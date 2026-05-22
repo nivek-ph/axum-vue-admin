@@ -1,0 +1,38 @@
+import { mount } from '@vue/test-utils'
+import { ElementCompat } from '@/ui/elementCompat'
+import { describe, expect, it, vi } from 'vitest'
+import { createMemoryHistory, createRouter } from 'vue-router'
+
+vi.mock('@/api/system', () => ({
+  fetchServerInfo: vi.fn().mockResolvedValue({
+    os: { goos: 'darwin', numCpu: 8, compiler: 'rustc', goVersion: '0.1.0', numGoroutine: 0 },
+    cpu: { cores: 8, cpus: [12, 18, 9, 24] },
+    ram: { totalMb: 8192, usedMb: 2048, usedPercent: 25 },
+    disk: [{ mountPoint: '/', totalGb: 500, usedGb: 125, usedPercent: 25 }]
+  }),
+  fetchSystemConfig: vi.fn().mockResolvedValue({
+    system: { env: 'public', addr: '127.0.0.1:3000', 'db-type': 'pgsql' },
+    captcha: { openCaptcha: 0, openCaptchaTimeOut: 0 },
+    local: { storePath: './uploads' }
+  })
+}))
+
+import SystemStateView from './SystemStateView.vue'
+
+describe('SystemStateView', () => {
+  it('renders system state heading', async () => {
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [{ path: '/', component: SystemStateView }]
+    })
+
+    const wrapper = mount(SystemStateView, {
+      global: {
+        plugins: [ElementCompat, router]
+      }
+    })
+
+    await Promise.resolve()
+    expect(wrapper.text()).toContain('系统状态')
+  })
+})

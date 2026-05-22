@@ -1,0 +1,13 @@
+[package]
+name = "auth"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+# External crates.
+argon2.workspace = true
+jsonwebtoken.workspace = true
+password-hash.workspace = true
+serde.workspace = true
+thiserror.workspace = true

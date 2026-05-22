@@ -1,0 +1,61 @@
+[workspace]
+members = [
+  "apps/api",
+  "crates/auth",
+  "crates/db",
+  "crates/file-storage",
+  "crates/httpz",
+  "crates/system",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2024"
+license = "MIT"
+version = "0.1.0"
+
+[workspace.dependencies]
+# Local workspace crates. This lets us reference them in other crates without specifying a path.
+admin-httpz = { path = "crates/httpz" }
+api = { path = "apps/api" }
+auth = { path = "crates/auth" }
+db = { path = "crates/db" }
+file-storage = { path = "crates/file-storage" }
+system = { path = "crates/system" }
+
+# External crates.
+anyhow = "1"
+argon2 = { version = "0.6.0-rc.8", features = ["getrandom", "password-hash"] }
+axum = { version = "0.8", features = ["json", "multipart"] }
+dotenvy = "0.15"
+jsonwebtoken = { version = "10", features = ["aws_lc_rs"] }
+password-hash = { version = "0.6.1", features = ["getrandom", "phc"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sqlx = { version = "0.9", features = [
+  "migrate",
+  "postgres",
+  "runtime-tokio",
+  "tls-rustls",
+] }
+thiserror = "2"
+tokio = { version = "1", features = [
+  "macros",
+  "rt-multi-thread",
+  "net",
+  "fs",
+  "io-util",
+] }
+tower = { version = "0.5", features = ["util"] }
+tower-http = { version = "0.6", features = [
+  "cors",
+  "fs",
+  "request-id",
+  "trace",
+] }
+tracing = "0.1"
+tracing-error = "0.2"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+utoipa = "5"
+utoipa-swagger-ui = { version = "9", features = ["axum"] }
+uuid = { version = "1", features = ["v4"] }

@@ -1,0 +1,63 @@
+import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-router'
+
+import AppLayout from '@/layouts/AppLayout.vue'
+import { useAuthStore } from '@/stores/auth'
+
+const LoginView = () => import('@/views/auth/LoginView.vue')
+const DashboardView = () => import('@/views/dashboard/DashboardView.vue')
+const UserListView = () => import('@/views/users/UserListView.vue')
+const RoleListView = () => import('@/views/roles/RoleListView.vue')
+const MenuListView = () => import('@/views/menus/MenuListView.vue')
+const ApiListView = () => import('@/views/apis/ApiListView.vue')
+const ParamListView = () => import('@/views/params/ParamListView.vue')
+const DictionaryListView = () => import('@/views/dictionaries/DictionaryListView.vue')
+const FileLibraryView = () => import('@/views/files/FileLibraryView.vue')
+const LoginLogView = () => import('@/views/logs/LoginLogView.vue')
+const OperationLogView = () => import('@/views/logs/OperationLogView.vue')
+const ProfileView = () => import('@/views/profile/ProfileView.vue')
+const SystemConfigView = () => import('@/views/system/SystemConfigView.vue')
+const SystemStateView = () => import('@/views/system/SystemStateView.vue')
+
+const routes: RouteRecordRaw[] = [
+  { path: '/login', name: 'login', component: LoginView },
+  {
+    path: '/',
+    component: AppLayout,
+    children: [
+      { path: '', redirect: '/dashboard' },
+      { path: 'dashboard', name: 'dashboard', component: DashboardView },
+      { path: 'users', name: 'users', component: UserListView },
+      { path: 'roles', name: 'roles', component: RoleListView },
+      { path: 'menus', name: 'menus', component: MenuListView },
+      { path: 'apis', name: 'apis', component: ApiListView },
+      { path: 'params', name: 'params', component: ParamListView },
+      { path: 'dictionaries', name: 'dictionaries', component: DictionaryListView },
+      { path: 'files', name: 'files', component: FileLibraryView },
+      { path: 'login-logs', name: 'login-logs', component: LoginLogView },
+      { path: 'operation-logs', name: 'operation-logs', component: OperationLogView },
+      { path: 'profile', name: 'profile', component: ProfileView },
+      { path: 'system-config', name: 'system-config', component: SystemConfigView },
+      { path: 'system-state', name: 'system-state', component: SystemStateView }
+    ]
+  }
+]
+
+export function createAppRouter() {
+  const router = createRouter({
+    history: createWebHashHistory(),
+    routes
+  })
+
+  router.beforeEach((to) => {
+    const authStore = useAuthStore()
+    if (to.name !== 'login' && !authStore.isAuthenticated) {
+      return { name: 'login' }
+    }
+    if (to.name === 'login' && authStore.isAuthenticated) {
+      return { name: 'dashboard' }
+    }
+    return true
+  })
+
+  return router
+}

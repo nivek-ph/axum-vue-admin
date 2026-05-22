@@ -1,0 +1,20 @@
+[package]
+name = "admin-httpz"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+# External crates.
+anyhow.workspace = true
+axum.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sqlx.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
+tracing-error.workspace = true
+
+[dev-dependencies]
+# External crates.
+tokio.workspace = true
