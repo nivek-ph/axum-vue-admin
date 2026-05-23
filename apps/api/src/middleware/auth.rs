@@ -5,16 +5,16 @@ use axum::{
     response::Response,
 };
 
-use admin_httpz::{AppError, OptionAppExt};
+use admin_httpz::{AppResult, OptionAppExt};
 use system::users::LoginError;
 
-use crate::auth::errors;
+use crate::auth::{errors, session::AuthSessionError};
 use crate::state::AppState;
 
 const X_FORWARDED_FOR: &str = "x-forwarded-for";
 const USER_AGENT: &str = "user-agent";
 
-fn extract_bearer_token(headers: &HeaderMap) -> Option<&str> {
+pub(crate) fn extract_bearer_token(headers: &HeaderMap) -> Option<&str> {
     let value = headers.get(AUTHORIZATION)?.to_str().ok()?;
     let token = value
         .strip_prefix("Bearer ")
@@ -30,7 +30,7 @@ pub async fn require_auth(
     State(state): State<AppState>,
     mut request: Request,
     next: Next,
-) -> Result<Response, AppError> {
+) -> AppResult<Response> {
     let method = request.method().to_string();
     let path = request.uri().path().to_string();
     let headers = request.headers();
@@ -46,9 +46,16 @@ pub async fn require_auth(
         .to_string();
     let token = extract_bearer_token(headers).ok_or_spec(errors::LOGIN_REQUIRED)?;
     let claims = state
-        .jwt_service
-        .decode_token(token)
-        .map_err(|error| errors::TOKEN_INVALID.into_error().with_source(error))?;
+        .auth_session
+        .decode_active_token(token)
+        .await
+        .map_err(|error| match error {
+            AuthSessionError::Auth(error) => errors::TOKEN_INVALID.into_error().with_source(error),
+            AuthSessionError::Revoked => errors::TOKEN_REVOKED.into_error(),
+            AuthSessionError::RevocationStoreUnavailable | AuthSessionError::Redis(_) => {
+                errors::AUTH_RESOLVE_FAILED.into_error().with_source(error)
+            }
+        })?;
     let user = match system::users::load_authenticated_user(&state.pool, claims.user_id).await {
         Ok(user) => user,
         Err(LoginError::InvalidCredentials | LoginError::UserNotFound) => {

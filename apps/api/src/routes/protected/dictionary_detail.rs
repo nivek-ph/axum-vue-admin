@@ -1,4 +1,4 @@
-use admin_httpz::{ApiResponse, AppError, OptionAppExt};
+use admin_httpz::{ApiResponse, AppResult, OptionAppExt};
 use axum::{
     Json,
     extract::{Path, Query, State},
@@ -11,7 +11,7 @@ use crate::state::AppState;
 pub async fn create_sys_dictionary_detail(
     State(state): State<AppState>,
     Json(payload): Json<system::dictionary::SysDictionaryDetail>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     system::dictionary::create_detail(&state.pool, payload).await?;
     Ok(Json(ApiResponse::ok_message("创建成功")))
 }
@@ -19,7 +19,7 @@ pub async fn create_sys_dictionary_detail(
 pub async fn update_sys_dictionary_detail(
     State(state): State<AppState>,
     Json(payload): Json<system::dictionary::SysDictionaryDetail>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     system::dictionary::update_detail(&state.pool, payload).await?;
     Ok(Json(ApiResponse::ok_message("更新成功")))
 }
@@ -28,7 +28,7 @@ pub async fn update_sys_dictionary_detail_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
     Json(mut payload): Json<system::dictionary::SysDictionaryDetail>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     payload.id = id;
     system::dictionary::update_detail(&state.pool, payload).await?;
     Ok(Json(ApiResponse::ok_message("更新成功")))
@@ -37,7 +37,7 @@ pub async fn update_sys_dictionary_detail_by_id(
 pub async fn find_sys_dictionary_detail(
     State(state): State<AppState>,
     Query(payload): Query<system::dictionary::IdRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let id = payload.id.ok_or_spec(errors::ID_REQUIRED)?;
     let item = system::dictionary::find_detail(&state.pool, id).await?;
     Ok(Json(ApiResponse::ok(serde_json::json!({
@@ -48,7 +48,7 @@ pub async fn find_sys_dictionary_detail(
 pub async fn find_sys_dictionary_detail_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let item = system::dictionary::find_detail(&state.pool, id).await?;
     Ok(Json(ApiResponse::ok(serde_json::json!({
         "reSysDictionaryDetail": item
@@ -58,7 +58,7 @@ pub async fn find_sys_dictionary_detail_by_id(
 pub async fn get_dictionary_tree_list(
     State(state): State<AppState>,
     Query(payload): Query<system::dictionary::DictionaryTreeQuery>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let list =
         system::dictionary::tree_by_dictionary(&state.pool, payload.sys_dictionary_id).await?;
     Ok(Json(ApiResponse::ok(serde_json::json!({
@@ -69,7 +69,7 @@ pub async fn get_dictionary_tree_list(
 pub async fn get_dictionary_tree_list_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let list = system::dictionary::tree_by_dictionary(&state.pool, id).await?;
     Ok(Json(ApiResponse::ok(serde_json::json!({
         "list": list
@@ -79,7 +79,7 @@ pub async fn get_dictionary_tree_list_by_id(
 pub async fn get_sys_dictionary_detail_list(
     State(state): State<AppState>,
     Query(payload): Query<system::dictionary::DictionaryTreeQuery>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let list =
         system::dictionary::tree_by_dictionary(&state.pool, payload.sys_dictionary_id).await?;
     Ok(Json(ApiResponse::ok(serde_json::json!({ "list": list }))))
@@ -88,7 +88,7 @@ pub async fn get_sys_dictionary_detail_list(
 pub async fn get_dictionary_tree_list_by_type(
     State(state): State<AppState>,
     Query(payload): Query<system::dictionary::DictionaryTypeQuery>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let list = system::dictionary::tree_by_type(&state.pool, &payload.dict_type).await?;
     Ok(Json(ApiResponse::ok(serde_json::json!({ "list": list }))))
 }
@@ -96,7 +96,7 @@ pub async fn get_dictionary_tree_list_by_type(
 pub async fn get_dictionary_details_by_parent(
     State(state): State<AppState>,
     Query(payload): Query<system::dictionary::DictionaryParentQuery>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let list = system::dictionary::details_by_parent(&state.pool, payload.parent_id).await?;
     Ok(Json(ApiResponse::ok(serde_json::json!({ "list": list }))))
 }
@@ -104,7 +104,7 @@ pub async fn get_dictionary_details_by_parent(
 pub async fn get_dictionary_path(
     State(state): State<AppState>,
     Query(payload): Query<system::dictionary::IdRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let id = payload.id.ok_or_spec(errors::ID_REQUIRED)?;
     let list = system::dictionary::detail_path(&state.pool, id).await?;
     Ok(Json(ApiResponse::ok(serde_json::json!({ "list": list }))))
@@ -113,7 +113,7 @@ pub async fn get_dictionary_path(
 pub async fn get_dictionary_path_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let list = system::dictionary::detail_path(&state.pool, id).await?;
     Ok(Json(ApiResponse::ok(serde_json::json!({ "list": list }))))
 }
@@ -121,7 +121,7 @@ pub async fn get_dictionary_path_by_id(
 pub async fn delete_sys_dictionary_detail(
     State(state): State<AppState>,
     Json(payload): Json<system::dictionary::IdRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let id = payload.id.ok_or_spec(errors::ID_REQUIRED)?;
     system::dictionary::delete_detail(&state.pool, id).await?;
     Ok(Json(ApiResponse::ok_message("删除成功")))
@@ -130,7 +130,7 @@ pub async fn delete_sys_dictionary_detail(
 pub async fn delete_sys_dictionary_detail_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     system::dictionary::delete_detail(&state.pool, id).await?;
     Ok(Json(ApiResponse::ok_message("删除成功")))
 }

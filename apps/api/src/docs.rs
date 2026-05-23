@@ -159,6 +159,7 @@ pub struct MenuResponse {
         crate::routes::public::health::health,
         crate::routes::public::captcha::captcha,
         crate::routes::public::auth::login,
+        crate::routes::protected::session::logout,
         crate::routes::protected::user::get_user_info,
         crate::routes::protected::menu::get_menu,
     ),

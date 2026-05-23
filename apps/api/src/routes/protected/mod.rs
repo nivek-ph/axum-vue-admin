@@ -4,10 +4,10 @@ pub mod authority;
 pub mod dictionary;
 pub mod dictionary_detail;
 pub mod file;
-pub mod jwt;
 pub mod logs;
 pub mod menu;
 pub mod params;
+pub mod session;
 pub mod system;
 pub mod user;
 
@@ -184,5 +184,5 @@ pub fn router() -> Router<crate::state::AppState> {
         )
         .route("/files/{id}", delete(file::delete_file_by_id))
         .route("/files/{id}/name", patch(file::edit_file_name_by_id))
-        .route("/jwt/blacklist", post(jwt::json_in_blacklist))
+        .route("/auth/logout", post(session::logout))
 }

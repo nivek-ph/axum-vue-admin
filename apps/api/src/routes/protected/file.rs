@@ -1,4 +1,4 @@
-use admin_httpz::{ApiResponse, AppError};
+use admin_httpz::{ApiResponse, AppResult};
 use axum::{
     Json,
     extract::{Multipart, Path, Query, State},
@@ -18,7 +18,7 @@ pub struct UploadClassQuery {
 pub async fn get_file_list(
     State(state): State<AppState>,
     Json(payload): Json<file_storage::files::FileListQuery>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let (list, total, page, page_size) = file_storage::files::list(&state.pool, payload).await?;
     Ok(Json(ApiResponse::ok(serde_json::json!({
         "list": list,
@@ -31,7 +31,7 @@ pub async fn get_file_list(
 pub async fn get_file_list_by_query(
     State(state): State<AppState>,
     Query(payload): Query<file_storage::files::FileListQuery>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let (list, total, page, page_size) = file_storage::files::list(&state.pool, payload).await?;
     Ok(Json(ApiResponse::ok(serde_json::json!({
         "list": list,
@@ -44,7 +44,7 @@ pub async fn get_file_list_by_query(
 pub async fn delete_file(
     State(state): State<AppState>,
     Json(payload): Json<file_storage::files::FileDeletePayload>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     file_storage::files::delete_file(&state.pool, payload.id).await?;
     Ok(Json(ApiResponse::ok_message("删除成功")))
 }
@@ -52,7 +52,7 @@ pub async fn delete_file(
 pub async fn delete_file_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     file_storage::files::delete_file(&state.pool, id).await?;
     Ok(Json(ApiResponse::ok_message("删除成功")))
 }
@@ -60,7 +60,7 @@ pub async fn delete_file_by_id(
 pub async fn edit_file_name(
     State(state): State<AppState>,
     Json(payload): Json<file_storage::files::FileEditPayload>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     file_storage::files::edit_name(&state.pool, payload).await?;
     Ok(Json(ApiResponse::ok_message("编辑成功")))
 }
@@ -69,7 +69,7 @@ pub async fn edit_file_name_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
     Json(mut payload): Json<file_storage::files::FileEditPayload>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     payload.id = id;
     file_storage::files::edit_name(&state.pool, payload).await?;
     Ok(Json(ApiResponse::ok_message("编辑成功")))
@@ -78,7 +78,7 @@ pub async fn edit_file_name_by_id(
 pub async fn import_url(
     State(state): State<AppState>,
     Json(payload): Json<file_storage::files::ImportUrlPayload>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     file_storage::files::import_url(&state.pool, payload).await?;
     Ok(Json(ApiResponse::ok_message("导入成功")))
 }
@@ -87,7 +87,7 @@ pub async fn upload_file(
     State(state): State<AppState>,
     Query(query): Query<UploadClassQuery>,
     mut multipart: Multipart,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let mut uploaded = None;
     while let Some(field) = multipart
         .next_field()

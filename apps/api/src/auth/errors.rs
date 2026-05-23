@@ -2,6 +2,7 @@ use admin_httpz::ErrorSpec;
 
 pub const LOGIN_REQUIRED: ErrorSpec = ErrorSpec::unauthorized("LOGIN_REQUIRED", "请先登录");
 pub const TOKEN_INVALID: ErrorSpec = ErrorSpec::unauthorized("TOKEN_INVALID", "登录已失效");
+pub const TOKEN_REVOKED: ErrorSpec = ErrorSpec::unauthorized("TOKEN_REVOKED", "登录已失效");
 pub const SESSION_INVALID: ErrorSpec = ErrorSpec::unauthorized("SESSION_INVALID", "登录已失效");
 
 /// Unexpected failure while resolving the authenticated user after a valid JWT (middleware).

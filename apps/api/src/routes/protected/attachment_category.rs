@@ -1,4 +1,4 @@
-use admin_httpz::{ApiResponse, AppError};
+use admin_httpz::{ApiResponse, AppResult};
 use axum::{
     Json,
     extract::{Path, State},
@@ -9,7 +9,7 @@ use crate::state::AppState;
 
 pub async fn get_category_list(
     State(state): State<AppState>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let list = file_storage::category::list(&state.pool).await?;
     Ok(Json(ApiResponse::ok(serde_json::json!(list))))
 }
@@ -17,7 +17,7 @@ pub async fn get_category_list(
 pub async fn add_category(
     State(state): State<AppState>,
     Json(payload): Json<file_storage::category::CategoryPayload>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     file_storage::category::upsert(&state.pool, payload).await?;
     Ok(Json(ApiResponse::ok_message("操作成功")))
 }
@@ -25,7 +25,7 @@ pub async fn add_category(
 pub async fn delete_category(
     State(state): State<AppState>,
     Json(payload): Json<file_storage::category::DeleteCategoryPayload>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     file_storage::category::delete(&state.pool, payload.id).await?;
     Ok(Json(ApiResponse::ok_message("删除成功")))
 }
@@ -33,7 +33,7 @@ pub async fn delete_category(
 pub async fn delete_category_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     file_storage::category::delete(&state.pool, id).await?;
     Ok(Json(ApiResponse::ok_message("删除成功")))
 }

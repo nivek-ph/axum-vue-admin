@@ -1,4 +1,4 @@
-use admin_httpz::{ApiResponse, AppError};
+use admin_httpz::{ApiResponse, AppResult};
 use axum::{
     Json,
     extract::{Path, Query, State},
@@ -9,7 +9,7 @@ use crate::state::AppState;
 
 pub async fn get_authority_list(
     State(state): State<AppState>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let data = system::authority::get_authority_info_list(&state.pool).await?;
 
     Ok(Json(ApiResponse::ok(serde_json::json!(data))))
@@ -18,7 +18,7 @@ pub async fn get_authority_list(
 pub async fn create_authority(
     State(state): State<AppState>,
     Json(payload): Json<system::authority::CreateAuthorityRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let authority = system::authority::create_authority(&state.pool, payload).await?;
 
     Ok(Json(ApiResponse::ok(serde_json::json!({
@@ -29,7 +29,7 @@ pub async fn create_authority(
 pub async fn update_authority(
     State(state): State<AppState>,
     Json(payload): Json<system::authority::UpdateAuthorityRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let authority = system::authority::update_authority(&state.pool, payload).await?;
 
     Ok(Json(ApiResponse::ok(serde_json::json!({
@@ -40,7 +40,7 @@ pub async fn update_authority(
 pub async fn delete_authority(
     State(state): State<AppState>,
     Json(payload): Json<system::authority::DeleteAuthorityRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     system::authority::delete_authority(&state.pool, payload).await?;
 
     Ok(Json(ApiResponse::ok_message("删除成功")))
@@ -49,7 +49,7 @@ pub async fn delete_authority(
 pub async fn delete_authority_by_id(
     State(state): State<AppState>,
     Path(authority_id): Path<i64>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     system::authority::delete_authority(
         &state.pool,
         system::authority::DeleteAuthorityRequest { authority_id },
@@ -62,7 +62,7 @@ pub async fn delete_authority_by_id(
 pub async fn copy_authority(
     State(state): State<AppState>,
     Json(payload): Json<system::authority::CopyAuthorityRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let authority = system::authority::copy_authority(&state.pool, payload).await?;
 
     Ok(Json(ApiResponse::ok(serde_json::json!({
@@ -73,7 +73,7 @@ pub async fn copy_authority(
 pub async fn get_users_by_authority(
     State(state): State<AppState>,
     Query(payload): Query<system::menu::MenuAuthorityRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let user_ids =
         system::authority::get_user_ids_by_authority_id(&state.pool, payload.authority_id).await?;
 
@@ -83,7 +83,7 @@ pub async fn get_users_by_authority(
 pub async fn get_users_by_authority_id(
     State(state): State<AppState>,
     Path(authority_id): Path<i64>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let user_ids =
         system::authority::get_user_ids_by_authority_id(&state.pool, authority_id).await?;
 
@@ -93,7 +93,7 @@ pub async fn get_users_by_authority_id(
 pub async fn set_role_users(
     State(state): State<AppState>,
     Json(payload): Json<system::authority::SetRoleUsersRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     system::authority::set_role_users(&state.pool, payload).await?;
 
     Ok(Json(ApiResponse::ok_message("设置成功")))
@@ -103,7 +103,7 @@ pub async fn set_role_users_by_id(
     State(state): State<AppState>,
     Path(authority_id): Path<i64>,
     Json(mut payload): Json<system::authority::SetRoleUsersRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     payload.authority_id = authority_id;
     system::authority::set_role_users(&state.pool, payload).await?;
 

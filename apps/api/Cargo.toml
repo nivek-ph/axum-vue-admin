@@ -3,6 +3,15 @@ name = "api"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
+default-run = "api"
+
+[[bin]]
+name = "api"
+path = "src/main.rs"
+
+[[bin]]
+name = "bootstrap"
+path = "bin/bootstrap.rs"
 
 [dependencies]
 # Local workspace crates
@@ -15,9 +24,13 @@ system.workspace = true
 # External crates.
 axum.workspace = true
 dotenvy.workspace = true
+hex.workspace = true
+redis.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+sha2.workspace = true
 sqlx.workspace = true
+thiserror.workspace = true
 tokio.workspace = true
 tower.workspace = true
 tower-http.workspace = true

@@ -1,4 +1,4 @@
-use admin_httpz::{ApiResponse, AppError, OptionAppExt};
+use admin_httpz::{ApiResponse, AppResult, OptionAppExt};
 use axum::{
     Json,
     extract::{Path, Query, State},
@@ -28,7 +28,7 @@ pub async fn get_user_info(CurrentUser(user): CurrentUser) -> Json<ApiResponse<V
 pub async fn get_user_list(
     State(state): State<AppState>,
     Json(payload): Json<system::users::GetUserListRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let page = payload.page.max(1);
     let page_size = payload.page_size.max(1);
     let (list, total) = system::users::get_user_list(&state.pool, payload).await?;
@@ -44,7 +44,7 @@ pub async fn get_user_list(
 pub async fn get_user_list_by_query(
     State(state): State<AppState>,
     Query(payload): Query<system::users::GetUserListRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let page = payload.page.max(1);
     let page_size = payload.page_size.max(1);
     let (list, total) = system::users::get_user_list(&state.pool, payload).await?;
@@ -60,7 +60,7 @@ pub async fn get_user_list_by_query(
 pub async fn admin_register(
     State(state): State<AppState>,
     Json(payload): Json<system::users::RegisterRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     system::users::register_user(&state.pool, &state.password_service, payload).await?;
 
     Ok(Json(ApiResponse::ok_message("注册成功")))
@@ -70,7 +70,7 @@ pub async fn change_password(
     State(state): State<AppState>,
     CurrentUser(user): CurrentUser,
     Json(payload): Json<system::users::ChangePasswordRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     system::users::change_password(&state.pool, &state.password_service, user.id, payload).await?;
 
     Ok(Json(ApiResponse::ok_message("修改成功")))
@@ -79,7 +79,7 @@ pub async fn change_password(
 pub async fn set_user_info(
     State(state): State<AppState>,
     Json(payload): Json<system::users::UpdateUserRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     system::users::update_user(&state.pool, payload).await?;
 
     Ok(Json(ApiResponse::ok_message("修改成功")))
@@ -89,7 +89,7 @@ pub async fn set_user_info_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
     Json(mut payload): Json<system::users::UpdateUserRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     payload.id = id;
     system::users::update_user(&state.pool, payload).await?;
 
@@ -100,7 +100,7 @@ pub async fn set_self_info(
     State(state): State<AppState>,
     CurrentUser(user): CurrentUser,
     Json(payload): Json<system::users::SetSelfInfoRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     system::users::set_self_info(&state.pool, user.id, payload).await?;
 
     Ok(Json(ApiResponse::ok_message("修改成功")))
@@ -110,7 +110,7 @@ pub async fn set_self_setting(
     State(state): State<AppState>,
     CurrentUser(user): CurrentUser,
     Json(payload): Json<system::users::SetSelfSettingRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     system::users::set_self_setting(&state.pool, user.id, payload).await?;
 
     Ok(Json(ApiResponse::ok_message("修改成功")))
@@ -119,7 +119,7 @@ pub async fn set_self_setting(
 pub async fn delete_user(
     State(state): State<AppState>,
     Json(payload): Json<system::users::DeleteUserRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     system::users::delete_user(&state.pool, payload).await?;
 
     Ok(Json(ApiResponse::ok_message("删除成功")))
@@ -128,7 +128,7 @@ pub async fn delete_user(
 pub async fn delete_user_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     system::users::delete_user(&state.pool, system::users::DeleteUserRequest { id }).await?;
 
     Ok(Json(ApiResponse::ok_message("删除成功")))
@@ -137,7 +137,7 @@ pub async fn delete_user_by_id(
 pub async fn reset_password(
     State(state): State<AppState>,
     Json(payload): Json<system::users::ResetPasswordRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     system::users::reset_password(&state.pool, &state.password_service, payload).await?;
 
     Ok(Json(ApiResponse::ok_message("密码重置成功")))
@@ -147,7 +147,7 @@ pub async fn reset_password_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
     Json(mut payload): Json<system::users::ResetPasswordRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     payload.id = id;
     system::users::reset_password(&state.pool, &state.password_service, payload).await?;
 
@@ -157,7 +157,7 @@ pub async fn reset_password_by_id(
 pub async fn set_user_authorities(
     State(state): State<AppState>,
     Json(payload): Json<system::users::SetUserAuthoritiesRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     system::users::set_user_authorities(&state.pool, payload).await?;
 
     Ok(Json(ApiResponse::ok_message("角色设置成功")))
@@ -167,7 +167,7 @@ pub async fn set_user_authorities_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
     Json(mut payload): Json<system::users::SetUserAuthoritiesRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     payload.id = id;
     system::users::set_user_authorities(&state.pool, payload).await?;
 
@@ -178,7 +178,7 @@ pub async fn set_user_authority(
     State(state): State<AppState>,
     CurrentUser(user): CurrentUser,
     Json(payload): Json<serde_json::Value>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let authority_id = payload
         .get("authorityId")
         .and_then(|value| value.as_i64())

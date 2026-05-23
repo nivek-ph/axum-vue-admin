@@ -44,6 +44,7 @@ Required:
 Optional:
 
 - `APP_BIND_ADDR`, default `127.0.0.1:3000`
+- `REDIS_URL`, default `redis://127.0.0.1:6379/` (Redis 8 or newer required)
 - `JWT_SECRET`, default `change-me-in-env`
 - `ADMIN_USERNAME`, default `admin`
 - `ADMIN_PASSWORD`, default `123456`
@@ -159,7 +160,7 @@ Protected route groups:
 | Attachment categories | `GET/POST /api/attachment-categories`, `DELETE /api/attachment-categories/{id}`                                                                                                                                                                   |
 | Logs                  | `GET/DELETE /api/login-logs`, `GET/DELETE /api/login-logs/{id}`, `GET/DELETE /api/operation-logs`, `DELETE /api/operation-logs/{id}`                                                                                                              |
 | System                | `GET/PUT /api/system/config`, `GET /api/system/server-info`, `POST /api/system/reload`                                                                                                                                                            |
-| JWT                   | `POST /api/jwt/blacklist`                                                                                                                                                                                                                         |
+| Auth sessions         | `POST /api/auth/logout`                                                                                                                                                                                                                           |
 
 ## Features
 
@@ -221,8 +222,9 @@ npm run build
 Recommended manual integration sweep:
 
 1. Start PostgreSQL for the configured `DATABASE_URL`.
-2. Start the backend with `cargo run -p api`.
-3. Start the frontend with `cd apps/desktop && npm run dev`.
-4. Log in with `admin / 123456`.
-5. Smoke test user, role, menu, API route, param, dictionary, file, log, and
+2. Start Redis 8 or newer for the configured `REDIS_URL`.
+3. Start the backend with `cargo run -p api`.
+4. Start the frontend with `cd apps/desktop && npm run dev`.
+5. Log in with `admin / 123456`.
+6. Smoke test user, role, menu, API route, param, dictionary, file, log, and
    system pages.

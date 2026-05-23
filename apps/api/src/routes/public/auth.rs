@@ -1,4 +1,4 @@
-use admin_httpz::{ApiResponse, AppError};
+use admin_httpz::{ApiResponse, AppResult};
 use axum::{Json, extract::State, http::HeaderMap};
 use serde_json::Value;
 use system::users::LoginError;
@@ -20,15 +20,12 @@ pub async fn login(
     State(state): State<AppState>,
     headers: HeaderMap,
     Json(payload): Json<system::users::LoginRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let username = payload.username.clone();
-    let login_result = match system::users::login(
-        &state.pool,
-        &state.password_service,
-        &state.jwt_service,
-        payload,
-    )
-    .await
+    let login_result = match state
+        .auth_session
+        .login(&state.pool, &state.password_service, payload)
+        .await
     {
         Ok(result) => {
             let _ = system::logs::create_login_log(

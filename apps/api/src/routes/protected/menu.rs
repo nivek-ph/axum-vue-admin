@@ -1,4 +1,4 @@
-use admin_httpz::{ApiResponse, AppError};
+use admin_httpz::{ApiResponse, AppResult};
 use axum::{
     Json,
     extract::{Path, Query, State},
@@ -20,7 +20,7 @@ use crate::{extractors::current_user::CurrentUser, state::AppState};
 pub async fn get_menu(
     State(state): State<AppState>,
     CurrentUser(user): CurrentUser,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let menus = system::menu::get_menu_tree_for_authority(&state.pool, user.authority_id).await?;
 
     Ok(Json(ApiResponse::ok(serde_json::json!({
@@ -28,9 +28,7 @@ pub async fn get_menu(
     }))))
 }
 
-pub async fn get_menu_list(
-    State(state): State<AppState>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+pub async fn get_menu_list(State(state): State<AppState>) -> AppResult<Json<ApiResponse<Value>>> {
     let menus = system::menu::get_menu_list(&state.pool).await?;
 
     Ok(Json(ApiResponse::ok(serde_json::json!(menus))))
@@ -38,7 +36,7 @@ pub async fn get_menu_list(
 
 pub async fn get_base_menu_tree(
     State(state): State<AppState>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let menus = system::menu::get_base_menu_tree(&state.pool).await?;
 
     Ok(Json(ApiResponse::ok(serde_json::json!({
@@ -49,7 +47,7 @@ pub async fn get_base_menu_tree(
 pub async fn add_base_menu(
     State(state): State<AppState>,
     Json(payload): Json<system::menu::MenuView>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     system::menu::add_base_menu(&state.pool, payload).await?;
 
     Ok(Json(ApiResponse::ok_message("添加成功")))
@@ -58,7 +56,7 @@ pub async fn add_base_menu(
 pub async fn update_base_menu(
     State(state): State<AppState>,
     Json(payload): Json<system::menu::MenuView>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     system::menu::update_base_menu(&state.pool, payload).await?;
 
     Ok(Json(ApiResponse::ok_message("更新成功")))
@@ -68,7 +66,7 @@ pub async fn update_base_menu_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
     Json(mut payload): Json<system::menu::MenuView>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     payload.id = id;
     system::menu::update_base_menu(&state.pool, payload).await?;
 
@@ -78,7 +76,7 @@ pub async fn update_base_menu_by_id(
 pub async fn delete_base_menu(
     State(state): State<AppState>,
     Json(payload): Json<system::menu::MenuIdRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     system::menu::delete_base_menu(&state.pool, payload.id).await?;
 
     Ok(Json(ApiResponse::ok_message("删除成功")))
@@ -87,7 +85,7 @@ pub async fn delete_base_menu(
 pub async fn delete_base_menu_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     system::menu::delete_base_menu(&state.pool, id).await?;
 
     Ok(Json(ApiResponse::ok_message("删除成功")))
@@ -96,7 +94,7 @@ pub async fn delete_base_menu_by_id(
 pub async fn get_base_menu_by_id(
     State(state): State<AppState>,
     Json(payload): Json<system::menu::MenuIdRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let menu = system::menu::get_base_menu_by_id(&state.pool, payload.id).await?;
 
     Ok(Json(ApiResponse::ok(serde_json::json!({
@@ -107,7 +105,7 @@ pub async fn get_base_menu_by_id(
 pub async fn get_base_menu_by_path_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let menu = system::menu::get_base_menu_by_id(&state.pool, id).await?;
 
     Ok(Json(ApiResponse::ok(serde_json::json!({
@@ -118,7 +116,7 @@ pub async fn get_base_menu_by_path_id(
 pub async fn get_menu_authority(
     State(state): State<AppState>,
     Json(payload): Json<system::menu::MenuAuthorityRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let menus = system::menu::get_menu_authority(&state.pool, payload.authority_id).await?;
 
     Ok(Json(ApiResponse::ok(serde_json::json!({
@@ -129,7 +127,7 @@ pub async fn get_menu_authority(
 pub async fn add_menu_authority(
     State(state): State<AppState>,
     Json(payload): Json<system::menu::AddMenuAuthorityRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     system::menu::add_menu_authority(&state.pool, payload).await?;
 
     Ok(Json(ApiResponse::ok_message("添加成功")))
@@ -138,7 +136,7 @@ pub async fn add_menu_authority(
 pub async fn get_menu_roles(
     State(state): State<AppState>,
     Query(payload): Query<system::menu::MenuIdRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let data = system::menu::get_menu_roles(&state.pool, payload.id).await?;
 
     Ok(Json(ApiResponse::ok(serde_json::json!(data))))
@@ -147,7 +145,7 @@ pub async fn get_menu_roles(
 pub async fn get_menu_roles_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let data = system::menu::get_menu_roles(&state.pool, id).await?;
 
     Ok(Json(ApiResponse::ok(serde_json::json!(data))))
@@ -156,7 +154,7 @@ pub async fn get_menu_roles_by_id(
 pub async fn set_menu_roles(
     State(state): State<AppState>,
     Json(payload): Json<system::menu::SetMenuRolesRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     system::menu::set_menu_roles(&state.pool, payload).await?;
 
     Ok(Json(ApiResponse::ok_message("分配成功")))
@@ -166,7 +164,7 @@ pub async fn set_menu_roles_by_id(
     State(state): State<AppState>,
     Path(menu_id): Path<i64>,
     Json(mut payload): Json<system::menu::SetMenuRolesRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     payload.menu_id = menu_id;
     system::menu::set_menu_roles(&state.pool, payload).await?;
 

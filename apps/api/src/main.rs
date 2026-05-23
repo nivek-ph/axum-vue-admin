@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use auth::{jwt::JwtService, password::PasswordService};
+use auth::password::PasswordService;
 use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -20,36 +20,27 @@ async fn main() {
         .await
         .expect("database pool should connect");
     info!("database connected");
+    let redis_client =
+        redis::Client::open(config.redis_url.clone()).expect("redis client should construct");
+    let redis_connection = redis_client
+        .get_multiplexed_async_connection()
+        .await
+        .expect("redis connection should connect");
     info!("running database migrations");
     sqlx::migrate!("../../migrations")
         .run(&pool)
         .await
         .expect("database migrations should run");
     info!("database migrations complete");
-    system::authority::ensure_default_authority(&pool)
-        .await
-        .expect("default authority should be bootstrapped");
-    system::menu::ensure_default_menu(&pool)
-        .await
-        .expect("default menu should be bootstrapped");
-    system::api_registry::ensure_default_apis(&pool)
-        .await
-        .expect("default apis should be bootstrapped");
     let password_service = PasswordService::default();
-    system::users::ensure_admin_user(
-        &pool,
-        &password_service,
-        &config.admin_username,
-        &config.admin_password,
-        &config.admin_nickname,
-    )
-    .await
-    .expect("admin user should be bootstrapped");
 
     let app = api::router::build_router(api::state::AppState {
         config: Arc::new(config.clone()),
         pool,
-        jwt_service: JwtService::new(&config.jwt_secret),
+        auth_session: api::auth::session::AuthSessionService::new(
+            &config.jwt_secret,
+            redis_connection,
+        ),
         password_service,
     });
     info!(bind_addr = %config.bind_addr, "binding api listener");

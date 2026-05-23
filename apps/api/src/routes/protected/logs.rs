@@ -1,4 +1,4 @@
-use admin_httpz::{ApiResponse, AppError};
+use admin_httpz::{ApiResponse, AppResult};
 use axum::{
     Json,
     extract::{Path, Query, State},
@@ -10,7 +10,7 @@ use crate::state::AppState;
 pub async fn get_login_log_list(
     State(state): State<AppState>,
     Query(payload): Query<system::logs::LoginLogSearch>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let page = payload.page.max(1);
     let page_size = payload.page_size.max(1);
     let (list, total) = system::logs::get_login_log_list(&state.pool, payload).await?;
@@ -26,7 +26,7 @@ pub async fn get_login_log_list(
 pub async fn find_login_log(
     State(state): State<AppState>,
     Query(payload): Query<system::logs::IdRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let (list, _) = system::logs::get_login_log_list(
         &state.pool,
         system::logs::LoginLogSearch {
@@ -47,7 +47,7 @@ pub async fn find_login_log(
 pub async fn find_login_log_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let (list, _) = system::logs::get_login_log_list(
         &state.pool,
         system::logs::LoginLogSearch {
@@ -68,7 +68,7 @@ pub async fn find_login_log_by_id(
 pub async fn delete_login_log(
     State(state): State<AppState>,
     Json(payload): Json<system::logs::IdRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     system::logs::delete_login_log(&state.pool, payload.id).await?;
 
     Ok(Json(ApiResponse::ok_message("删除成功")))
@@ -77,7 +77,7 @@ pub async fn delete_login_log(
 pub async fn delete_login_log_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     system::logs::delete_login_log(&state.pool, id).await?;
 
     Ok(Json(ApiResponse::ok_message("删除成功")))
@@ -86,7 +86,7 @@ pub async fn delete_login_log_by_id(
 pub async fn delete_login_log_by_ids(
     State(state): State<AppState>,
     Json(payload): Json<system::logs::IdsRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     system::logs::delete_login_logs(&state.pool, payload.ids).await?;
 
     Ok(Json(ApiResponse::ok_message("批量删除成功")))
@@ -95,7 +95,7 @@ pub async fn delete_login_log_by_ids(
 pub async fn get_operation_log_list(
     State(state): State<AppState>,
     Query(payload): Query<system::logs::OperationLogSearch>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     let page = payload.page.max(1);
     let page_size = payload.page_size.max(1);
     let (list, total) = system::logs::get_operation_log_list(&state.pool, payload).await?;
@@ -111,7 +111,7 @@ pub async fn get_operation_log_list(
 pub async fn delete_operation_log(
     State(state): State<AppState>,
     Json(payload): Json<system::logs::IdRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     system::logs::delete_operation_log(&state.pool, payload.id).await?;
 
     Ok(Json(ApiResponse::ok_message("删除成功")))
@@ -120,7 +120,7 @@ pub async fn delete_operation_log(
 pub async fn delete_operation_log_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     system::logs::delete_operation_log(&state.pool, id).await?;
 
     Ok(Json(ApiResponse::ok_message("删除成功")))
@@ -129,7 +129,7 @@ pub async fn delete_operation_log_by_id(
 pub async fn delete_operation_log_by_ids(
     State(state): State<AppState>,
     Json(payload): Json<system::logs::IdsRequest>,
-) -> Result<Json<ApiResponse<Value>>, AppError> {
+) -> AppResult<Json<ApiResponse<Value>>> {
     system::logs::delete_operation_logs(&state.pool, payload.ids).await?;
 
     Ok(Json(ApiResponse::ok_message("批量删除成功")))
