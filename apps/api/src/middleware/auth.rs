@@ -8,7 +8,7 @@ use axum::{
 use admin_httpz::{AppResult, OptionAppExt};
 use system::users::LoginError;
 
-use crate::auth::{errors, session::AuthSessionError};
+use crate::auth::errors;
 use crate::state::AppState;
 
 const X_FORWARDED_FOR: &str = "x-forwarded-for";
@@ -48,14 +48,7 @@ pub async fn require_auth(
     let claims = state
         .auth_session_service
         .decode_active_token(token)
-        .await
-        .map_err(|error| match error {
-            AuthSessionError::Auth(error) => errors::TOKEN_INVALID.into_error().with_source(error),
-            AuthSessionError::Revoked => errors::TOKEN_REVOKED.into_error(),
-            AuthSessionError::RevocationStoreUnavailable | AuthSessionError::Redis(_) => {
-                errors::AUTH_RESOLVE_FAILED.into_error().with_source(error)
-            }
-        })?;
+        .await?;
     let user = match system::users::load_authenticated_user(&state.pool, claims.user_id).await {
         Ok(user) => user,
         Err(LoginError::InvalidCredentials | LoginError::UserNotFound) => {

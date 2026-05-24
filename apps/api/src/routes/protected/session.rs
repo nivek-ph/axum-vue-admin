@@ -19,11 +19,7 @@ pub async fn logout(
     headers: HeaderMap,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     let token = extract_bearer_token(&headers).ok_or_spec(errors::LOGIN_REQUIRED)?;
-    state
-        .auth_session_service
-        .revoke_token(token)
-        .await
-        .map_err(|error| errors::AUTH_RESOLVE_FAILED.into_error().with_source(error))?;
+    state.auth_session_service.revoke_token(token).await?;
 
     Ok(Json(ApiResponse::ok_message("退出登录成功")))
 }
