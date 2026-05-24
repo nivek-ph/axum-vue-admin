@@ -112,7 +112,6 @@ pub async fn upload_file(
             )
             .await?,
         );
-        break;
     }
 
     Ok(Json(ApiResponse::ok(serde_json::json!({

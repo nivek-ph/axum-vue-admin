@@ -206,7 +206,7 @@ pub async fn ensure_admin_user(
 
     let password_hash = password_service
         .hash_password(password)
-        .map_err(map_auth_error_to_sqlx)?;
+        .map_err(|err| sqlx::Error::Protocol(err.to_string()))?;
 
     sqlx::query(
         r#"
@@ -674,10 +674,6 @@ fn build_user_info(record: &UserRecord) -> UserInfoView {
         email: record.email.clone().unwrap_or_default(),
         origin_setting: record.origin_setting.clone(),
     }
-}
-
-fn map_auth_error_to_sqlx(error: AuthError) -> sqlx::Error {
-    sqlx::Error::Protocol(error.to_string().into())
 }
 
 fn authority_from_ids(

@@ -29,7 +29,7 @@ async fn main() {
         .await
         .expect("default apis should be bootstrapped");
 
-    let password_service = PasswordService::default();
+    let password_service = PasswordService::new();
     system::users::ensure_admin_user(
         &pool,
         &password_service,

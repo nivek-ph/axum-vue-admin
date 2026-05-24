@@ -371,9 +371,9 @@ pub async fn import_dictionary(
     payload: ImportDictionaryPayload,
 ) -> Result<(), sqlx::Error> {
     let value: serde_json::Value = serde_json::from_str(&payload.json)
-        .map_err(|err| sqlx::Error::Protocol(err.to_string().into()))?;
+        .map_err(|err| sqlx::Error::Protocol(err.to_string()))?;
     let dictionary = serde_json::from_value::<SysDictionary>(value["dictionary"].clone())
-        .map_err(|err| sqlx::Error::Protocol(err.to_string().into()))?;
+        .map_err(|err| sqlx::Error::Protocol(err.to_string()))?;
     create(
         pool,
         SysDictionary {

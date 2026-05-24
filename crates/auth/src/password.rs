@@ -27,6 +27,10 @@ impl From<jsonwebtoken::errors::Error> for AuthError {
 pub struct PasswordService;
 
 impl PasswordService {
+    pub fn new() -> Self {
+        Self
+    }
+
     pub fn hash_password(&self, password: &str) -> Result<String, AuthError> {
         Ok(Argon2::default()
             .hash_password(password.as_bytes())?

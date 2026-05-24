@@ -32,7 +32,7 @@ async fn main() {
         .await
         .expect("database migrations should run");
     info!("database migrations complete");
-    let password_service = PasswordService::default();
+    let password_service = PasswordService::new();
 
     let app = api::router::build_router(api::state::AppState {
         config: Arc::new(config.clone()),
