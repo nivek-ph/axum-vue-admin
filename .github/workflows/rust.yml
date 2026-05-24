@@ -69,10 +69,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install MSRV toolchain
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ env.MSRV }}
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+  
       - name: Cache Rust dependencies
         uses: actions/cache@v4
         with:
@@ -80,10 +79,11 @@ jobs:
             ~/.cargo/bin/
             ~/.cargo/registry/
             ~/.cargo/git/db/
-          key: ${{ runner.os }}-cargo-msrv-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-msrv-
-      - name: Check MSRV
+            ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+            ${{ runner.os }}-cargo-
+      - name: Check and update lock file
         run: cargo check --all-features
 
   udeps:
