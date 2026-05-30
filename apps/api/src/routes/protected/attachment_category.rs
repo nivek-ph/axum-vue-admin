@@ -19,7 +19,7 @@ pub async fn add_category(
     Json(payload): Json<file_storage::category::CategoryPayload>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     file_storage::category::upsert(&state.pool, payload).await?;
-    Ok(Json(ApiResponse::ok_message("操作成功")))
+    Ok(Json(ApiResponse::ok_message("operation succeeded")))
 }
 
 pub async fn delete_category(
@@ -27,7 +27,7 @@ pub async fn delete_category(
     Json(payload): Json<file_storage::category::DeleteCategoryPayload>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     file_storage::category::delete(&state.pool, payload.id).await?;
-    Ok(Json(ApiResponse::ok_message("删除成功")))
+    Ok(Json(ApiResponse::ok_message("deleted")))
 }
 
 pub async fn delete_category_by_id(
@@ -35,5 +35,5 @@ pub async fn delete_category_by_id(
     Path(id): Path<i64>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     file_storage::category::delete(&state.pool, id).await?;
-    Ok(Json(ApiResponse::ok_message("删除成功")))
+    Ok(Json(ApiResponse::ok_message("deleted")))
 }

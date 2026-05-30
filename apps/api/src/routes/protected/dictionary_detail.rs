@@ -13,7 +13,7 @@ pub async fn create_sys_dictionary_detail(
     Json(payload): Json<system::dictionary::SysDictionaryDetail>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::dictionary::create_detail(&state.pool, payload).await?;
-    Ok(Json(ApiResponse::ok_message("创建成功")))
+    Ok(Json(ApiResponse::ok_message("created")))
 }
 
 pub async fn update_sys_dictionary_detail(
@@ -21,7 +21,7 @@ pub async fn update_sys_dictionary_detail(
     Json(payload): Json<system::dictionary::SysDictionaryDetail>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::dictionary::update_detail(&state.pool, payload).await?;
-    Ok(Json(ApiResponse::ok_message("更新成功")))
+    Ok(Json(ApiResponse::ok_message("updated")))
 }
 
 pub async fn update_sys_dictionary_detail_by_id(
@@ -31,7 +31,7 @@ pub async fn update_sys_dictionary_detail_by_id(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     payload.id = id;
     system::dictionary::update_detail(&state.pool, payload).await?;
-    Ok(Json(ApiResponse::ok_message("更新成功")))
+    Ok(Json(ApiResponse::ok_message("updated")))
 }
 
 pub async fn find_sys_dictionary_detail(
@@ -124,7 +124,7 @@ pub async fn delete_sys_dictionary_detail(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     let id = payload.id.ok_or_spec(errors::ID_REQUIRED)?;
     system::dictionary::delete_detail(&state.pool, id).await?;
-    Ok(Json(ApiResponse::ok_message("删除成功")))
+    Ok(Json(ApiResponse::ok_message("deleted")))
 }
 
 pub async fn delete_sys_dictionary_detail_by_id(
@@ -132,5 +132,5 @@ pub async fn delete_sys_dictionary_detail_by_id(
     Path(id): Path<i64>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::dictionary::delete_detail(&state.pool, id).await?;
-    Ok(Json(ApiResponse::ok_message("删除成功")))
+    Ok(Json(ApiResponse::ok_message("deleted")))
 }

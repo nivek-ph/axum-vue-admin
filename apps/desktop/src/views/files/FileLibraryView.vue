@@ -2,21 +2,21 @@
   <div class="admin-page">
     <section class="page-hero">
       <div class="page-hero-main">
-        <span class="page-hero-kicker">File Library</span>
-        <h2 class="page-hero-title">文件管理</h2>
-        <p class="page-hero-subtitle">维护核心后台文件列表和分类结构，支持 URL 导入、重命名与删除。</p>
+        <span class="page-hero-kicker">{{ $t('File library') }}</span>
+        <h2 class="page-hero-title">{{ $t('File management') }}</h2>
+        <p class="page-hero-subtitle">{{ $t('Manage files and categories, including URL import, rename, and delete.') }}</p>
 
         <div class="page-metrics">
           <div class="page-metric">
-            <div class="page-metric-label">当前页文件</div>
+            <div class="page-metric-label">{{ $t('Files on page') }}</div>
             <div class="page-metric-value">{{ files.list.length }}</div>
           </div>
           <div class="page-metric">
-            <div class="page-metric-label">总文件数</div>
+            <div class="page-metric-label">{{ $t('Total files') }}</div>
             <div class="page-metric-value">{{ files.total }}</div>
           </div>
           <div class="page-metric">
-            <div class="page-metric-label">分类数</div>
+            <div class="page-metric-label">{{ $t('Category count') }}</div>
             <div class="page-metric-value">{{ flattenedCategories.length }}</div>
           </div>
         </div>
@@ -24,7 +24,7 @@
 
       <aside class="page-hero-side">
         <div>
-          <div class="page-note-label">模块摘要</div>
+          <div class="page-note-label">{{ $t('Current data') }}</div>
           <div class="page-note-value">{{ summary }}</div>
         </div>
         <div v-if="selectedUpload.name" class="upload-preview">
@@ -44,9 +44,9 @@
           </div>
         </div>
         <div class="page-hero-actions">
-          <el-button @click="loadData" :loading="loading">刷新文件</el-button>
-          <el-button @click="triggerUpload">上传文件</el-button>
-          <el-button type="primary" @click="openImportDialog">导入 URL</el-button>
+          <UiButton @click="loadData" :loading="loading">{{ $t('Refresh files') }}</UiButton>
+          <UiButton @click="triggerUpload">{{ $t('Upload file') }}</UiButton>
+          <UiButton type="primary" @click="openImportDialog">{{ $t('Import URL') }}</UiButton>
         </div>
       </aside>
     </section>
@@ -55,13 +55,13 @@
       <article class="page-panel">
         <div class="page-panel-header">
           <div>
-            <h3 class="page-panel-title">分类结构</h3>
-            <p class="page-panel-subtitle">选中分类后，右侧文件列表按分类过滤。</p>
+            <h3 class="page-panel-title">{{ $t('Category structure') }}</h3>
+            <p class="page-panel-subtitle">{{ $t('Select a category to filter the file list.') }}</p>
           </div>
         </div>
 
         <div class="page-panel-toolbar inline-filter">
-          <el-button @click="openCategoryDialog()">新增分类</el-button>
+          <UiButton @click="openCategoryDialog()">{{ $t('New category') }}</UiButton>
         </div>
 
         <div class="surface-card category-card">
@@ -76,8 +76,8 @@
               {{ item.name }}
             </div>
             <div class="category-actions">
-              <el-button link type="primary" @click.stop="openCategoryDialog(item)">编辑</el-button>
-              <el-button link type="danger" @click.stop="handleDeleteCategory(item.ID)">删除</el-button>
+              <UiButton link type="primary" @click.stop="openCategoryDialog(item)">{{ $t('Edit') }}</UiButton>
+              <UiButton link type="danger" @click.stop="handleDeleteCategory(item.ID)">{{ $t('Delete') }}</UiButton>
             </div>
           </div>
         </div>
@@ -86,40 +86,40 @@
       <article class="page-panel">
         <div class="page-panel-header">
           <div>
-            <h3 class="page-panel-title">文件列表</h3>
-            <p class="page-panel-subtitle">文件管理先覆盖列表、分类、URL 导入和重命名。</p>
+            <h3 class="page-panel-title">{{ $t('File list') }}</h3>
+            <p class="page-panel-subtitle">{{ $t('File management covers list, categories, URL import, and rename.') }}</p>
           </div>
         </div>
 
         <div class="page-panel-toolbar inline-filter">
-          <el-input v-model="filters.keyword" placeholder="按名称或 URL 过滤" clearable />
-          <el-button type="primary" @click="handleSearch">查询</el-button>
+          <UiInput v-model="filters.keyword" placeholder="Filter by name or URL" clearable />
+          <UiButton type="primary" @click="handleSearch">{{ $t('Search') }}</UiButton>
         </div>
 
         <div class="surface-card">
-          <el-table :data="files.list" v-loading="loading" style="width: 100%">
-            <el-table-column prop="ID" label="ID" width="80" />
-            <el-table-column label="名称" min-width="160">
-              <template #default="{ row }">
-                <el-button link type="primary" @click="openPreviewDialog(row)">{{ row.name }}</el-button>
+          <UiTable :data="files.list" :loading="loading" style="width: 100%">
+             <UiTableColumn prop="ID" label="ID" width="80" />
+          <UiTableColumn label="Name" min-width="160">
+            <template #default="{ row }">
+                <UiButton link type="primary" @click="openPreviewDialog(row)">{{ row.name }}</UiButton>
               </template>
-            </el-table-column>
-            <el-table-column prop="url" label="URL" min-width="220" />
-            <el-table-column prop="tag" label="类型" width="100" />
-            <el-table-column prop="classId" label="分类" width="90" />
-            <el-table-column prop="UpdatedAt" label="更新时间" min-width="180" />
-            <el-table-column label="操作" width="240">
-              <template #default="{ row }">
-                <el-button link @click="openPreviewDialog(row)">预览</el-button>
-                <el-button link type="primary" @click="openRenameDialog(row)">重命名</el-button>
-                <el-button link type="danger" @click="handleDeleteFile(row.ID)">删除</el-button>
+            </UiTableColumn>
+             <UiTableColumn prop="url" label="URL" min-width="220" />
+          <UiTableColumn prop="tag" label="Type" width="100" />
+          <UiTableColumn prop="classId" label="Category name" width="90" />
+          <UiTableColumn prop="UpdatedAt" label="Updated at" min-width="180" />
+          <UiTableColumn label="Actions" width="240">
+            <template #default="{ row }">
+                <UiButton link @click="openPreviewDialog(row)">{{ $t('Preview') }}</UiButton>
+                <UiButton link type="primary" @click="openRenameDialog(row)">{{ $t('Rename') }}</UiButton>
+                <UiButton link type="danger" @click="handleDeleteFile(row.ID)">{{ $t('Delete') }}</UiButton>
               </template>
-            </el-table-column>
-          </el-table>
+            </UiTableColumn>
+          </UiTable>
         </div>
 
         <div class="pagination">
-          <el-pagination
+          <UiPagination
             background
             layout="total, prev, pager, next"
             :total="files.total"
@@ -131,71 +131,71 @@
       </article>
     </section>
 
-    <el-dialog v-model="categoryDialogVisible" :title="categoryForm.ID ? '编辑分类' : '新增分类'" width="520px">
-      <el-form label-width="90px" @submit.prevent="submitCategory">
-        <el-form-item label="名称">
-          <el-input v-model="categoryForm.name" placeholder="例如：图片" />
-        </el-form-item>
-        <el-form-item label="父分类">
-          <el-select v-model="categoryForm.pid" class="w-full">
-            <el-option :value="0" label="顶级分类" />
-            <el-option
+    <UiDialog v-model="categoryDialogVisible" :title="categoryForm.ID ? 'Edit category' : 'New category'" width="520px">
+      <UiForm labelWidth="90px" @submit.prevent="submitCategory">
+        <UiFormItem label="Name">
+          <UiInput v-model="categoryForm.name" placeholder="Example: images" />
+        </UiFormItem>
+        <UiFormItem label="Parent category">
+          <UiSelect v-model="categoryForm.pid" class="w-full">
+            <UiOption :value="0" label="Top-level category" />
+            <UiOption
               v-for="item in flattenedCategories"
               :key="item.ID"
               :label="item.name"
               :value="item.ID"
             />
-          </el-select>
-        </el-form-item>
-      </el-form>
+          </UiSelect>
+        </UiFormItem>
+      </UiForm>
 
       <template #footer>
-        <el-button @click="categoryDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submittingCategory" @click="submitCategory">保存</el-button>
+        <UiButton @click="categoryDialogVisible = false">{{ $t('Cancel') }}</UiButton>
+        <UiButton type="primary" :loading="submittingCategory" @click="submitCategory">{{ $t('Save') }}</UiButton>
       </template>
-    </el-dialog>
+    </UiDialog>
 
-    <el-dialog v-model="importDialogVisible" title="导入 URL" width="560px">
-      <el-form label-width="90px" @submit.prevent="submitImport">
-        <el-form-item label="名称">
-          <el-input v-model="importForm.name" placeholder="例如：logo.png" />
-        </el-form-item>
-        <el-form-item label="URL">
-          <el-input v-model="importForm.url" placeholder="https://example.com/logo.png" />
-        </el-form-item>
-        <el-form-item label="分类">
-          <el-select v-model="importForm.classId" class="w-full" clearable>
-            <el-option :value="0" label="未分类" />
-            <el-option
+    <UiDialog v-model="importDialogVisible" title="Import URL" width="560px">
+      <UiForm labelWidth="90px" @submit.prevent="submitImport">
+        <UiFormItem label="Name">
+          <UiInput v-model="importForm.name" placeholder="Example: logo.png" />
+        </UiFormItem>
+        <UiFormItem label="URL">
+          <UiInput v-model="importForm.url" placeholder="https://example.com/logo.png" />
+        </UiFormItem>
+        <UiFormItem label="Category name">
+          <UiSelect v-model="importForm.classId" class="w-full" clearable>
+            <UiOption :value="0" label="Uncategorized" />
+            <UiOption
               v-for="item in flattenedCategories"
               :key="item.ID"
               :label="item.name"
               :value="item.ID"
             />
-          </el-select>
-        </el-form-item>
-      </el-form>
+          </UiSelect>
+        </UiFormItem>
+      </UiForm>
 
       <template #footer>
-        <el-button @click="importDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submittingImport" @click="submitImport">导入</el-button>
+        <UiButton @click="importDialogVisible = false">{{ $t('Cancel') }}</UiButton>
+        <UiButton type="primary" :loading="submittingImport" @click="submitImport">{{ $t('Import') }}</UiButton>
       </template>
-    </el-dialog>
+    </UiDialog>
 
-    <el-dialog v-model="renameDialogVisible" title="重命名文件" width="520px">
-      <el-form label-width="90px" @submit.prevent="submitRename">
-        <el-form-item label="名称">
-          <el-input v-model="renameForm.name" placeholder="新的文件名" />
-        </el-form-item>
-      </el-form>
+    <UiDialog v-model="renameDialogVisible" title="Rename file" width="520px">
+      <UiForm labelWidth="90px" @submit.prevent="submitRename">
+        <UiFormItem label="Name">
+          <UiInput v-model="renameForm.name" placeholder="New file name" />
+        </UiFormItem>
+      </UiForm>
 
       <template #footer>
-        <el-button @click="renameDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submittingRename" @click="submitRename">保存</el-button>
+        <UiButton @click="renameDialogVisible = false">{{ $t('Cancel') }}</UiButton>
+        <UiButton type="primary" :loading="submittingRename" @click="submitRename">{{ $t('Save') }}</UiButton>
       </template>
-    </el-dialog>
+    </UiDialog>
 
-    <el-dialog v-model="previewDialogVisible" title="文件详情" width="640px">
+    <UiDialog v-model="previewDialogVisible" title="File details" width="640px">
       <div v-if="previewFile" class="preview-layout">
         <div class="preview-visual">
           <img
@@ -209,29 +209,29 @@
         <div class="preview-meta">
           <div class="preview-title">{{ previewFile.name }}</div>
           <div class="preview-item">
-            <span>文件地址</span>
+            <span>{{ $t('File URL') }}</span>
             <strong>{{ previewFile.url }}</strong>
           </div>
           <div class="preview-item">
-            <span>文件类型</span>
+            <span>{{ $t('File type') }}</span>
             <strong>{{ previewFile.tag || '-' }}</strong>
           </div>
           <div class="preview-item">
-            <span>所属分类</span>
+            <span>{{ $t('Category') }}</span>
             <strong>{{ categoryName(previewFile.classId) }}</strong>
           </div>
           <div class="preview-item">
-            <span>更新时间</span>
+            <span>{{ $t('Updated at') }}</span>
             <strong>{{ previewFile.UpdatedAt }}</strong>
           </div>
         </div>
       </div>
 
       <template #footer>
-        <el-button @click="previewDialogVisible = false">关闭</el-button>
-        <el-button type="primary" @click="openFileInNewTab">打开文件</el-button>
+        <UiButton @click="previewDialogVisible = false">{{ $t('Close') }}</UiButton>
+        <UiButton type="primary" @click="openFileInNewTab">{{ $t('Open file') }}</UiButton>
       </template>
-    </el-dialog>
+    </UiDialog>
 
     <input
       ref="fileInput"
@@ -261,6 +261,7 @@ import {
   type FileRecord,
   type FileListResult
 } from '@/api/files'
+import { t } from '@/i18n'
 
 const loading = ref(false)
 const uploading = ref(false)
@@ -274,7 +275,7 @@ const selectedUpload = reactive({
   sizeLabel: '',
   previewUrl: '',
   extension: '',
-  classLabel: '未分类'
+  classLabel: t('Uncategorized')
 })
 const files = reactive<FileListResult>({
   list: [],
@@ -310,12 +311,17 @@ const renameForm = reactive({
 })
 
 const flattenedCategories = computed(() => flattenCategories(categories.value))
-const summary = computed(() => `当前共 ${files.total} 个文件，已建立 ${flattenedCategories.value.length} 个分类节点`)
+const summary = computed(() =>
+  t('Current total: {count} files, {categories} category nodes', {
+    count: files.total,
+    categories: flattenedCategories.value.length
+  })
+)
 const uploadStatusLabel = computed(() => {
   if (!selectedUpload.name) return ''
-  if (uploading.value) return `上传中 ${uploadProgress.value}%`
-  if (uploadProgress.value === 100) return '上传完成'
-  return '等待上传'
+  if (uploading.value) return t('Uploading {progress}%', { progress: uploadProgress.value })
+  if (uploadProgress.value === 100) return t('Upload complete')
+  return t('Waiting to upload')
 })
 
 function flattenCategories(list: CategoryRecord[], depth = 0): Array<CategoryRecord & { _depth: number }> {
@@ -340,7 +346,7 @@ function resolveFileUrl(url: string) {
 }
 
 function categoryName(classId: number) {
-  return flattenedCategories.value.find((item) => item.ID === classId)?.name || '未分类'
+  return flattenedCategories.value.find((item) => item.ID === classId)?.name || t('Uncategorized')
 }
 
 function isPreviewImage(file: FileRecord) {
@@ -356,7 +362,7 @@ function clearUploadPreview() {
   selectedUpload.sizeLabel = ''
   selectedUpload.previewUrl = ''
   selectedUpload.extension = ''
-  selectedUpload.classLabel = '未分类'
+  selectedUpload.classLabel = t('Uncategorized')
   uploadProgress.value = 0
 }
 
@@ -379,7 +385,7 @@ async function loadData() {
   try {
     await Promise.all([loadFiles(), loadCategories()])
   } catch (err) {
-    ElMessage.error(getApiErrorMessage(err, '获取文件数据失败'))
+    ElMessage.error(getApiErrorMessage(err, t('Failed to load files')))
   } finally {
     loading.value = false
   }
@@ -414,7 +420,7 @@ function openCategoryDialog(item?: CategoryRecord) {
 
 async function submitCategory() {
   if (!categoryForm.name.trim()) {
-    ElMessage.warning('请填写分类名称')
+    ElMessage.warning(t('Please enter a category name'))
     return
   }
 
@@ -426,14 +432,14 @@ async function submitCategory() {
       pid: categoryForm.pid
     })
     if (response.code === 'OK') {
-      ElMessage.success('分类已保存')
+      ElMessage.success(t('Category saved'))
       categoryDialogVisible.value = false
       await loadData()
       return
     }
-    ElMessage.error(response.message || '保存分类失败')
+    ElMessage.error(response.message || t('Failed to save category'))
   } catch (err) {
-    ElMessage.error(getApiErrorMessage(err, '保存分类失败'))
+    ElMessage.error(getApiErrorMessage(err, t('Failed to save category')))
   } finally {
     submittingCategory.value = false
   }
@@ -441,7 +447,7 @@ async function submitCategory() {
 
 async function handleDeleteCategory(id: number) {
   try {
-    await ElMessageBox.confirm('确定删除该分类及其文件吗？', '提示', { type: 'warning' })
+    await ElMessageBox.confirm(t('Delete this category and its files?'), t('Notice'), { type: 'warning' })
   } catch {
     return
   }
@@ -449,16 +455,16 @@ async function handleDeleteCategory(id: number) {
   try {
     const response = await deleteCategory(id)
     if (response.code === 'OK') {
-      ElMessage.success('分类已删除')
+      ElMessage.success(t('Category deleted'))
       if (selectedClassId.value === id) {
         selectedClassId.value = undefined
       }
       await loadData()
       return
     }
-    ElMessage.error(response.message || '删除分类失败')
+    ElMessage.error(response.message || t('Failed to delete category'))
   } catch (err) {
-    ElMessage.error(getApiErrorMessage(err, '删除分类失败'))
+    ElMessage.error(getApiErrorMessage(err, t('Failed to delete category')))
   }
 }
 
@@ -471,7 +477,7 @@ function openImportDialog() {
 
 async function submitImport() {
   if (!importForm.name.trim() || !importForm.url.trim()) {
-    ElMessage.warning('请填写完整导入信息')
+    ElMessage.warning(t('Please complete import information'))
     return
   }
 
@@ -483,14 +489,14 @@ async function submitImport() {
       classId: importForm.classId || undefined
     })
     if (response.code === 'OK') {
-      ElMessage.success('文件已导入')
+      ElMessage.success(t('File imported'))
       importDialogVisible.value = false
       await loadData()
       return
     }
-    ElMessage.error(response.message || '导入失败')
+    ElMessage.error(response.message || t('Import failed'))
   } catch (err) {
-    ElMessage.error(getApiErrorMessage(err, '导入失败'))
+    ElMessage.error(getApiErrorMessage(err, t('Import failed')))
   } finally {
     submittingImport.value = false
   }
@@ -514,7 +520,7 @@ function openFileInNewTab() {
 
 async function submitRename() {
   if (!renameForm.name.trim()) {
-    ElMessage.warning('请填写文件名称')
+    ElMessage.warning(t('Please enter a file name'))
     return
   }
 
@@ -525,14 +531,14 @@ async function submitRename() {
       name: renameForm.name.trim()
     })
     if (response.code === 'OK') {
-      ElMessage.success('文件已重命名')
+      ElMessage.success(t('File renamed'))
       renameDialogVisible.value = false
       await loadData()
       return
     }
-    ElMessage.error(response.message || '重命名失败')
+    ElMessage.error(response.message || t('Rename failed'))
   } catch (err) {
-    ElMessage.error(getApiErrorMessage(err, '重命名失败'))
+    ElMessage.error(getApiErrorMessage(err, t('Rename failed')))
   } finally {
     submittingRename.value = false
   }
@@ -540,7 +546,7 @@ async function submitRename() {
 
 async function handleDeleteFile(id: number) {
   try {
-    await ElMessageBox.confirm('确定删除该文件吗？', '提示', { type: 'warning' })
+    await ElMessageBox.confirm(t('Delete this file?'), t('Notice'), { type: 'warning' })
   } catch {
     return
   }
@@ -548,13 +554,13 @@ async function handleDeleteFile(id: number) {
   try {
     const response = await deleteFile(id)
     if (response.code === 'OK') {
-      ElMessage.success('文件已删除')
+      ElMessage.success(t('File deleted'))
       await loadData()
       return
     }
-    ElMessage.error(response.message || '删除文件失败')
+    ElMessage.error(response.message || t('Failed to delete file'))
   } catch (err) {
-    ElMessage.error(getApiErrorMessage(err, '删除文件失败'))
+    ElMessage.error(getApiErrorMessage(err, t('Failed to delete file')))
   }
 }
 
@@ -572,7 +578,7 @@ async function handleFileSelected(event: Event) {
   selectedUpload.sizeLabel = `${(file.size / 1024 / 1024).toFixed(2)} MB`
   selectedUpload.extension = file.name.split('.').pop()?.toUpperCase() || ''
   selectedUpload.classLabel =
-    flattenedCategories.value.find((item) => item.ID === selectedClassId.value)?.name || '未分类'
+    flattenedCategories.value.find((item) => item.ID === selectedClassId.value)?.name || t('Uncategorized')
   if (file.type.startsWith('image/')) {
     selectedUpload.previewUrl = URL.createObjectURL(file)
   }
@@ -586,13 +592,13 @@ async function handleFileSelected(event: Event) {
     })
     if (response.code === 'OK') {
       uploadProgress.value = 100
-      ElMessage.success('文件上传成功')
+      ElMessage.success(t('File uploaded'))
       await loadData()
     } else {
-      ElMessage.error(response.message || '上传失败')
+      ElMessage.error(response.message || t('Upload failed'))
     }
   } catch (err) {
-    ElMessage.error(getApiErrorMessage(err, '上传失败'))
+    ElMessage.error(getApiErrorMessage(err, t('Upload failed')))
   } finally {
     input.value = ''
     loading.value = false

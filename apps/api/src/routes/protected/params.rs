@@ -13,7 +13,7 @@ pub async fn create_sys_params(
     Json(payload): Json<system::params::SysParam>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::params::create(&state.pool, payload).await?;
-    Ok(Json(ApiResponse::ok_message("创建成功")))
+    Ok(Json(ApiResponse::ok_message("created")))
 }
 
 pub async fn update_sys_params(
@@ -21,7 +21,7 @@ pub async fn update_sys_params(
     Json(payload): Json<system::params::SysParam>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::params::update(&state.pool, payload).await?;
-    Ok(Json(ApiResponse::ok_message("更新成功")))
+    Ok(Json(ApiResponse::ok_message("updated")))
 }
 
 pub async fn update_sys_params_by_id(
@@ -31,7 +31,7 @@ pub async fn update_sys_params_by_id(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     payload.id = id;
     system::params::update(&state.pool, payload).await?;
-    Ok(Json(ApiResponse::ok_message("更新成功")))
+    Ok(Json(ApiResponse::ok_message("updated")))
 }
 
 pub async fn find_sys_params(
@@ -86,7 +86,7 @@ pub async fn delete_sys_params(
     Query(payload): Query<system::params::IdRequest>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::params::delete(&state.pool, payload.id).await?;
-    Ok(Json(ApiResponse::ok_message("删除成功")))
+    Ok(Json(ApiResponse::ok_message("deleted")))
 }
 
 pub async fn delete_sys_params_by_id(
@@ -94,7 +94,7 @@ pub async fn delete_sys_params_by_id(
     Path(id): Path<i64>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::params::delete(&state.pool, id).await?;
-    Ok(Json(ApiResponse::ok_message("删除成功")))
+    Ok(Json(ApiResponse::ok_message("deleted")))
 }
 
 pub async fn delete_sys_params_by_ids(
@@ -102,7 +102,7 @@ pub async fn delete_sys_params_by_ids(
     Query(payload): Query<system::params::IdsRequest>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::params::delete_many(&state.pool, payload.ids).await?;
-    Ok(Json(ApiResponse::ok_message("删除成功")))
+    Ok(Json(ApiResponse::ok_message("deleted")))
 }
 
 pub async fn get_sys_param(

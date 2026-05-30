@@ -1,22 +1,22 @@
-import { getUserInfo } from '@/api/auth'
+import { getUserInfo } from '@/api/auth';
 
-import { useAuthStore } from './auth'
+import { useAuthStore } from './auth';
 
 export async function bootstrapAuthSession() {
-  const authStore = useAuthStore()
+  const authStore = useAuthStore();
   if (!authStore.isAuthenticated) {
-    return
+    return;
   }
 
   try {
-    const response = await getUserInfo(authStore.token)
+    const response = await getUserInfo(authStore.token);
     if (response.code !== 'OK') {
-      authStore.clearToken()
-      return
+      authStore.clearToken();
+      return;
     }
 
-    authStore.setSession(authStore.token, response.data.userInfo)
+    authStore.setSession(authStore.token, response.data.userInfo);
   } catch {
-    authStore.clearToken()
+    authStore.clearToken();
   }
 }

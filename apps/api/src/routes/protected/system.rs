@@ -26,11 +26,11 @@ pub async fn get_system_config(State(state): State<AppState>) -> Json<ApiRespons
 }
 
 pub async fn set_system_config() -> Json<ApiResponse<Value>> {
-    Json(ApiResponse::ok_message("配置文件设置成功"))
+    Json(ApiResponse::ok_message("configuration saved"))
 }
 
 pub async fn reload_system() -> Json<ApiResponse<Value>> {
-    Json(ApiResponse::ok_message("操作成功"))
+    Json(ApiResponse::ok_message("operation succeeded"))
 }
 
 pub async fn get_server_info() -> Json<ApiResponse<Value>> {

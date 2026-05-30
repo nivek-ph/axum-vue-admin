@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { ElementCompat } from '@/ui/elementCompat'
+import { UiComponents } from '@/components/ui'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/api/files', () => ({
@@ -23,11 +23,11 @@ describe('FileLibraryView', () => {
   it('renders file library heading', async () => {
     const wrapper = mount(FileLibraryView, {
       global: {
-        plugins: [ElementCompat]
+        plugins: [UiComponents]
       }
     })
 
     await Promise.resolve()
-    expect(wrapper.text()).toContain('文件管理')
+    expect(wrapper.text()).toContain('File management')
   })
 })

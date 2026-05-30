@@ -2,21 +2,21 @@
   <div class="admin-page">
     <section class="page-hero">
       <div class="page-hero-main">
-        <span class="page-hero-kicker">Authority Center</span>
-        <h2 class="page-hero-title">角色管理</h2>
-        <p class="page-hero-subtitle">维护核心 admin 的角色结构、默认路由和成员归属。</p>
+        <span class="page-hero-kicker">{{ $t('Role permissions') }}</span>
+        <h2 class="page-hero-title">{{ $t('Roles') }}</h2>
+        <p class="page-hero-subtitle">{{ $t('Manage role structure, default routes, and members.') }}</p>
 
         <div class="page-metrics">
           <div class="page-metric">
-            <div class="page-metric-label">角色总数</div>
+            <div class="page-metric-label">{{ $t('Total roles') }}</div>
             <div class="page-metric-value">{{ total }}</div>
           </div>
           <div class="page-metric">
-            <div class="page-metric-label">根角色</div>
+            <div class="page-metric-label">{{ $t('Root roles') }}</div>
             <div class="page-metric-value">{{ rootRoleCount }}</div>
           </div>
           <div class="page-metric">
-            <div class="page-metric-label">默认入口</div>
+            <div class="page-metric-label">{{ $t('Default entry') }}</div>
             <div class="page-metric-value">{{ defaultRouterLabel }}</div>
           </div>
         </div>
@@ -24,12 +24,12 @@
 
       <aside class="page-hero-side">
         <div>
-          <div class="page-note-label">模块摘要</div>
+          <div class="page-note-label">{{ $t('Current data') }}</div>
           <div class="page-note-value">{{ summary }}</div>
         </div>
         <div class="page-hero-actions">
-          <el-button @click="loadAuthorities" :loading="loading">刷新列表</el-button>
-          <el-button type="primary" @click="openCreateDialog">新增角色</el-button>
+          <UiButton @click="loadAuthorities" :loading="loading">{{ $t('Refresh list') }}</UiButton>
+          <UiButton type="primary" @click="openCreateDialog">{{ $t('New role') }}</UiButton>
         </div>
       </aside>
     </section>
@@ -37,107 +37,107 @@
     <section class="page-panel">
       <div class="page-panel-header">
         <div>
-          <h3 class="page-panel-title">角色列表</h3>
-          <p class="page-panel-subtitle">查看树形列表，维护角色所需字段。</p>
+          <h3 class="page-panel-title">{{ $t('Role list') }}</h3>
+          <p class="page-panel-subtitle">{{ $t('Review the tree and maintain role fields.') }}</p>
         </div>
       </div>
 
       <div class="surface-card">
-        <el-table
+        <UiTable
           :data="authorities"
           row-key="authorityId"
           default-expand-all
-          v-loading="loading"
+          :loading="loading"
           style="width: 100%"
         >
-          <el-table-column prop="authorityId" label="角色 ID" width="120" />
-          <el-table-column prop="authorityName" label="角色名称" min-width="180" />
-          <el-table-column prop="parentId" label="父角色" width="120" />
-          <el-table-column prop="defaultRouter" label="默认路由" min-width="160" />
-          <el-table-column label="操作" width="260">
+          <UiTableColumn prop="authorityId" label="Role ID" width="120" />
+          <UiTableColumn prop="authorityName" label="Role name" min-width="180" />
+          <UiTableColumn prop="parentId" label="Parent role" width="120" />
+          <UiTableColumn prop="defaultRouter" label="Default route" min-width="160" />
+          <UiTableColumn label="Actions" width="260">
             <template #default="{ row }">
-              <el-button link type="primary" @click="openEditDialog(row)">编辑</el-button>
-              <el-button link @click="openUserDialog(row)">分配成员</el-button>
-              <el-button
+              <UiButton link type="primary" @click="openEditDialog(row)">{{ $t('Edit') }}</UiButton>
+              <UiButton link @click="openUserDialog(row)">{{ $t('Assign members') }}</UiButton>
+              <UiButton
                 link
                 type="danger"
                 :disabled="row.authorityId === 888"
                 @click="handleDelete(row)"
               >
-                删除
-              </el-button>
+                {{ $t('Delete') }}
+              </UiButton>
             </template>
-          </el-table-column>
-        </el-table>
+          </UiTableColumn>
+        </UiTable>
       </div>
     </section>
 
-    <el-dialog
+    <UiDialog
       v-model="dialogVisible"
-      :title="dialogMode === 'create' ? '新增角色' : '编辑角色'"
+      :title="dialogMode === 'create' ? 'New role' : 'Edit role'"
       width="520px"
     >
-      <el-form label-width="100px" @submit.prevent="submitAuthority">
-        <el-form-item label="角色 ID">
-          <el-input-number
+      <UiForm labelWidth="100px" @submit.prevent="submitAuthority">
+        <UiFormItem label="Role ID">
+          <UiInputNumber
             v-model="form.authorityId"
             :disabled="dialogMode === 'edit'"
             :min="1"
             :precision="0"
             class="w-full"
           />
-        </el-form-item>
-        <el-form-item label="角色名称">
-          <el-input v-model="form.authorityName" placeholder="例如：运营管理员" />
-        </el-form-item>
-        <el-form-item label="父角色">
-          <el-select v-model="form.parentId" class="w-full">
-            <el-option :value="0" label="顶级角色" />
-            <el-option
+        </UiFormItem>
+        <UiFormItem label="Role name">
+          <UiInput v-model="form.authorityName" placeholder="Example: operator admin" />
+        </UiFormItem>
+        <UiFormItem label="Parent role">
+          <UiSelect v-model="form.parentId" class="w-full">
+            <UiOption :value="0" label="Top-level role" />
+            <UiOption
               v-for="item in authorityOptions"
               :key="item.authorityId"
               :label="`${item.authorityName} (${item.authorityId})`"
               :value="item.authorityId"
             />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="默认路由">
-          <el-input v-model="form.defaultRouter" placeholder="dashboard" />
-        </el-form-item>
-      </el-form>
+          </UiSelect>
+        </UiFormItem>
+        <UiFormItem label="Default route">
+          <UiInput v-model="form.defaultRouter" placeholder="dashboard" />
+        </UiFormItem>
+      </UiForm>
 
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="submitAuthority">保存</el-button>
+        <UiButton @click="dialogVisible = false">{{ $t('Cancel') }}</UiButton>
+        <UiButton type="primary" :loading="submitting" @click="submitAuthority">{{ $t('Save') }}</UiButton>
       </template>
-    </el-dialog>
+    </UiDialog>
 
-    <el-dialog v-model="userDialogVisible" title="分配成员" width="520px">
+    <UiDialog v-model="userDialogVisible" title="Assign members" width="520px">
       <div class="dialog-summary">
-        {{ selectedAuthority?.authorityName || '角色' }}
+        {{ selectedAuthority?.authorityName || $t('Role') }}
       </div>
-      <el-select
+      <UiSelect
         v-model="selectedUserIds"
         multiple
         filterable
         class="w-full"
-        placeholder="选择用户"
+        placeholder="Select users"
       >
-        <el-option
+        <UiOption
           v-for="user in userOptions"
           :key="user.ID"
           :label="`${user.nickName || user.userName} (${user.userName})`"
           :value="user.ID"
         />
-      </el-select>
+      </UiSelect>
 
       <template #footer>
-        <el-button @click="userDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="userSubmitting" @click="submitRoleUsers">
-          保存成员
-        </el-button>
+        <UiButton @click="userDialogVisible = false">{{ $t('Cancel') }}</UiButton>
+        <UiButton type="primary" :loading="userSubmitting" @click="submitRoleUsers">
+          {{ $t('Save members') }}
+        </UiButton>
       </template>
-    </el-dialog>
+    </UiDialog>
   </div>
 </template>
 
@@ -156,6 +156,7 @@ import {
 } from '@/api/authorities'
 import { usePageChrome } from '@/composables/usePageChrome'
 import { fetchUsers, type UserRecord } from '@/api/users'
+import { t } from '@/i18n'
 
 type DialogMode = 'create' | 'edit'
 
@@ -177,7 +178,7 @@ const form = reactive({
 })
 
 const authorityOptions = computed(() => flattenAuthorities(authorities.value))
-const { total, summary } = usePageChrome(authorities, '条角色')
+const { total, summary } = usePageChrome(authorities, 'roles')
 const rootRoleCount = computed(() => authorityOptions.value.filter((item) => item.parentId === 0).length)
 const defaultRouterLabel = computed(() => authorityOptions.value[0]?.defaultRouter || 'dashboard')
 
@@ -197,7 +198,7 @@ async function loadAuthorities() {
   try {
     authorities.value = await fetchAuthorities()
   } catch {
-    ElMessage.error('获取角色列表失败')
+    ElMessage.error(t('Failed to load roles'))
   } finally {
     loading.value = false
   }
@@ -220,7 +221,7 @@ function openEditDialog(authority: AuthorityRecord) {
 
 async function submitAuthority() {
   if (!form.authorityId || !form.authorityName.trim()) {
-    ElMessage.warning('请填写完整角色信息')
+    ElMessage.warning(t('Please complete role information'))
     return
   }
 
@@ -241,15 +242,15 @@ async function submitAuthority() {
           })
 
     if (response.code === 'OK') {
-      ElMessage.success(dialogMode.value === 'create' ? '角色已创建' : '角色已更新')
+      ElMessage.success(t(dialogMode.value === 'create' ? 'Role created' : 'Role updated'))
       dialogVisible.value = false
       await loadAuthorities()
       return
     }
 
-    ElMessage.error(response.message || '保存角色失败')
+    ElMessage.error(response.message || t('Failed to save role'))
   } catch {
-    ElMessage.error('保存角色失败')
+    ElMessage.error(t('Failed to save role'))
   } finally {
     submitting.value = false
   }
@@ -266,7 +267,7 @@ async function openUserDialog(authority: AuthorityRecord) {
     userOptions.value = users.list
     selectedUserIds.value = userIds
   } catch {
-    ElMessage.error('获取角色成员失败')
+    ElMessage.error(t('Failed to load role members'))
   }
 }
 
@@ -277,14 +278,14 @@ async function submitRoleUsers() {
   try {
     const response = await setRoleUsers(selectedAuthority.value.authorityId, selectedUserIds.value)
     if (response.code === 'OK') {
-      ElMessage.success('角色成员已更新')
+      ElMessage.success(t('Role members updated'))
       userDialogVisible.value = false
       return
     }
 
-    ElMessage.error(response.message || '保存成员失败')
+    ElMessage.error(response.message || t('Failed to save members'))
   } catch {
-    ElMessage.error('保存成员失败')
+    ElMessage.error(t('Failed to save members'))
   } finally {
     userSubmitting.value = false
   }
@@ -292,7 +293,7 @@ async function submitRoleUsers() {
 
 async function handleDelete(authority: AuthorityRecord) {
   try {
-    await ElMessageBox.confirm(`确定删除角色“${authority.authorityName}”吗？`, '提示', {
+    await ElMessageBox.confirm(t('Delete role "{name}"?', { name: authority.authorityName }), t('Notice'), {
       type: 'warning'
     })
   } catch {
@@ -302,14 +303,14 @@ async function handleDelete(authority: AuthorityRecord) {
   try {
     const response = await deleteAuthority(authority.authorityId)
     if (response.code === 'OK') {
-      ElMessage.success('角色已删除')
+      ElMessage.success(t('Role deleted'))
       await loadAuthorities()
       return
     }
 
-    ElMessage.error(response.message || '删除角色失败')
+    ElMessage.error(response.message || t('Failed to delete role'))
   } catch {
-    ElMessage.error('删除角色失败')
+    ElMessage.error(t('Failed to delete role'))
   }
 }
 

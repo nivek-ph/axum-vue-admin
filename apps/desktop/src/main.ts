@@ -1,12 +1,12 @@
 import { createPinia, setActivePinia } from 'pinia';
-import ui from '@nuxt/ui/vue-plugin';
 import { createApp } from 'vue';
 
 import App from './App.vue';
 import { createAppRouter } from './router';
 import { bootstrapAuthSession } from './stores/bootstrapAuth';
 import './styles.css';
-import { ElementCompat } from './ui/elementCompat';
+import { UiComponents } from './components/ui';
+import { I18nPlugin } from './i18n';
 
 async function start() {
   const app = createApp(App);
@@ -19,8 +19,8 @@ async function start() {
 
   app.use(pinia);
   app.use(router);
-  app.use(ui);
-  app.use(ElementCompat);
+  app.use(UiComponents);
+  app.use(I18nPlugin);
   app.mount('#app');
 }
 

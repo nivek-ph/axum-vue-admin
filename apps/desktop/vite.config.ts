@@ -1,20 +1,10 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
-import ui from '@nuxt/ui/vite';
+import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath, URL } from 'node:url';
 
 export default defineConfig({
-  plugins: [
-    vue(),
-    ui({
-      theme: {
-        defaultVariants: {
-          color: 'neutral',
-          size: 'sm',
-        },
-      },
-    }),
-  ],
+  plugins: [vue(), tailwindcss()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
@@ -26,7 +16,7 @@ export default defineConfig({
         manualChunks(id) {
           if (!id.includes('node_modules')) return;
 
-          if (id.includes('@nuxt/ui') || id.includes('reka-ui')) {
+          if (id.includes('@lucide/vue')) {
             return 'ui-vendor';
           }
 

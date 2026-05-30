@@ -3,11 +3,11 @@ use password_hash::{Error as PasswordHashError, PasswordHasher, PasswordVerifier
 
 #[derive(Debug, thiserror::Error)]
 pub enum AuthError {
-    #[error("认证失败")]
+    #[error("authentication failed")]
     AuthFailed,
-    #[error("token 无效")]
+    #[error("token invalid")]
     InvalidToken,
-    #[error("内部错误: {0}")]
+    #[error("internal error: {0}")]
     Internal(String),
 }
 

@@ -72,7 +72,7 @@ pub fn default_menus() -> Vec<MenuView> {
             active_name: String::new(),
             keep_alive: false,
             default_menu: false,
-            title: "仪表盘".to_string(),
+            title: "Dashboard".to_string(),
             icon: "odometer".to_string(),
             close_tab: false,
             transition_type: String::new(),
@@ -132,11 +132,11 @@ pub struct SetMenuRolesRequest {
 
 #[derive(Debug, thiserror::Error)]
 pub enum MenuError {
-    #[error("菜单不存在")]
+    #[error("menu not found")]
     NotFound,
     #[error("{0}")]
     Database(#[from] sqlx::Error),
-    #[error("菜单数据格式错误")]
+    #[error("invalid menu payload")]
     InvalidPayload,
 }
 
@@ -161,10 +161,25 @@ pub async fn ensure_default_menu(pool: &sqlx::PgPool) -> Result<(), sqlx::Error>
             parameters, menu_btn
         ) values (
             1, 0, 'dashboard', 'dashboard', false, 'view/dashboard/index.vue', 1,
-            '', false, false, '仪表盘', 'odometer', false, '',
+            '', false, false, 'Dashboard', 'odometer', false, '',
             '[]'::jsonb, '[]'::jsonb
         )
-        on conflict (id) do nothing
+        on conflict (id) do update
+        set parent_id = excluded.parent_id,
+            path = excluded.path,
+            name = excluded.name,
+            hidden = excluded.hidden,
+            component = excluded.component,
+            sort = excluded.sort,
+            active_name = excluded.active_name,
+            keep_alive = excluded.keep_alive,
+            default_menu = excluded.default_menu,
+            title = excluded.title,
+            icon = excluded.icon,
+            close_tab = excluded.close_tab,
+            transition_type = excluded.transition_type,
+            parameters = excluded.parameters,
+            menu_btn = excluded.menu_btn
         "#,
     )
     .execute(pool)

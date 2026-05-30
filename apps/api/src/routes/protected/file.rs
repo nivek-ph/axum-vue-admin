@@ -46,7 +46,7 @@ pub async fn delete_file(
     Json(payload): Json<file_storage::files::FileDeletePayload>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     file_storage::files::delete_file(&state.pool, payload.id).await?;
-    Ok(Json(ApiResponse::ok_message("删除成功")))
+    Ok(Json(ApiResponse::ok_message("deleted")))
 }
 
 pub async fn delete_file_by_id(
@@ -54,7 +54,7 @@ pub async fn delete_file_by_id(
     Path(id): Path<i64>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     file_storage::files::delete_file(&state.pool, id).await?;
-    Ok(Json(ApiResponse::ok_message("删除成功")))
+    Ok(Json(ApiResponse::ok_message("deleted")))
 }
 
 pub async fn edit_file_name(
@@ -62,7 +62,7 @@ pub async fn edit_file_name(
     Json(payload): Json<file_storage::files::FileEditPayload>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     file_storage::files::edit_name(&state.pool, payload).await?;
-    Ok(Json(ApiResponse::ok_message("编辑成功")))
+    Ok(Json(ApiResponse::ok_message("updated")))
 }
 
 pub async fn edit_file_name_by_id(
@@ -72,7 +72,7 @@ pub async fn edit_file_name_by_id(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     payload.id = id;
     file_storage::files::edit_name(&state.pool, payload).await?;
-    Ok(Json(ApiResponse::ok_message("编辑成功")))
+    Ok(Json(ApiResponse::ok_message("updated")))
 }
 
 pub async fn import_url(
@@ -80,7 +80,7 @@ pub async fn import_url(
     Json(payload): Json<file_storage::files::ImportUrlPayload>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     file_storage::files::import_url(&state.pool, payload).await?;
-    Ok(Json(ApiResponse::ok_message("导入成功")))
+    Ok(Json(ApiResponse::ok_message("imported")))
 }
 
 pub async fn upload_file(

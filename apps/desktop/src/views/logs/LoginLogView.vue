@@ -3,20 +3,20 @@
     <section class="page-hero">
       <div class="page-hero-main">
         <span class="page-hero-kicker">Audit Trail</span>
-        <h2 class="page-hero-title">登录日志</h2>
-        <p class="page-hero-subtitle">查看后台登录成功与失败记录，快速定位登录异常和账号使用情况。</p>
+        <h2 class="page-hero-title">{{ $t('Login logs') }}</h2>
+        <p class="page-hero-subtitle">{{ $t('Review successful and failed sign-ins to diagnose account usage.') }}</p>
 
         <div class="page-metrics">
           <div class="page-metric">
-            <div class="page-metric-label">当前页条目</div>
+            <div class="page-metric-label">{{ $t('Rows on page') }}</div>
             <div class="page-metric-value">{{ logs.length }}</div>
           </div>
           <div class="page-metric">
-            <div class="page-metric-label">总日志数</div>
+            <div class="page-metric-label">{{ $t('Total logs') }}</div>
             <div class="page-metric-value">{{ total }}</div>
           </div>
           <div class="page-metric">
-            <div class="page-metric-label">失败记录</div>
+            <div class="page-metric-label">{{ $t('Failed records') }}</div>
             <div class="page-metric-value">{{ failedCount }}</div>
           </div>
         </div>
@@ -24,15 +24,15 @@
 
       <aside class="page-hero-side">
         <div>
-          <div class="page-note-label">模块摘要</div>
+          <div class="page-note-label">{{ $t('Module summary') }}</div>
           <div class="page-note-value">{{ summary }}</div>
         </div>
         <div class="page-hero-actions">
-          <el-button @click="loadLogs" :loading="loading">刷新日志</el-button>
-          <el-button :disabled="selectedIds.length === 0" @click="handleBatchDelete">
-            批量删除
-          </el-button>
-          <el-button type="primary" @click="page = 1; loadLogs()">重新检索</el-button>
+          <UiButton @click="loadLogs" :loading="loading">{{ $t('Refresh logs') }}</UiButton>
+          <UiButton :disabled="selectedIds.length === 0" @click="handleBatchDelete">
+            {{ $t('Batch delete') }}
+          </UiButton>
+          <UiButton type="primary" @click="page = 1; loadLogs()">{{ $t('Search again') }}</UiButton>
         </div>
       </aside>
     </section>
@@ -40,45 +40,45 @@
     <section class="page-panel">
       <div class="page-panel-header">
         <div>
-          <h3 class="page-panel-title">登录审计</h3>
-          <p class="page-panel-subtitle">只保留核心筛选字段，避免审计页信息噪音过高。</p>
+          <h3 class="page-panel-title">{{ $t('Login audit') }}</h3>
+          <p class="page-panel-subtitle">{{ $t('Keep only core filters to reduce audit noise.') }}</p>
         </div>
       </div>
 
       <div class="page-panel-toolbar inline-filter">
-        <el-input v-model="filters.username" placeholder="按用户名过滤" clearable />
-        <el-select v-model="statusModel" clearable placeholder="登录状态">
-          <el-option label="成功" value="success" />
-          <el-option label="失败" value="failed" />
-        </el-select>
-        <el-button type="primary" @click="handleSearch">查询</el-button>
+        <UiInput v-model="filters.username" placeholder="Filter by username" clearable />
+        <UiSelect v-model="statusModel" clearable placeholder="Login status">
+          <UiOption label="Success" value="success" />
+          <UiOption label="Failed" value="failed" />
+        </UiSelect>
+        <UiButton type="primary" @click="handleSearch">{{ $t('Search') }}</UiButton>
       </div>
 
       <div class="surface-card">
-        <el-table :data="logs" v-loading="loading" style="width: 100%" @selection-change="handleSelectionChange">
-          <el-table-column type="selection" width="44" />
-          <el-table-column prop="ID" label="ID" width="80" />
-          <el-table-column prop="username" label="用户名" min-width="140" />
-          <el-table-column prop="ip" label="IP" min-width="140" />
-          <el-table-column label="状态" width="100">
+        <UiTable :data="logs" :loading="loading" style="width: 100%" @selection-change="handleSelectionChange">
+          <UiTableColumn type="selection" width="44" />
+          <UiTableColumn prop="ID" label="ID" width="80" />
+          <UiTableColumn prop="username" label="Username" min-width="140" />
+          <UiTableColumn prop="ip" label="IP" min-width="140" />
+          <UiTableColumn label="Status" width="100">
             <template #default="{ row }">
-              <el-tag :type="row.status ? 'success' : 'danger'">
-                {{ row.status ? '成功' : '失败' }}
-              </el-tag>
+              <UiTag :type="row.status ? 'success' : 'danger'">
+                {{ $t(row.status ? 'Success' : 'Failed') }}
+              </UiTag>
             </template>
-          </el-table-column>
-          <el-table-column prop="errorMessage" label="错误信息" min-width="180" />
-          <el-table-column prop="CreatedAt" label="时间" min-width="180" />
-          <el-table-column label="操作" width="120">
+          </UiTableColumn>
+          <UiTableColumn prop="errorMessage" label="Error message" min-width="180" />
+          <UiTableColumn prop="CreatedAt" label="Time" min-width="180" />
+          <UiTableColumn label="Actions" width="120">
             <template #default="{ row }">
-              <el-button link type="danger" @click="handleDelete(row.ID)">删除</el-button>
+              <UiButton link type="danger" @click="handleDelete(row.ID)">{{ $t('Delete') }}</UiButton>
             </template>
-          </el-table-column>
-        </el-table>
+          </UiTableColumn>
+        </UiTable>
       </div>
 
       <div class="pagination">
-        <el-pagination
+        <UiPagination
           background
           layout="total, prev, pager, next"
           :total="total"
@@ -97,6 +97,7 @@ import { ElMessage, ElMessageBox } from '@/ui/feedback'
 
 import { usePageChrome } from '@/composables/usePageChrome'
 import { deleteLoginLog, deleteLoginLogs, fetchLoginLogs, type LoginLogRecord } from '@/api/logs'
+import { t } from '@/i18n'
 
 const logs = ref<LoginLogRecord[]>([])
 const loading = ref(false)
@@ -108,7 +109,7 @@ const filters = reactive({
 })
 const statusModel = ref<'success' | 'failed' | undefined>()
 const selectedIds = ref<number[]>([])
-const { summary } = usePageChrome(logs, '条登录记录')
+const { summary } = usePageChrome(logs, 'login records')
 const failedCount = computed(() => logs.value.filter((item) => !item.status).length)
 
 async function loadLogs() {
@@ -126,7 +127,7 @@ async function loadLogs() {
     logs.value = result.list
     total.value = result.total
   } catch {
-    ElMessage.error('获取登录日志失败')
+    ElMessage.error(t('Failed to load login logs'))
   } finally {
     loading.value = false
   }
@@ -148,7 +149,7 @@ function handleSelectionChange(rows: LoginLogRecord[]) {
 
 async function handleDelete(id: number) {
   try {
-    await ElMessageBox.confirm('确定删除这条登录日志吗？', '提示', { type: 'warning' })
+    await ElMessageBox.confirm(t('Delete this login log?'), t('Notice'), { type: 'warning' })
   } catch {
     return
   }
@@ -156,13 +157,13 @@ async function handleDelete(id: number) {
   try {
     const response = await deleteLoginLog(id)
     if (response.code === 'OK') {
-      ElMessage.success('登录日志已删除')
+      ElMessage.success(t('Login log deleted'))
       await loadLogs()
       return
     }
-    ElMessage.error(response.message || '删除失败')
+    ElMessage.error(response.message || t('Delete failed'))
   } catch {
-    ElMessage.error('删除失败')
+    ElMessage.error(t('Delete failed'))
   }
 }
 
@@ -170,7 +171,7 @@ async function handleBatchDelete() {
   if (selectedIds.value.length === 0) return
 
   try {
-    await ElMessageBox.confirm(`确定批量删除 ${selectedIds.value.length} 条登录日志吗？`, '提示', {
+    await ElMessageBox.confirm(t('Delete {count} login logs?', { count: selectedIds.value.length }), t('Notice'), {
       type: 'warning'
     })
   } catch {
@@ -180,14 +181,14 @@ async function handleBatchDelete() {
   try {
     const response = await deleteLoginLogs(selectedIds.value)
     if (response.code === 'OK') {
-      ElMessage.success('登录日志已批量删除')
+      ElMessage.success(t('Login logs deleted'))
       selectedIds.value = []
       await loadLogs()
       return
     }
-    ElMessage.error(response.message || '批量删除失败')
+    ElMessage.error(response.message || t('Batch delete failed'))
   } catch {
-    ElMessage.error('批量删除失败')
+    ElMessage.error(t('Batch delete failed'))
   }
 }
 

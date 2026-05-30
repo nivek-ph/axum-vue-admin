@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { ElementCompat } from '@/ui/elementCompat'
+import { UiComponents } from '@/components/ui'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/api/authorities', () => ({
@@ -26,12 +26,12 @@ describe('RoleListView', () => {
   it('renders role management actions', async () => {
     const wrapper = mount(RoleListView, {
       global: {
-        plugins: [ElementCompat]
+        plugins: [UiComponents]
       }
     })
 
     await Promise.resolve()
-    expect(wrapper.text()).toContain('角色管理')
-    expect(wrapper.text()).toContain('新增角色')
+    expect(wrapper.text()).toContain('Roles')
+    expect(wrapper.text()).toContain('New role')
   })
 })

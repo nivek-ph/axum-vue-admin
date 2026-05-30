@@ -26,7 +26,8 @@ impl AppConfig {
             jwt_secret: env::var("JWT_SECRET").unwrap_or_else(|_| "change-me-in-env".to_string()),
             admin_username: env::var("ADMIN_USERNAME").unwrap_or_else(|_| "admin".to_string()),
             admin_password: env::var("ADMIN_PASSWORD").unwrap_or_else(|_| "123456".to_string()),
-            admin_nickname: env::var("ADMIN_NICKNAME").unwrap_or_else(|_| "系统管理员".to_string()),
+            admin_nickname: env::var("ADMIN_NICKNAME")
+                .unwrap_or_else(|_| "System Administrator".to_string()),
         })
     }
 }
@@ -49,7 +50,7 @@ impl Default for AppState {
                 jwt_secret: "change-me-in-env".to_string(),
                 admin_username: "admin".to_string(),
                 admin_password: "123456".to_string(),
-                admin_nickname: "系统管理员".to_string(),
+                admin_nickname: "System Administrator".to_string(),
             }),
             pool: DbPool::connect_lazy("postgres://postgres:postgres@localhost/axum_vue_admin")
                 .expect("lazy pool should construct"),

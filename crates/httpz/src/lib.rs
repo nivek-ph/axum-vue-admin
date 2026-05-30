@@ -29,7 +29,7 @@ mod tests {
 
     #[tokio::test]
     async fn bad_request_error_response_exposes_stable_semantics() {
-        let response = crate::error::AppError::bad_request("缺少ID").into_response();
+        let response = crate::error::AppError::bad_request("id is required").into_response();
         let status = response.status();
         let value = response_json(response).await;
 
@@ -39,14 +39,14 @@ mod tests {
             json!({
                 "code": "BAD_REQUEST",
                 "data": Value::Null,
-                "message": "缺少ID",
+                "message": "id is required",
             })
         );
     }
 
     #[tokio::test]
     async fn internal_error_response_masks_diagnostics_but_keeps_source() {
-        let error = crate::error::AppError::internal("数据库连接失败")
+        let error = crate::error::AppError::internal("database connection failed")
             .with_source(std::io::Error::other("database offline"));
         assert!(std::error::Error::source(&error).is_some());
         let _ = error.span_trace();
@@ -60,14 +60,14 @@ mod tests {
             json!({
                 "code": "INTERNAL_SERVER_ERROR",
                 "data": Value::Null,
-                "message": "服务器开小差了，请稍后再试",
+                "message": "internal server error",
             })
         );
     }
 
     #[tokio::test]
     async fn conflict_error_can_override_stable_error_code() {
-        let response = crate::error::AppError::conflict("角色已存在")
+        let response = crate::error::AppError::conflict("role already exists")
             .with_code("ROLE_ALREADY_EXISTS")
             .into_response();
         let status = response.status();
@@ -75,7 +75,7 @@ mod tests {
 
         assert_eq!(status, axum::http::StatusCode::CONFLICT);
         assert_eq!(value["code"], "ROLE_ALREADY_EXISTS");
-        assert_eq!(value["message"], "角色已存在");
+        assert_eq!(value["message"], "role already exists");
     }
 
     #[test]
@@ -104,7 +104,7 @@ mod tests {
     #[tokio::test]
     async fn error_spec_conflict_response_matches_api_envelope() {
         let error: crate::error::AppError =
-            crate::error::ErrorSpec::conflict("USER_ALREADY_EXISTS", "用户已存在").into();
+            crate::error::ErrorSpec::conflict("USER_ALREADY_EXISTS", "user already exists").into();
 
         let response = error.into_response();
         let status = response.status();
@@ -116,7 +116,7 @@ mod tests {
             json!({
                 "code": "USER_ALREADY_EXISTS",
                 "data": Value::Null,
-                "message": "用户已存在",
+                "message": "user already exists",
             })
         );
     }
@@ -139,7 +139,7 @@ mod tests {
             json!({
                 "code": "INTERNAL_SERVER_ERROR",
                 "data": Value::Null,
-                "message": "服务器开小差了，请稍后再试",
+                "message": "internal server error",
             })
         );
     }
@@ -147,7 +147,7 @@ mod tests {
     #[tokio::test]
     async fn internal_with_source_then_with_code_keeps_source_and_masks_response() {
         let io_err = std::io::Error::other("root cause");
-        let error = crate::error::AppError::internal("机密诊断")
+        let error = crate::error::AppError::internal("private diagnostic")
             .with_source(io_err)
             .with_code("CUSTOM");
 
@@ -161,7 +161,7 @@ mod tests {
         let response = error.into_response();
         let value = response_json(response).await;
         assert_eq!(value["code"], "CUSTOM");
-        assert_eq!(value["message"], "服务器开小差了，请稍后再试");
+        assert_eq!(value["message"], "internal server error");
         assert_eq!(value["data"], Value::Null);
     }
 
@@ -177,6 +177,6 @@ mod tests {
         let value = response_json(response).await;
         assert_eq!(status, axum::http::StatusCode::BAD_GATEWAY);
         assert_eq!(value["code"], "BAD_GATEWAY");
-        assert_eq!(value["message"], "服务器开小差了，请稍后再试");
+        assert_eq!(value["message"], "internal server error");
     }
 }

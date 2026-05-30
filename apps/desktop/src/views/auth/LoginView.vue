@@ -3,33 +3,36 @@
     <section class="auth-shell">
       <div class="auth-brand">
         <div class="auth-brand-kicker">axum-vue-admin</div>
-        <h1 class="auth-title">管理后台</h1>
+        <h1 class="auth-title">{{ $t('Admin Console') }}</h1>
         <p class="auth-subtitle">
-          Rust + Vue，专注用户、角色、菜单与 API 权限等核心后台能力。
+          {{ $t('Rust + Vue admin for users, roles, menus, and API permissions.') }}
         </p>
       </div>
 
-      <el-card class="login-card" shadow="never">
-        <div class="login-card-kicker">Sign In</div>
-        <h2 class="login-card-title">登录控制台</h2>
-        <p class="login-card-subtitle">使用当前环境里的管理员账户进入核心后台。</p>
+      <UiCard class="login-card" shadow="never">
+        <div class="login-card-top">
+          <div class="login-card-kicker">{{ $t('Account sign-in') }}</div>
+          <LanguageSwitch />
+        </div>
+        <h2 class="login-card-title">{{ $t('Sign in to console') }}</h2>
+        <p class="login-card-subtitle">{{ $t('Use the administrator account for this environment.') }}</p>
 
-        <el-form class="form" @submit.prevent="handleLogin">
-          <el-form-item>
-            <el-input v-model="form.username" placeholder="用户名" />
-          </el-form-item>
-          <el-form-item>
-            <el-input v-model="form.password" type="password" placeholder="密码" show-password />
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" class="w-full" @click="handleLogin" :loading="loading">
-              登录并进入后台
-            </el-button>
-          </el-form-item>
-        </el-form>
+        <UiForm class="form" @submit.prevent="handleLogin">
+          <UiFormItem>
+            <UiInput v-model="form.username" placeholder="Username" />
+          </UiFormItem>
+          <UiFormItem>
+            <UiInput v-model="form.password" type="password" placeholder="Password" showPassword />
+          </UiFormItem>
+          <UiFormItem>
+            <UiButton type="primary" class="w-full" @click="handleLogin" :loading="loading">
+              {{ $t('Sign in') }}
+            </UiButton>
+          </UiFormItem>
+        </UiForm>
 
-        <div class="login-note">默认管理员：admin / 123456</div>
-      </el-card>
+        <div class="login-note">{{ $t('Default admin: admin / 123456') }}</div>
+      </UiCard>
     </section>
   </div>
 </template>
@@ -39,8 +42,10 @@ import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from '@/ui/feedback'
 
+import LanguageSwitch from '@/components/LanguageSwitch.vue'
 import { getMenu, getUserInfo, login } from '@/api/auth'
 import { getApiErrorMessage } from '@/api/http'
+import { t } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
 import { buildCoreMenuItems, useMenuStore } from '@/stores/menu'
 
@@ -61,7 +66,7 @@ async function handleLogin() {
   try {
     const res = await login(form)
     if (res.code !== 'OK') {
-      ElMessage.error(res.message || '登录失败')
+      ElMessage.error(res.message || t('Sign in failed'))
       return
     }
     authStore.setSession(res.data.token, res.data.user)
@@ -77,7 +82,7 @@ async function handleLogin() {
     }
     await router.push('/dashboard')
   } catch (err) {
-    ElMessage.error(getApiErrorMessage(err, '登录失败'))
+    ElMessage.error(getApiErrorMessage(err, t('Sign in failed')))
   } finally {
     loading.value = false
   }
@@ -155,6 +160,13 @@ async function handleLogin() {
 
 .login-card-kicker {
   color: var(--text-muted);
+}
+
+.login-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .login-card-title {

@@ -9,5 +9,5 @@ pub async fn check_db() -> Json<ApiResponse<Value>> {
 }
 
 pub async fn init_db() -> Json<ApiResponse<Value>> {
-    Json(ApiResponse::ok_message("自动创建数据库成功"))
+    Json(ApiResponse::ok_message("database created"))
 }

@@ -2,21 +2,21 @@
   <div class="admin-page">
     <section class="page-hero">
       <div class="page-hero-main">
-        <span class="page-hero-kicker">User Directory</span>
-        <h2 class="page-hero-title">用户管理</h2>
-        <p class="page-hero-subtitle">保持后台最常用的账号管理节奏，用更清楚的层次展示状态、角色和操作入口。</p>
+        <span class="page-hero-kicker">{{ $t('User directory') }}</span>
+        <h2 class="page-hero-title">{{ $t('Users') }}</h2>
+        <p class="page-hero-subtitle">{{ $t('Review accounts, roles, status, and common actions in one place.') }}</p>
 
         <div class="page-metrics">
           <div class="page-metric">
-            <div class="page-metric-label">用户总数</div>
+            <div class="page-metric-label">{{ $t('Total users') }}</div>
             <div class="page-metric-value">{{ total }}</div>
           </div>
           <div class="page-metric">
-            <div class="page-metric-label">启用用户</div>
+            <div class="page-metric-label">{{ $t('Enabled users') }}</div>
             <div class="page-metric-value">{{ enabledCount }}</div>
           </div>
           <div class="page-metric">
-            <div class="page-metric-label">角色种类</div>
+            <div class="page-metric-label">{{ $t('Role types') }}</div>
             <div class="page-metric-value">{{ roleCount }}</div>
           </div>
         </div>
@@ -24,12 +24,12 @@
 
       <aside class="page-hero-side">
         <div>
-          <div class="page-note-label">模块摘要</div>
+          <div class="page-note-label">{{ $t('Current data') }}</div>
           <div class="page-note-value">{{ summary }}</div>
         </div>
         <div class="page-hero-actions">
-          <el-button @click="loadUsers" :loading="loading">刷新列表</el-button>
-          <el-button type="primary" @click="router.push('/roles')">查看角色</el-button>
+          <UiButton @click="loadUsers" :loading="loading">{{ $t('Refresh list') }}</UiButton>
+          <UiButton type="primary" @click="router.push('/roles')">{{ $t('View roles') }}</UiButton>
         </div>
       </aside>
     </section>
@@ -37,37 +37,37 @@
     <section class="page-panel">
       <div class="page-panel-header">
         <div>
-          <h3 class="page-panel-title">账号列表</h3>
-          <p class="page-panel-subtitle">高频动作保留在行内，减少认知负担。</p>
+          <h3 class="page-panel-title">{{ $t('Accounts') }}</h3>
+          <p class="page-panel-subtitle">{{ $t('Common actions stay inline for faster operation.') }}</p>
         </div>
       </div>
 
       <div class="surface-card">
-        <el-table :data="users" v-loading="loading" style="width: 100%">
-          <el-table-column prop="ID" label="ID" width="80" />
-          <el-table-column prop="userName" label="用户名" min-width="140" />
-          <el-table-column prop="nickName" label="昵称" min-width="140" />
-          <el-table-column prop="phone" label="手机号" min-width="140" />
-          <el-table-column prop="email" label="邮箱" min-width="180" />
-          <el-table-column label="角色" min-width="140">
+        <UiTable :data="users" :loading="loading" style="width: 100%">
+          <UiTableColumn prop="ID" label="ID" width="80" />
+          <UiTableColumn prop="userName" label="Username" min-width="140" />
+          <UiTableColumn prop="nickName" label="Nickname" min-width="140" />
+          <UiTableColumn prop="phone" label="Phone" min-width="140" />
+          <UiTableColumn prop="email" label="Email" min-width="180" />
+          <UiTableColumn label="Role" min-width="140">
             <template #default="{ row }">
               {{ row.authority?.authorityName || '-' }}
             </template>
-          </el-table-column>
-          <el-table-column label="状态" width="100">
+          </UiTableColumn>
+          <UiTableColumn label="Status" width="100">
             <template #default="{ row }">
-              <el-tag :type="row.enable === 1 ? 'success' : 'danger'">
-                {{ row.enable === 1 ? '启用' : '禁用' }}
-              </el-tag>
+              <UiTag :type="row.enable === 1 ? 'success' : 'danger'">
+                {{ $t(row.enable === 1 ? 'Enabled' : 'Disabled') }}
+              </UiTag>
             </template>
-          </el-table-column>
-          <el-table-column label="操作" width="220">
+          </UiTableColumn>
+          <UiTableColumn label="Actions" width="220">
             <template #default="{ row }">
-              <el-button link type="primary" @click="handleResetPassword(row.ID)">重置密码</el-button>
-              <el-button link type="danger" @click="handleDelete(row.ID)">删除</el-button>
+              <UiButton link type="primary" @click="handleResetPassword(row.ID)">{{ $t('Reset password') }}</UiButton>
+              <UiButton link type="danger" @click="handleDelete(row.ID)">{{ $t('Delete') }}</UiButton>
             </template>
-          </el-table-column>
-        </el-table>
+          </UiTableColumn>
+        </UiTable>
       </div>
     </section>
   </div>
@@ -81,11 +81,12 @@ import { ElMessage, ElMessageBox } from '@/ui/feedback'
 import { usePageChrome } from '@/composables/usePageChrome'
 import { deleteUser, fetchUsers, resetUserPassword, type UserRecord } from '@/api/users'
 import { getApiErrorMessage } from '@/api/http'
+import { t } from '@/i18n'
 
 const router = useRouter()
 const users = ref<UserRecord[]>([])
 const loading = ref(false)
-const { total, summary } = usePageChrome(users, '位用户')
+const { total, summary } = usePageChrome(users, 'users')
 const enabledCount = computed(() => users.value.filter((item) => item.enable === 1).length)
 const roleCount = computed(
   () => new Set(users.value.map((item) => item.authority?.authorityName).filter(Boolean)).size
@@ -97,7 +98,7 @@ async function loadUsers() {
     const result = await fetchUsers()
     users.value = result.list
   } catch (err) {
-    ElMessage.error(getApiErrorMessage(err, '获取用户列表失败'))
+    ElMessage.error(getApiErrorMessage(err, t('Failed to load users')))
   } finally {
     loading.value = false
   }
@@ -105,7 +106,7 @@ async function loadUsers() {
 
 async function handleDelete(id: number) {
   try {
-    await ElMessageBox.confirm('确定删除该用户吗？', '提示', {
+    await ElMessageBox.confirm(t('Delete this user?'), t('Notice'), {
       type: 'warning'
     })
   } catch {
@@ -115,13 +116,13 @@ async function handleDelete(id: number) {
   try {
     const res = await deleteUser(id)
     if (res.code === 'OK') {
-      ElMessage.success('删除成功')
+      ElMessage.success(t('Deleted'))
       await loadUsers()
     } else {
-      ElMessage.error(res.message || '删除失败')
+      ElMessage.error(res.message || t('Delete failed'))
     }
   } catch (err) {
-    ElMessage.error(getApiErrorMessage(err, '删除失败'))
+    ElMessage.error(getApiErrorMessage(err, t('Delete failed')))
   }
 }
 
@@ -129,12 +130,12 @@ async function handleResetPassword(id: number) {
   try {
     const res = await resetUserPassword(id, '123456')
     if (res.code === 'OK') {
-      ElMessage.success('密码已重置为 123456')
+      ElMessage.success(t('Password reset to 123456'))
     } else {
-      ElMessage.error(res.message || '重置失败')
+      ElMessage.error(res.message || t('Reset failed'))
     }
   } catch (err) {
-    ElMessage.error(getApiErrorMessage(err, '重置失败'))
+    ElMessage.error(getApiErrorMessage(err, t('Reset failed')))
   }
 }
 

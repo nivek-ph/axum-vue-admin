@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { ElementCompat } from '@/ui/elementCompat'
+import { UiComponents } from '@/components/ui'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/api/authorities', () => ({
@@ -24,12 +24,12 @@ describe('MenuListView', () => {
   it('renders menu management actions', async () => {
     const wrapper = mount(MenuListView, {
       global: {
-        plugins: [ElementCompat]
+        plugins: [UiComponents]
       }
     })
 
     await Promise.resolve()
-    expect(wrapper.text()).toContain('菜单管理')
-    expect(wrapper.text()).toContain('新增菜单')
+    expect(wrapper.text()).toContain('Menus')
+    expect(wrapper.text()).toContain('New menu')
   })
 })

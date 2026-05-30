@@ -21,5 +21,5 @@ pub async fn logout(
     let token = extract_bearer_token(&headers).ok_or_spec(errors::LOGIN_REQUIRED)?;
     state.auth_session_service.revoke_token(token).await?;
 
-    Ok(Json(ApiResponse::ok_message("退出登录成功")))
+    Ok(Json(ApiResponse::ok_message("signed out")))
 }

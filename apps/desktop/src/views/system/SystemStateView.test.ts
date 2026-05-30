@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { ElementCompat } from '@/ui/elementCompat'
+import { UiComponents } from '@/components/ui'
 import { describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
@@ -28,11 +28,11 @@ describe('SystemStateView', () => {
 
     const wrapper = mount(SystemStateView, {
       global: {
-        plugins: [ElementCompat, router]
+        plugins: [UiComponents, router]
       }
     })
 
     await Promise.resolve()
-    expect(wrapper.text()).toContain('系统状态')
+    expect(wrapper.text()).toContain('System status')
   })
 })

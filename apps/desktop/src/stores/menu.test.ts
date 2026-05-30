@@ -8,23 +8,23 @@ describe('menu store helpers', () => {
       {
         name: 'users',
         path: 'system/users',
-        meta: { title: '用户管理' }
+        meta: { title: 'Users' }
       },
       {
         name: 'dashboard',
         path: 'home',
-        meta: { title: '工作台' }
+        meta: { title: 'Workbench' }
       }
     ])
 
     expect(items).toContainEqual({
       key: 'dashboard',
-      label: '工作台',
+      label: 'Workbench',
       path: '/home'
     })
     expect(items).toContainEqual({
       key: 'users',
-      label: '用户管理',
+      label: 'Users',
       path: '/system/users'
     })
     expect(items.some((item) => item.key === 'roles')).toBe(true)

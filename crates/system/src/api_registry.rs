@@ -7,6 +7,14 @@ use admin_httpz::AppError;
 
 use crate::errors;
 
+const DEFAULT_APIS: [(&str, &str, &str, &str); 5] = [
+    ("/api/auth/login", "User login", "auth", "POST"),
+    ("/api/users/me", "Get current user", "user", "GET"),
+    ("/api/users", "List users", "user", "GET"),
+    ("/api/menus/current", "Get menus", "menu", "GET"),
+    ("/api/roles", "List roles", "role", "GET"),
+];
+
 #[derive(Debug, Clone, FromRow, Serialize)]
 pub struct ApiRecord {
     #[serde(rename = "ID")]
@@ -97,9 +105,9 @@ pub struct ApiRoleSelection {
 
 #[derive(Debug, thiserror::Error)]
 pub enum ApiError {
-    #[error("API 已存在")]
+    #[error("API already exists")]
     AlreadyExists,
-    #[error("API 不存在")]
+    #[error("API not found")]
     NotFound,
     #[error("{0}")]
     Database(#[from] sqlx::Error),
@@ -118,20 +126,14 @@ impl From<ApiError> for AppError {
 }
 
 pub async fn ensure_default_apis(pool: &sqlx::PgPool) -> Result<(), sqlx::Error> {
-    let defaults = [
-        ("/api/auth/login", "用户登录", "auth", "POST"),
-        ("/api/users/me", "获取用户信息", "user", "GET"),
-        ("/api/users", "获取用户列表", "user", "GET"),
-        ("/api/menus/current", "获取菜单", "menu", "GET"),
-        ("/api/roles", "获取角色列表", "role", "GET"),
-    ];
-
-    for (path, description, api_group, method) in defaults {
+    for (path, description, api_group, method) in DEFAULT_APIS {
         sqlx::query(
             r#"
             insert into sys_apis (path, description, api_group, method)
             values ($1, $2, $3, $4)
-            on conflict (path, method) do nothing
+            on conflict (path, method) do update
+            set description = excluded.description,
+                api_group = excluded.api_group
             "#,
         )
         .bind(path)
@@ -143,6 +145,13 @@ pub async fn ensure_default_apis(pool: &sqlx::PgPool) -> Result<(), sqlx::Error>
     }
 
     Ok(())
+}
+
+pub fn default_api_descriptions() -> Vec<&'static str> {
+    DEFAULT_APIS
+        .iter()
+        .map(|(_, description, _, _)| *description)
+        .collect()
 }
 
 pub async fn get_api_list(

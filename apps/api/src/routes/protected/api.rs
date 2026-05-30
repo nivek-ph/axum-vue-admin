@@ -45,7 +45,7 @@ pub async fn create_api(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::api_registry::create_api(&state.pool, payload).await?;
 
-    Ok(Json(ApiResponse::ok_message("创建成功")))
+    Ok(Json(ApiResponse::ok_message("created")))
 }
 
 pub async fn get_api_by_id(
@@ -76,7 +76,7 @@ pub async fn update_api(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::api_registry::update_api(&state.pool, payload).await?;
 
-    Ok(Json(ApiResponse::ok_message("修改成功")))
+    Ok(Json(ApiResponse::ok_message("updated")))
 }
 
 pub async fn update_api_by_id(
@@ -87,7 +87,7 @@ pub async fn update_api_by_id(
     payload.id = id;
     system::api_registry::update_api(&state.pool, payload).await?;
 
-    Ok(Json(ApiResponse::ok_message("修改成功")))
+    Ok(Json(ApiResponse::ok_message("updated")))
 }
 
 pub async fn delete_api(
@@ -96,7 +96,7 @@ pub async fn delete_api(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::api_registry::delete_api(&state.pool, payload.id).await?;
 
-    Ok(Json(ApiResponse::ok_message("删除成功")))
+    Ok(Json(ApiResponse::ok_message("deleted")))
 }
 
 pub async fn delete_api_by_path_id(
@@ -105,7 +105,7 @@ pub async fn delete_api_by_path_id(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::api_registry::delete_api(&state.pool, id).await?;
 
-    Ok(Json(ApiResponse::ok_message("删除成功")))
+    Ok(Json(ApiResponse::ok_message("deleted")))
 }
 
 pub async fn delete_apis_by_ids(
@@ -114,11 +114,11 @@ pub async fn delete_apis_by_ids(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::api_registry::delete_apis_by_ids(&state.pool, payload).await?;
 
-    Ok(Json(ApiResponse::ok_message("删除成功")))
+    Ok(Json(ApiResponse::ok_message("deleted")))
 }
 
 pub async fn fresh_casbin() -> Json<ApiResponse<Value>> {
-    Json(ApiResponse::ok_message("刷新成功"))
+    Json(ApiResponse::ok_message("refreshed"))
 }
 
 pub async fn sync_api() -> Json<ApiResponse<Value>> {
@@ -139,11 +139,11 @@ pub async fn get_api_groups(State(state): State<AppState>) -> AppResult<Json<Api
 }
 
 pub async fn ignore_api() -> Json<ApiResponse<Value>> {
-    Json(ApiResponse::ok_message("忽略成功"))
+    Json(ApiResponse::ok_message("ignored"))
 }
 
 pub async fn enter_sync_api() -> Json<ApiResponse<Value>> {
-    Json(ApiResponse::ok_message("同步成功"))
+    Json(ApiResponse::ok_message("synced"))
 }
 
 pub async fn get_all_apis(State(state): State<AppState>) -> AppResult<Json<ApiResponse<Value>>> {
@@ -167,5 +167,5 @@ pub async fn set_api_roles(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::api_registry::set_api_roles(&state.pool, payload).await?;
 
-    Ok(Json(ApiResponse::ok_message("分配成功")))
+    Ok(Json(ApiResponse::ok_message("assigned")))
 }

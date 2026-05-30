@@ -76,7 +76,7 @@ http.interceptors.response.use(
 
     const data = error.response?.data;
     if (isApiEnvelope(data)) {
-      const msg = data.message?.trim() ? data.message : '请求失败';
+      const msg = data.message?.trim() ? data.message : 'Request failed';
       return Promise.reject(new ApiHttpError(msg, { status, body: data, cause: error }));
     }
     return Promise.reject(error);

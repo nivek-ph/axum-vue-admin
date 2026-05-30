@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { ElementCompat } from '@/ui/elementCompat'
+import { UiComponents } from '@/components/ui'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/api/logs', () => ({
@@ -19,11 +19,11 @@ describe('OperationLogView', () => {
   it('renders operation log heading', async () => {
     const wrapper = mount(OperationLogView, {
       global: {
-        plugins: [ElementCompat]
+        plugins: [UiComponents]
       }
     })
 
     await Promise.resolve()
-    expect(wrapper.text()).toContain('操作日志')
+    expect(wrapper.text()).toContain('Operation logs')
   })
 })

@@ -71,7 +71,7 @@ pub async fn delete_login_log(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::logs::delete_login_log(&state.pool, payload.id).await?;
 
-    Ok(Json(ApiResponse::ok_message("删除成功")))
+    Ok(Json(ApiResponse::ok_message("deleted")))
 }
 
 pub async fn delete_login_log_by_id(
@@ -80,7 +80,7 @@ pub async fn delete_login_log_by_id(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::logs::delete_login_log(&state.pool, id).await?;
 
-    Ok(Json(ApiResponse::ok_message("删除成功")))
+    Ok(Json(ApiResponse::ok_message("deleted")))
 }
 
 pub async fn delete_login_log_by_ids(
@@ -89,7 +89,7 @@ pub async fn delete_login_log_by_ids(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::logs::delete_login_logs(&state.pool, payload.ids).await?;
 
-    Ok(Json(ApiResponse::ok_message("批量删除成功")))
+    Ok(Json(ApiResponse::ok_message("batch deleted")))
 }
 
 pub async fn get_operation_log_list(
@@ -114,7 +114,7 @@ pub async fn delete_operation_log(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::logs::delete_operation_log(&state.pool, payload.id).await?;
 
-    Ok(Json(ApiResponse::ok_message("删除成功")))
+    Ok(Json(ApiResponse::ok_message("deleted")))
 }
 
 pub async fn delete_operation_log_by_id(
@@ -123,7 +123,7 @@ pub async fn delete_operation_log_by_id(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::logs::delete_operation_log(&state.pool, id).await?;
 
-    Ok(Json(ApiResponse::ok_message("删除成功")))
+    Ok(Json(ApiResponse::ok_message("deleted")))
 }
 
 pub async fn delete_operation_log_by_ids(
@@ -132,5 +132,5 @@ pub async fn delete_operation_log_by_ids(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::logs::delete_operation_logs(&state.pool, payload.ids).await?;
 
-    Ok(Json(ApiResponse::ok_message("批量删除成功")))
+    Ok(Json(ApiResponse::ok_message("batch deleted")))
 }

@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { ElementCompat } from '@/ui/elementCompat'
+import { UiComponents } from '@/components/ui'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/api/logs', () => ({
@@ -18,11 +18,11 @@ describe('LoginLogView', () => {
   it('renders login log heading', async () => {
     const wrapper = mount(LoginLogView, {
       global: {
-        plugins: [ElementCompat]
+        plugins: [UiComponents]
       }
     })
 
     await Promise.resolve()
-    expect(wrapper.text()).toContain('登录日志')
+    expect(wrapper.text()).toContain('Login logs')
   })
 })

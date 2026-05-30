@@ -3,13 +3,12 @@
     <div class="brand-card">
       <div class="brand-mark">A</div>
       <div>
-        <div class="brand-eyebrow">Core Control</div>
         <div class="brand-title">Axum Vue Admin</div>
       </div>
     </div>
 
     <div class="sidebar-section">
-      <div class="sidebar-caption">核心管理</div>
+      <div class="sidebar-caption">{{ $t('Core') }}</div>
       <nav class="nav">
         <RouterLink
           v-for="item in menuStore.items"
@@ -19,7 +18,7 @@
           active-class="is-active"
         >
           <span class="nav-bullet" />
-          <span class="nav-label">{{ item.label }}</span>
+          <span class="nav-label">{{ $t(item.label) }}</span>
         </RouterLink>
       </nav>
     </div>
@@ -64,15 +63,7 @@ const menuStore = useMenuStore()
   font-size: 18px;
 }
 
-.brand-eyebrow {
-  color: rgba(244, 244, 245, 0.42);
-  font-size: 10px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
 .brand-title {
-  margin-top: 4px;
   color: var(--sidebar-strong);
   font-size: 17px;
   font-weight: 700;

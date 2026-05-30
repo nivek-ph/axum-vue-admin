@@ -1,23 +1,24 @@
 <template>
   <header class="header">
     <div>
-      <div class="header-eyebrow">Desktop Console</div>
+      <div class="header-eyebrow">{{ $t('Admin Console') }}</div>
       <div class="header-title">{{ currentTitle }}</div>
     </div>
 
     <div class="header-actions">
+      <LanguageSwitch />
       <div class="status-chip">
         <span class="status-dot" />
-        <span>Local API</span>
+        <span>{{ $t('Local API') }}</span>
       </div>
       <div class="user-chip">
         <div class="user-avatar">
           {{ userInitial }}
         </div>
         <div>
-          <div class="user-name">{{ authStore.userInfo?.nickName || '未登录' }}</div>
+          <div class="user-name">{{ authStore.userInfo?.nickName || $t('Not signed in') }}</div>
           <div class="user-subtitle">
-            {{ authStore.userInfo?.authority?.authorityName || '访客' }}
+            {{ authStore.userInfo?.authority?.authorityName || $t('Guest') }}
           </div>
         </div>
       </div>
@@ -29,6 +30,8 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
+import LanguageSwitch from '@/components/LanguageSwitch.vue'
+import { t } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useMenuStore } from '@/stores/menu'
 
@@ -38,7 +41,7 @@ const route = useRoute()
 
 const currentTitle = computed(() => {
   const matched = menuStore.items.find((item) => item.path === route.path)
-  return matched?.label || 'Core Admin'
+  return t(matched?.label || 'Admin Console')
 })
 
 const userInitial = computed(() => {

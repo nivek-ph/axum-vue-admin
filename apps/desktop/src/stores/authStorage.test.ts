@@ -13,7 +13,7 @@ describe('authStorage', () => {
       userInfo: {
         ID: 1,
         userName: 'admin',
-        nickName: '系统管理员',
+        nickName: 'System Administrator',
       },
     });
 
@@ -22,7 +22,7 @@ describe('authStorage', () => {
       userInfo: {
         ID: 1,
         userName: 'admin',
-        nickName: '系统管理员',
+        nickName: 'System Administrator',
       },
     });
   });

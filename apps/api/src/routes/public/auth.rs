@@ -52,7 +52,7 @@ pub async fn login(
                     username,
                     ip: header_value(&headers, "x-forwarded-for"),
                     status: true,
-                    error_message: "登录成功".to_string(),
+                    error_message: "login succeeded".to_string(),
                     agent: header_value(&headers, "user-agent"),
                     user_id: Some(result.user.id),
                 },

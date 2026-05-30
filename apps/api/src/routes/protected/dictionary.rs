@@ -13,7 +13,7 @@ pub async fn create_sys_dictionary(
     Json(payload): Json<system::dictionary::SysDictionary>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::dictionary::create(&state.pool, payload).await?;
-    Ok(Json(ApiResponse::ok_message("创建成功")))
+    Ok(Json(ApiResponse::ok_message("created")))
 }
 
 pub async fn update_sys_dictionary(
@@ -21,7 +21,7 @@ pub async fn update_sys_dictionary(
     Json(payload): Json<system::dictionary::SysDictionary>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::dictionary::update(&state.pool, payload).await?;
-    Ok(Json(ApiResponse::ok_message("更新成功")))
+    Ok(Json(ApiResponse::ok_message("updated")))
 }
 
 pub async fn update_sys_dictionary_by_id(
@@ -31,7 +31,7 @@ pub async fn update_sys_dictionary_by_id(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     payload.id = id;
     system::dictionary::update(&state.pool, payload).await?;
-    Ok(Json(ApiResponse::ok_message("更新成功")))
+    Ok(Json(ApiResponse::ok_message("updated")))
 }
 
 pub async fn find_sys_dictionary(
@@ -69,7 +69,7 @@ pub async fn delete_sys_dictionary(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     let id = payload.id.ok_or_spec(errors::ID_REQUIRED)?;
     system::dictionary::delete(&state.pool, id).await?;
-    Ok(Json(ApiResponse::ok_message("删除成功")))
+    Ok(Json(ApiResponse::ok_message("deleted")))
 }
 
 pub async fn delete_sys_dictionary_by_id(
@@ -77,7 +77,7 @@ pub async fn delete_sys_dictionary_by_id(
     Path(id): Path<i64>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::dictionary::delete(&state.pool, id).await?;
-    Ok(Json(ApiResponse::ok_message("删除成功")))
+    Ok(Json(ApiResponse::ok_message("deleted")))
 }
 
 pub async fn export_sys_dictionary(
@@ -106,5 +106,5 @@ pub async fn import_sys_dictionary(
     Json(payload): Json<system::dictionary::ImportDictionaryPayload>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::dictionary::import_dictionary(&state.pool, payload).await?;
-    Ok(Json(ApiResponse::ok_message("导入成功")))
+    Ok(Json(ApiResponse::ok_message("imported")))
 }

@@ -8,8 +8,8 @@ describe('authority api adapter', () => {
       data: [
         {
           authorityId: 888,
-          authorityName: '超级管理员',
-          children: [{ authorityId: 999, authorityName: '运营' }],
+          authorityName: 'Super Admin',
+          children: [{ authorityId: 999, authorityName: 'Operator' }],
         },
       ],
     });

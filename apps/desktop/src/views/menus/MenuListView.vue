@@ -2,21 +2,21 @@
   <div class="admin-page">
     <section class="page-hero">
       <div class="page-hero-main">
-        <span class="page-hero-kicker">Menu Topology</span>
-        <h2 class="page-hero-title">菜单管理</h2>
-        <p class="page-hero-subtitle">维护菜单层级、可见性与角色绑定，并按核心后台收敛入口。</p>
+        <span class="page-hero-kicker">{{ $t('Menu structure') }}</span>
+        <h2 class="page-hero-title">{{ $t('Menus') }}</h2>
+        <p class="page-hero-subtitle">{{ $t('Manage menu hierarchy, visibility, and role bindings.') }}</p>
 
         <div class="page-metrics">
           <div class="page-metric">
-            <div class="page-metric-label">菜单总数</div>
+            <div class="page-metric-label">{{ $t('Total menus') }}</div>
             <div class="page-metric-value">{{ total }}</div>
           </div>
           <div class="page-metric">
-            <div class="page-metric-label">顶级菜单</div>
+            <div class="page-metric-label">{{ $t('Top-level menus') }}</div>
             <div class="page-metric-value">{{ rootMenuCount }}</div>
           </div>
           <div class="page-metric">
-            <div class="page-metric-label">隐藏菜单</div>
+            <div class="page-metric-label">{{ $t('Hidden menus') }}</div>
             <div class="page-metric-value">{{ hiddenMenuCount }}</div>
           </div>
         </div>
@@ -24,12 +24,12 @@
 
       <aside class="page-hero-side">
         <div>
-          <div class="page-note-label">模块摘要</div>
+          <div class="page-note-label">{{ $t('Current data') }}</div>
           <div class="page-note-value">{{ summary }}</div>
         </div>
         <div class="page-hero-actions">
-          <el-button @click="loadData" :loading="loading">刷新结构</el-button>
-          <el-button type="primary" @click="openCreateDialog">新增菜单</el-button>
+          <UiButton @click="loadData" :loading="loading">{{ $t('Refresh structure') }}</UiButton>
+          <UiButton type="primary" @click="openCreateDialog">{{ $t('New menu') }}</UiButton>
         </div>
       </aside>
     </section>
@@ -37,142 +37,142 @@
     <section class="page-panel">
       <div class="page-panel-header">
         <div>
-          <h3 class="page-panel-title">菜单结构</h3>
-          <p class="page-panel-subtitle">高频信息在前，树形结构保留，复杂字段放进弹窗里处理。</p>
+          <h3 class="page-panel-title">{{ $t('Menu structure') }}</h3>
+          <p class="page-panel-subtitle">{{ $t('Keep common fields visible and handle advanced fields in dialogs.') }}</p>
         </div>
       </div>
 
       <div class="surface-card">
-        <el-table
+        <UiTable
           :data="menus"
           row-key="ID"
           default-expand-all
-          v-loading="loading"
+          :loading="loading"
           style="width: 100%"
         >
-          <el-table-column prop="ID" label="ID" width="80" />
-          <el-table-column label="标题" min-width="180">
+          <UiTableColumn prop="ID" label="ID" width="80" />
+          <UiTableColumn label="Title" min-width="180">
             <template #default="{ row }">
               {{ row.meta?.title || row.name }}
             </template>
-          </el-table-column>
-          <el-table-column prop="path" label="路径" min-width="140" />
-          <el-table-column prop="name" label="名称" min-width="140" />
-          <el-table-column prop="component" label="组件" min-width="220" />
-          <el-table-column prop="sort" label="排序" width="90" />
-          <el-table-column label="隐藏" width="90">
+          </UiTableColumn>
+          <UiTableColumn prop="path" label="Path" min-width="140" />
+          <UiTableColumn prop="name" label="Name" min-width="140" />
+          <UiTableColumn prop="component" label="Component" min-width="220" />
+          <UiTableColumn prop="sort" label="Sort" width="90" />
+          <UiTableColumn label="Hidden" width="90">
             <template #default="{ row }">
-              <el-tag :type="row.hidden ? 'info' : 'success'">
-                {{ row.hidden ? '隐藏' : '显示' }}
-              </el-tag>
+              <UiTag :type="row.hidden ? 'info' : 'success'">
+                {{ $t(row.hidden ? 'Hidden' : 'Visible') }}
+              </UiTag>
             </template>
-          </el-table-column>
-          <el-table-column label="操作" width="280">
+          </UiTableColumn>
+          <UiTableColumn label="Actions" width="280">
             <template #default="{ row }">
-              <el-button link type="primary" @click="openEditDialog(row)">编辑</el-button>
-              <el-button link @click="openRoleDialog(row)">分配角色</el-button>
-              <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
+              <UiButton link type="primary" @click="openEditDialog(row)">{{ $t('Edit') }}</UiButton>
+              <UiButton link @click="openRoleDialog(row)">{{ $t('Assign roles') }}</UiButton>
+              <UiButton link type="danger" @click="handleDelete(row)">{{ $t('Delete') }}</UiButton>
             </template>
-          </el-table-column>
-        </el-table>
+          </UiTableColumn>
+        </UiTable>
       </div>
     </section>
 
-    <el-dialog
+    <UiDialog
       v-model="dialogVisible"
-      :title="dialogMode === 'create' ? '新增菜单' : '编辑菜单'"
+      :title="dialogMode === 'create' ? 'New menu' : 'Edit menu'"
       width="620px"
     >
-      <el-form label-width="110px" @submit.prevent="submitMenu">
-        <el-form-item label="父菜单">
-          <el-select v-model="form.parentId" class="w-full">
-            <el-option :value="0" label="顶级菜单" />
-            <el-option
+      <UiForm labelWidth="110px" @submit.prevent="submitMenu">
+        <UiFormItem label="Parent menu item">
+          <UiSelect v-model="form.parentId" class="w-full">
+            <UiOption :value="0" label="Top-level menus" />
+            <UiOption
               v-for="item in menuOptions"
               :key="item.ID"
               :label="`${item.meta?.title || item.name} (${item.name})`"
               :value="item.ID"
             />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="路径">
-          <el-input v-model="form.path" placeholder="users" />
-        </el-form-item>
-        <el-form-item label="名称">
-          <el-input v-model="form.name" placeholder="users" />
-        </el-form-item>
-        <el-form-item label="标题">
-          <el-input v-model="form.meta.title" placeholder="用户管理" />
-        </el-form-item>
-        <el-form-item label="组件">
-          <el-input v-model="form.component" placeholder="view/users/index.vue" />
-        </el-form-item>
-        <el-form-item label="排序">
-          <el-input-number v-model="form.sort" :min="0" :precision="0" class="w-full" />
-        </el-form-item>
-        <el-form-item label="图标">
-          <el-input v-model="form.meta.icon" placeholder="setting" />
-        </el-form-item>
-        <el-form-item label="激活路由">
-          <el-input v-model="form.meta.activeName" placeholder="users" />
-        </el-form-item>
-        <el-form-item label="过渡">
-          <el-input v-model="form.meta.transitionType" placeholder="fade" />
-        </el-form-item>
-        <el-form-item label="显示设置">
+          </UiSelect>
+        </UiFormItem>
+        <UiFormItem label="Path">
+          <UiInput v-model="form.path" placeholder="users" />
+        </UiFormItem>
+        <UiFormItem label="Name">
+          <UiInput v-model="form.name" placeholder="users" />
+        </UiFormItem>
+        <UiFormItem label="Title">
+          <UiInput v-model="form.meta.title" placeholder="Users" />
+        </UiFormItem>
+        <UiFormItem label="Component">
+          <UiInput v-model="form.component" placeholder="view/users/index.vue" />
+        </UiFormItem>
+        <UiFormItem label="Sort">
+          <UiInputNumber v-model="form.sort" :min="0" :precision="0" class="w-full" />
+        </UiFormItem>
+        <UiFormItem label="Icon">
+          <UiInput v-model="form.meta.icon" placeholder="setting" />
+        </UiFormItem>
+        <UiFormItem label="Active route">
+          <UiInput v-model="form.meta.activeName" placeholder="users" />
+        </UiFormItem>
+        <UiFormItem label="Transition">
+          <UiInput v-model="form.meta.transitionType" placeholder="fade" />
+        </UiFormItem>
+        <UiFormItem label="Display settings">
           <div class="switch-group">
-            <el-switch v-model="form.hidden" active-text="隐藏" inactive-text="显示" />
-            <el-switch
+            <UiSwitch v-model="form.hidden" active-text="Hidden" inactive-text="Visible" />
+            <UiSwitch
               v-model="form.meta.keepAlive"
-              active-text="缓存"
-              inactive-text="不缓存"
+              active-text="Cache"
+              inactive-text="No cache"
             />
-            <el-switch
+            <UiSwitch
               v-model="form.meta.defaultMenu"
-              active-text="默认菜单"
-              inactive-text="普通菜单"
+              active-text="Default menu"
+              inactive-text="Normal menu"
             />
           </div>
-        </el-form-item>
-      </el-form>
+        </UiFormItem>
+      </UiForm>
 
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="submitMenu">保存</el-button>
+        <UiButton @click="dialogVisible = false">{{ $t('Cancel') }}</UiButton>
+        <UiButton type="primary" :loading="submitting" @click="submitMenu">{{ $t('Save') }}</UiButton>
       </template>
-    </el-dialog>
+    </UiDialog>
 
-    <el-dialog v-model="roleDialogVisible" title="分配角色" width="520px">
-      <el-alert
+    <UiDialog v-model="roleDialogVisible" title="Assign roles" width="520px">
+      <UiAlert
         v-if="defaultRouterAuthorityIds.length"
         type="warning"
         :closable="false"
         class="dialog-alert"
       >
-        有角色将此菜单作为默认路由：{{ defaultRouterAuthorityIds.join(', ') }}
-      </el-alert>
-      <el-select
+        {{ $t('Roles using this menu as default route: ') }}{{ defaultRouterAuthorityIds.join(', ') }}
+      </UiAlert>
+      <UiSelect
         v-model="selectedAuthorityIds"
         multiple
         filterable
         class="w-full"
-        placeholder="选择可见角色"
+        placeholder="Select visible roles"
       >
-        <el-option
+        <UiOption
           v-for="authority in authorityOptions"
           :key="authority.authorityId"
           :label="`${authority.authorityName} (${authority.authorityId})`"
           :value="authority.authorityId"
         />
-      </el-select>
+      </UiSelect>
 
       <template #footer>
-        <el-button @click="roleDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="roleSubmitting" @click="submitMenuRoles">
-          保存角色
-        </el-button>
+        <UiButton @click="roleDialogVisible = false">{{ $t('Cancel') }}</UiButton>
+        <UiButton type="primary" :loading="roleSubmitting" @click="submitMenuRoles">
+          {{ $t('Save roles') }}
+        </UiButton>
       </template>
-    </el-dialog>
+    </UiDialog>
   </div>
 </template>
 
@@ -191,6 +191,7 @@ import {
   updateMenu,
   type MenuRecord
 } from '@/api/menus'
+import { t } from '@/i18n'
 
 type DialogMode = 'create' | 'edit'
 
@@ -209,7 +210,7 @@ const form = reactive(createEmptyMenu())
 
 const menuOptions = computed(() => flattenMenus(menus.value))
 const authorityOptions = computed(() => flattenAuthorities(authorities.value))
-const { total, summary } = usePageChrome(menus, '条菜单')
+const { total, summary } = usePageChrome(menus, 'menus')
 const rootMenuCount = computed(() => menuOptions.value.filter((item) => item.parentId === 0).length)
 const hiddenMenuCount = computed(() => menuOptions.value.filter((item) => item.hidden).length)
 
@@ -276,7 +277,7 @@ async function loadData() {
     menus.value = menuList
     authorities.value = authorityList
   } catch {
-    ElMessage.error('获取菜单数据失败')
+    ElMessage.error(t('Failed to load menus'))
   } finally {
     loading.value = false
   }
@@ -296,7 +297,7 @@ function openEditDialog(menu: MenuRecord) {
 
 async function submitMenu() {
   if (!form.name.trim() || !form.path.trim() || !form.meta.title.trim() || !form.component.trim()) {
-    ElMessage.warning('请填写完整菜单信息')
+    ElMessage.warning(t('Please complete menu information'))
     return
   }
 
@@ -307,15 +308,15 @@ async function submitMenu() {
       dialogMode.value === 'create' ? await createMenu(payload) : await updateMenu(payload)
 
     if (response.code === 'OK') {
-      ElMessage.success(dialogMode.value === 'create' ? '菜单已创建' : '菜单已更新')
+      ElMessage.success(t(dialogMode.value === 'create' ? 'Menu created' : 'Menu updated'))
       dialogVisible.value = false
       await loadData()
       return
     }
 
-    ElMessage.error(response.message || '保存菜单失败')
+    ElMessage.error(response.message || t('Failed to save menu'))
   } catch {
-    ElMessage.error('保存菜单失败')
+    ElMessage.error(t('Failed to save menu'))
   } finally {
     submitting.value = false
   }
@@ -329,7 +330,7 @@ async function openRoleDialog(menu: MenuRecord) {
     selectedAuthorityIds.value = selection.authorityIds
     defaultRouterAuthorityIds.value = selection.defaultRouterAuthorityIds
   } catch {
-    ElMessage.error('获取菜单角色失败')
+    ElMessage.error(t('Failed to load menu roles'))
   }
 }
 
@@ -340,14 +341,14 @@ async function submitMenuRoles() {
   try {
     const response = await setMenuRoles(selectedMenu.value.ID, selectedAuthorityIds.value)
     if (response.code === 'OK') {
-      ElMessage.success('菜单角色已更新')
+      ElMessage.success(t('Menu roles updated'))
       roleDialogVisible.value = false
       return
     }
 
-    ElMessage.error(response.message || '保存菜单角色失败')
+    ElMessage.error(response.message || t('Failed to save menu roles'))
   } catch {
-    ElMessage.error('保存菜单角色失败')
+    ElMessage.error(t('Failed to save menu roles'))
   } finally {
     roleSubmitting.value = false
   }
@@ -355,7 +356,7 @@ async function submitMenuRoles() {
 
 async function handleDelete(menu: MenuRecord) {
   try {
-    await ElMessageBox.confirm(`确定删除菜单“${menu.meta?.title || menu.name}”吗？`, '提示', {
+    await ElMessageBox.confirm(t('Delete menu "{name}"?', { name: menu.meta?.title || menu.name }), t('Notice'), {
       type: 'warning'
     })
   } catch {
@@ -365,14 +366,14 @@ async function handleDelete(menu: MenuRecord) {
   try {
     const response = await deleteMenu(menu.ID)
     if (response.code === 'OK') {
-      ElMessage.success('菜单已删除')
+      ElMessage.success(t('Menu deleted'))
       await loadData()
       return
     }
 
-    ElMessage.error(response.message || '删除菜单失败')
+    ElMessage.error(response.message || t('Failed to delete menu'))
   } catch {
-    ElMessage.error('删除菜单失败')
+    ElMessage.error(t('Failed to delete menu'))
   }
 }
 

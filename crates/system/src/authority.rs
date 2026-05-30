@@ -39,7 +39,7 @@ pub struct AuthorityDataView {
 pub fn default_authorities() -> Vec<AuthorityView> {
     vec![AuthorityView {
         authority_id: 888,
-        authority_name: "超级管理员".to_string(),
+        authority_name: "Super Admin".to_string(),
         parent_id: 0,
         default_router: "dashboard".to_string(),
         children: Vec::new(),
@@ -92,11 +92,11 @@ pub struct SetRoleUsersRequest {
 
 #[derive(Debug, thiserror::Error)]
 pub enum AuthorityError {
-    #[error("角色已存在")]
+    #[error("role already exists")]
     AlreadyExists,
-    #[error("默认角色不可删除")]
+    #[error("default role cannot be deleted")]
     CannotDeleteRoot,
-    #[error("角色不存在")]
+    #[error("role not found")]
     NotFound,
     #[error("{0}")]
     Database(#[from] sqlx::Error),
@@ -119,8 +119,22 @@ pub async fn ensure_default_authority(pool: &sqlx::PgPool) -> Result<(), sqlx::E
     sqlx::query(
         r#"
         insert into sys_authorities (authority_id, authority_name, parent_id, default_router)
-        values (888, 'super_admin', 0, 'dashboard')
-        on conflict (authority_id) do nothing
+        values (888, 'Super Admin', 0, 'dashboard')
+        on conflict (authority_id) do update
+        set authority_name = excluded.authority_name,
+            parent_id = excluded.parent_id,
+            default_router = excluded.default_router
+        "#,
+    )
+    .execute(pool)
+    .await?;
+
+    sqlx::query(
+        r#"
+        update sys_users
+        set authority_name = 'Super Admin',
+            default_router = 'dashboard'
+        where authority_id = 888
         "#,
     )
     .execute(pool)
@@ -306,7 +320,7 @@ pub async fn set_role_users(
             r#"
             update sys_users
             set authority_id = 888,
-                authority_name = '超级管理员',
+                authority_name = 'Super Admin',
                 default_router = 'dashboard'
             where authority_id = $1
               and id <> all($2)

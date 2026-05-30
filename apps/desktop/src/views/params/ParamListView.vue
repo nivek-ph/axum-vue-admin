@@ -2,21 +2,21 @@
   <div class="admin-page">
     <section class="page-hero">
       <div class="page-hero-main">
-        <span class="page-hero-kicker">System Params</span>
-        <h2 class="page-hero-title">参数管理</h2>
-        <p class="page-hero-subtitle">维护核心后台运行所需的系统参数，只保留键值配置的核心场景。</p>
+        <span class="page-hero-kicker">{{ $t('System params') }}</span>
+        <h2 class="page-hero-title">{{ $t('Param management') }}</h2>
+        <p class="page-hero-subtitle">{{ $t('Manage key-value settings required by the admin console.') }}</p>
 
         <div class="page-metrics">
           <div class="page-metric">
-            <div class="page-metric-label">当前页条目</div>
+            <div class="page-metric-label">{{ $t('Rows on page') }}</div>
             <div class="page-metric-value">{{ params.length }}</div>
           </div>
           <div class="page-metric">
-            <div class="page-metric-label">总参数数</div>
+            <div class="page-metric-label">{{ $t('Total params') }}</div>
             <div class="page-metric-value">{{ total }}</div>
           </div>
           <div class="page-metric">
-            <div class="page-metric-label">命名空间</div>
+            <div class="page-metric-label">{{ $t('Namespaces') }}</div>
             <div class="page-metric-value">{{ namespaceCount }}</div>
           </div>
         </div>
@@ -24,12 +24,12 @@
 
       <aside class="page-hero-side">
         <div>
-          <div class="page-note-label">模块摘要</div>
+          <div class="page-note-label">{{ $t('Current data') }}</div>
           <div class="page-note-value">{{ summary }}</div>
         </div>
         <div class="page-hero-actions">
-          <el-button @click="loadParams" :loading="loading">刷新参数</el-button>
-          <el-button type="primary" @click="openCreateDialog">新增参数</el-button>
+          <UiButton @click="loadParams" :loading="loading">{{ $t('Refresh params') }}</UiButton>
+          <UiButton type="primary" @click="openCreateDialog">{{ $t('New param') }}</UiButton>
         </div>
       </aside>
     </section>
@@ -37,35 +37,35 @@
     <section class="page-panel">
       <div class="page-panel-header">
         <div>
-          <h3 class="page-panel-title">参数列表</h3>
-          <p class="page-panel-subtitle">支持按名称与键过滤，保留最常用的 CRUD 流程。</p>
+          <h3 class="page-panel-title">{{ $t('Param list') }}</h3>
+          <p class="page-panel-subtitle">{{ $t('Filter by name and key while keeping the common CRUD flow.') }}</p>
         </div>
       </div>
 
       <div class="page-panel-toolbar inline-filter">
-        <el-input v-model="filters.name" placeholder="按名称过滤" clearable />
-        <el-input v-model="filters.key" placeholder="按键过滤" clearable />
-        <el-button type="primary" @click="handleSearch">查询</el-button>
+        <UiInput v-model="filters.name" placeholder="Filter by name" clearable />
+        <UiInput v-model="filters.key" placeholder="Filter by key" clearable />
+        <UiButton type="primary" @click="handleSearch">{{ $t('Search') }}</UiButton>
       </div>
 
       <div class="surface-card">
-        <el-table :data="params" v-loading="loading" style="width: 100%">
-          <el-table-column prop="ID" label="ID" width="80" />
-          <el-table-column prop="name" label="名称" min-width="160" />
-          <el-table-column prop="key" label="键" min-width="180" />
-          <el-table-column prop="value" label="值" min-width="180" />
-          <el-table-column prop="desc" label="说明" min-width="180" />
-          <el-table-column label="操作" width="180">
+        <UiTable :data="params" :loading="loading" style="width: 100%">
+          <UiTableColumn prop="ID" label="ID" width="80" />
+          <UiTableColumn prop="name" label="Name" min-width="160" />
+          <UiTableColumn prop="key" label="Key" min-width="180" />
+          <UiTableColumn prop="value" label="Value" min-width="180" />
+          <UiTableColumn prop="desc" label="Notes" min-width="180" />
+          <UiTableColumn label="Actions" width="180">
             <template #default="{ row }">
-              <el-button link type="primary" @click="openEditDialog(row)">编辑</el-button>
-              <el-button link type="danger" @click="handleDelete(row.ID)">删除</el-button>
+              <UiButton link type="primary" @click="openEditDialog(row)">{{ $t('Edit') }}</UiButton>
+              <UiButton link type="danger" @click="handleDelete(row.ID)">{{ $t('Delete') }}</UiButton>
             </template>
-          </el-table-column>
-        </el-table>
+          </UiTableColumn>
+        </UiTable>
       </div>
 
       <div class="pagination">
-        <el-pagination
+        <UiPagination
           background
           layout="total, prev, pager, next"
           :total="total"
@@ -76,27 +76,27 @@
       </div>
     </section>
 
-    <el-dialog v-model="dialogVisible" :title="dialogMode === 'create' ? '新增参数' : '编辑参数'" width="560px">
-      <el-form label-width="90px" @submit.prevent="submitParam">
-        <el-form-item label="名称">
-          <el-input v-model="form.name" placeholder="例如：站点名称" />
-        </el-form-item>
-        <el-form-item label="键">
-          <el-input v-model="form.key" placeholder="例如：site.name" />
-        </el-form-item>
-        <el-form-item label="值">
-          <el-input v-model="form.value" placeholder="例如：Core Admin" />
-        </el-form-item>
-        <el-form-item label="说明">
-          <el-input v-model="form.desc" type="textarea" :rows="3" placeholder="参数说明" />
-        </el-form-item>
-      </el-form>
+    <UiDialog v-model="dialogVisible" :title="dialogMode === 'create' ? 'New param' : 'Edit param'" width="560px">
+      <UiForm labelWidth="90px" @submit.prevent="submitParam">
+        <UiFormItem label="Name">
+          <UiInput v-model="form.name" placeholder="Example: site name" />
+        </UiFormItem>
+        <UiFormItem label="Key">
+          <UiInput v-model="form.key" placeholder="Example: site.name" />
+        </UiFormItem>
+        <UiFormItem label="Value">
+          <UiInput v-model="form.value" placeholder="Example: Admin Console" />
+        </UiFormItem>
+        <UiFormItem label="Notes">
+          <UiInput v-model="form.desc" type="textarea" :rows="3" placeholder="Param description" />
+        </UiFormItem>
+      </UiForm>
 
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="submitParam">保存</el-button>
+        <UiButton @click="dialogVisible = false">{{ $t('Cancel') }}</UiButton>
+        <UiButton type="primary" :loading="submitting" @click="submitParam">{{ $t('Save') }}</UiButton>
       </template>
-    </el-dialog>
+    </UiDialog>
   </div>
 </template>
 
@@ -106,6 +106,7 @@ import { ElMessage, ElMessageBox } from '@/ui/feedback'
 
 import { usePageChrome } from '@/composables/usePageChrome'
 import { createParam, deleteParam, fetchParams, updateParam, type ParamRecord } from '@/api/params'
+import { t } from '@/i18n'
 
 type DialogMode = 'create' | 'edit'
 
@@ -128,7 +129,7 @@ const form = reactive<ParamRecord>({
   value: '',
   desc: ''
 })
-const { summary } = usePageChrome(params, '条参数')
+const { summary } = usePageChrome(params, 'params')
 const namespaceCount = computed(
   () => new Set(params.value.map((item) => item.key.split('.').shift()).filter(Boolean)).size
 )
@@ -153,7 +154,7 @@ async function loadParams() {
     params.value = result.list
     total.value = result.total
   } catch {
-    ElMessage.error('获取参数列表失败')
+    ElMessage.error(t('Failed to load params'))
   } finally {
     loading.value = false
   }
@@ -183,7 +184,7 @@ function openEditDialog(item: ParamRecord) {
 
 async function submitParam() {
   if (!form.name.trim() || !form.key.trim()) {
-    ElMessage.warning('请填写完整参数信息')
+    ElMessage.warning(t('Please complete param information'))
     return
   }
 
@@ -200,14 +201,14 @@ async function submitParam() {
       dialogMode.value === 'create' ? await createParam(payload) : await updateParam(payload)
 
     if (response.code === 'OK') {
-      ElMessage.success(dialogMode.value === 'create' ? '参数已创建' : '参数已更新')
+      ElMessage.success(t(dialogMode.value === 'create' ? 'Param created' : 'Param updated'))
       dialogVisible.value = false
       await loadParams()
       return
     }
-    ElMessage.error(response.message || '保存参数失败')
+    ElMessage.error(response.message || t('Failed to save param'))
   } catch {
-    ElMessage.error('保存参数失败')
+    ElMessage.error(t('Failed to save param'))
   } finally {
     submitting.value = false
   }
@@ -215,7 +216,7 @@ async function submitParam() {
 
 async function handleDelete(id: number) {
   try {
-    await ElMessageBox.confirm('确定删除该参数吗？', '提示', { type: 'warning' })
+    await ElMessageBox.confirm(t('Delete this param?'), t('Notice'), { type: 'warning' })
   } catch {
     return
   }
@@ -223,13 +224,13 @@ async function handleDelete(id: number) {
   try {
     const response = await deleteParam(id)
     if (response.code === 'OK') {
-      ElMessage.success('参数已删除')
+      ElMessage.success(t('Param deleted'))
       await loadParams()
       return
     }
-    ElMessage.error(response.message || '删除参数失败')
+    ElMessage.error(response.message || t('Failed to delete param'))
   } catch {
-    ElMessage.error('删除参数失败')
+    ElMessage.error(t('Failed to delete param'))
   }
 }
 

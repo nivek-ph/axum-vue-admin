@@ -50,7 +50,7 @@ pub async fn add_base_menu(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::menu::add_base_menu(&state.pool, payload).await?;
 
-    Ok(Json(ApiResponse::ok_message("添加成功")))
+    Ok(Json(ApiResponse::ok_message("created")))
 }
 
 pub async fn update_base_menu(
@@ -59,7 +59,7 @@ pub async fn update_base_menu(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::menu::update_base_menu(&state.pool, payload).await?;
 
-    Ok(Json(ApiResponse::ok_message("更新成功")))
+    Ok(Json(ApiResponse::ok_message("updated")))
 }
 
 pub async fn update_base_menu_by_id(
@@ -70,7 +70,7 @@ pub async fn update_base_menu_by_id(
     payload.id = id;
     system::menu::update_base_menu(&state.pool, payload).await?;
 
-    Ok(Json(ApiResponse::ok_message("更新成功")))
+    Ok(Json(ApiResponse::ok_message("updated")))
 }
 
 pub async fn delete_base_menu(
@@ -79,7 +79,7 @@ pub async fn delete_base_menu(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::menu::delete_base_menu(&state.pool, payload.id).await?;
 
-    Ok(Json(ApiResponse::ok_message("删除成功")))
+    Ok(Json(ApiResponse::ok_message("deleted")))
 }
 
 pub async fn delete_base_menu_by_id(
@@ -88,7 +88,7 @@ pub async fn delete_base_menu_by_id(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::menu::delete_base_menu(&state.pool, id).await?;
 
-    Ok(Json(ApiResponse::ok_message("删除成功")))
+    Ok(Json(ApiResponse::ok_message("deleted")))
 }
 
 pub async fn get_base_menu_by_id(
@@ -130,7 +130,7 @@ pub async fn add_menu_authority(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::menu::add_menu_authority(&state.pool, payload).await?;
 
-    Ok(Json(ApiResponse::ok_message("添加成功")))
+    Ok(Json(ApiResponse::ok_message("created")))
 }
 
 pub async fn get_menu_roles(
@@ -157,7 +157,7 @@ pub async fn set_menu_roles(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::menu::set_menu_roles(&state.pool, payload).await?;
 
-    Ok(Json(ApiResponse::ok_message("分配成功")))
+    Ok(Json(ApiResponse::ok_message("assigned")))
 }
 
 pub async fn set_menu_roles_by_id(
@@ -168,5 +168,5 @@ pub async fn set_menu_roles_by_id(
     payload.menu_id = menu_id;
     system::menu::set_menu_roles(&state.pool, payload).await?;
 
-    Ok(Json(ApiResponse::ok_message("分配成功")))
+    Ok(Json(ApiResponse::ok_message("assigned")))
 }

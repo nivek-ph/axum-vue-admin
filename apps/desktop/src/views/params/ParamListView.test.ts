@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { ElementCompat } from '@/ui/elementCompat'
+import { UiComponents } from '@/components/ui'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/api/params', () => ({
@@ -20,11 +20,11 @@ describe('ParamListView', () => {
   it('renders params heading', async () => {
     const wrapper = mount(ParamListView, {
       global: {
-        plugins: [ElementCompat]
+        plugins: [UiComponents]
       }
     })
 
     await Promise.resolve()
-    expect(wrapper.text()).toContain('参数管理')
+    expect(wrapper.text()).toContain('Param management')
   })
 })

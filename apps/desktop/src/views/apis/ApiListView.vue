@@ -2,21 +2,21 @@
   <div class="admin-page">
     <section class="page-hero">
       <div class="page-hero-main">
-        <span class="page-hero-kicker">API Registry</span>
-        <h2 class="page-hero-title">API 管理</h2>
-        <p class="page-hero-subtitle">围绕核心 admin 接口做注册、检索和角色授权，不再把非核心平台接口拉回桌面端。</p>
+        <span class="page-hero-kicker">{{ $t('API directory') }}</span>
+        <h2 class="page-hero-title">{{ $t('API management') }}</h2>
+        <p class="page-hero-subtitle">{{ $t('Register APIs, search endpoints, and manage role access.') }}</p>
 
         <div class="page-metrics">
           <div class="page-metric">
-            <div class="page-metric-label">当前页条目</div>
+            <div class="page-metric-label">{{ $t('Rows on page') }}</div>
             <div class="page-metric-value">{{ apis.length }}</div>
           </div>
           <div class="page-metric">
-            <div class="page-metric-label">接口总数</div>
+            <div class="page-metric-label">{{ $t('Total APIs') }}</div>
             <div class="page-metric-value">{{ total }}</div>
           </div>
           <div class="page-metric">
-            <div class="page-metric-label">接口分组</div>
+            <div class="page-metric-label">{{ $t('API group') }}</div>
             <div class="page-metric-value">{{ apiGroups.length }}</div>
           </div>
         </div>
@@ -24,12 +24,12 @@
 
       <aside class="page-hero-side">
         <div>
-          <div class="page-note-label">模块摘要</div>
+          <div class="page-note-label">{{ $t('Current data') }}</div>
           <div class="page-note-value">{{ summary }}</div>
         </div>
         <div class="page-hero-actions">
-          <el-button @click="loadApis" :loading="loading">刷新接口</el-button>
-          <el-button type="primary" @click="openCreateDialog">新增 API</el-button>
+          <UiButton @click="loadApis" :loading="loading">{{ $t('Refresh APIs') }}</UiButton>
+          <UiButton type="primary" @click="openCreateDialog">{{ $t('New API') }}</UiButton>
         </div>
       </aside>
     </section>
@@ -37,46 +37,46 @@
     <section class="page-panel">
       <div class="page-panel-header">
         <div>
-          <h3 class="page-panel-title">接口目录</h3>
-          <p class="page-panel-subtitle">按路径、描述与分组筛选，列表保持紧凑可读。</p>
+          <h3 class="page-panel-title">{{ $t('API directory') }}</h3>
+          <p class="page-panel-subtitle">{{ $t('Filter by path, description, group, and method.') }}</p>
         </div>
       </div>
 
       <div class="page-panel-toolbar inline-filter">
-        <el-input v-model="filters.path" placeholder="按路径过滤" clearable />
-        <el-input v-model="filters.description" placeholder="按描述过滤" clearable />
-        <el-select v-model="filters.apiGroup" clearable placeholder="分组">
-          <el-option v-for="group in apiGroups" :key="group" :label="group" :value="group" />
-        </el-select>
-        <el-select v-model="filters.method" clearable placeholder="方法">
-          <el-option v-for="item in methodOptions" :key="item" :label="item" :value="item" />
-        </el-select>
-        <el-button type="primary" @click="handleSearch">查询</el-button>
+        <UiInput v-model="filters.path" placeholder="Filter by path" clearable />
+        <UiInput v-model="filters.description" placeholder="Filter by description" clearable />
+        <UiSelect v-model="filters.apiGroup" clearable placeholder="Group">
+          <UiOption v-for="group in apiGroups" :key="group" :label="group" :value="group" />
+        </UiSelect>
+        <UiSelect v-model="filters.method" clearable placeholder="Method">
+          <UiOption v-for="item in methodOptions" :key="item" :label="item" :value="item" />
+        </UiSelect>
+        <UiButton type="primary" @click="handleSearch">{{ $t('Search') }}</UiButton>
       </div>
 
       <div class="surface-card">
-        <el-table :data="apis" v-loading="loading" style="width: 100%">
-          <el-table-column prop="ID" label="ID" width="80" />
-          <el-table-column prop="method" label="方法" width="100">
+        <UiTable :data="apis" :loading="loading" style="width: 100%">
+          <UiTableColumn prop="ID" label="ID" width="80" />
+          <UiTableColumn prop="method" label="Method" width="100">
             <template #default="{ row }">
-              <el-tag :type="methodTagType(row.method)">{{ row.method }}</el-tag>
+              <UiTag :type="methodTagType(row.method)">{{ row.method }}</UiTag>
             </template>
-          </el-table-column>
-          <el-table-column prop="path" label="路径" min-width="260" />
-          <el-table-column prop="description" label="描述" min-width="180" />
-          <el-table-column prop="apiGroup" label="分组" min-width="120" />
-          <el-table-column label="操作" width="260">
+          </UiTableColumn>
+          <UiTableColumn prop="path" label="Path" min-width="260" />
+          <UiTableColumn prop="description" label="Description" min-width="180" />
+          <UiTableColumn prop="apiGroup" label="Group" min-width="120" />
+          <UiTableColumn label="Actions" width="260">
             <template #default="{ row }">
-              <el-button link type="primary" @click="openEditDialog(row)">编辑</el-button>
-              <el-button link @click="openRoleDialog(row)">分配角色</el-button>
-              <el-button link type="danger" @click="handleDelete(row)">删除</el-button>
+              <UiButton link type="primary" @click="openEditDialog(row)">{{ $t('Edit') }}</UiButton>
+              <UiButton link @click="openRoleDialog(row)">{{ $t('Assign roles') }}</UiButton>
+              <UiButton link type="danger" @click="handleDelete(row)">{{ $t('Delete') }}</UiButton>
             </template>
-          </el-table-column>
-        </el-table>
+          </UiTableColumn>
+        </UiTable>
       </div>
 
       <div class="pagination">
-        <el-pagination
+        <UiPagination
           background
           layout="total, prev, pager, next"
           :total="total"
@@ -87,60 +87,60 @@
       </div>
     </section>
 
-    <el-dialog
+    <UiDialog
       v-model="dialogVisible"
-      :title="dialogMode === 'create' ? '新增 API' : '编辑 API'"
+      :title="dialogMode === 'create' ? 'New API' : 'Edit API'"
       width="560px"
     >
-      <el-form label-width="100px" @submit.prevent="submitApi">
-        <el-form-item label="请求方法">
-          <el-select v-model="form.method" class="w-full">
-            <el-option v-for="item in methodOptions" :key="item" :label="item" :value="item" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="接口路径">
-          <el-input v-model="form.path" placeholder="/api/users" />
-        </el-form-item>
-        <el-form-item label="接口描述">
-          <el-input v-model="form.description" placeholder="获取用户列表" />
-        </el-form-item>
-        <el-form-item label="接口分组">
-          <el-input v-model="form.apiGroup" placeholder="user" />
-        </el-form-item>
-      </el-form>
+      <UiForm labelWidth="100px" @submit.prevent="submitApi">
+        <UiFormItem label="Request method">
+          <UiSelect v-model="form.method" class="w-full">
+            <UiOption v-for="item in methodOptions" :key="item" :label="item" :value="item" />
+          </UiSelect>
+        </UiFormItem>
+        <UiFormItem label="API path">
+          <UiInput v-model="form.path" placeholder="/api/users" />
+        </UiFormItem>
+        <UiFormItem label="API description">
+          <UiInput v-model="form.description" placeholder="Get users" />
+        </UiFormItem>
+        <UiFormItem label="API group">
+          <UiInput v-model="form.apiGroup" placeholder="user" />
+        </UiFormItem>
+      </UiForm>
 
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="submitApi">保存</el-button>
+        <UiButton @click="dialogVisible = false">{{ $t('Cancel') }}</UiButton>
+        <UiButton type="primary" :loading="submitting" @click="submitApi">{{ $t('Save') }}</UiButton>
       </template>
-    </el-dialog>
+    </UiDialog>
 
-    <el-dialog v-model="roleDialogVisible" title="分配角色" width="520px">
+    <UiDialog v-model="roleDialogVisible" title="Assign roles" width="520px">
       <div class="dialog-summary">
         {{ selectedApi?.method }} {{ selectedApi?.path }}
       </div>
-      <el-select
+      <UiSelect
         v-model="selectedAuthorityIds"
         multiple
         filterable
         class="w-full"
-        placeholder="选择可访问角色"
+        placeholder="Select roles"
       >
-        <el-option
+        <UiOption
           v-for="authority in authorityOptions"
           :key="authority.authorityId"
           :label="`${authority.authorityName} (${authority.authorityId})`"
           :value="authority.authorityId"
         />
-      </el-select>
+      </UiSelect>
 
       <template #footer>
-        <el-button @click="roleDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="roleSubmitting" @click="submitApiRoles">
-          保存角色
-        </el-button>
+        <UiButton @click="roleDialogVisible = false">{{ $t('Cancel') }}</UiButton>
+        <UiButton type="primary" :loading="roleSubmitting" @click="submitApiRoles">
+          {{ $t('Save roles') }}
+        </UiButton>
       </template>
-    </el-dialog>
+    </UiDialog>
   </div>
 </template>
 
@@ -160,6 +160,7 @@ import {
   type ApiRecord
 } from '@/api/apis'
 import { usePageChrome } from '@/composables/usePageChrome'
+import { t } from '@/i18n'
 
 type DialogMode = 'create' | 'edit'
 
@@ -193,7 +194,7 @@ const form = reactive<ApiRecord>({
 })
 
 const authorityOptions = computed(() => flattenAuthorities(authorities.value))
-const { summary } = usePageChrome(apis, '条接口')
+const { summary } = usePageChrome(apis, 'APIs')
 
 function flattenAuthorities(list: AuthorityRecord[]): AuthorityRecord[] {
   return list.flatMap((item) => [item, ...flattenAuthorities(item.children || [])])
@@ -228,7 +229,7 @@ async function loadApis() {
     apis.value = result.list
     total.value = result.total
   } catch {
-    ElMessage.error('获取 API 列表失败')
+    ElMessage.error(t('Failed to load APIs'))
   } finally {
     loading.value = false
   }
@@ -240,7 +241,7 @@ async function loadBaseData() {
     apiGroups.value = groups
     authorities.value = authorityList
   } catch {
-    ElMessage.error('获取基础数据失败')
+    ElMessage.error(t('Failed to load base data'))
   }
 }
 
@@ -272,7 +273,7 @@ function openEditDialog(api: ApiRecord) {
 
 async function submitApi() {
   if (!form.path.trim() || !form.description.trim() || !form.apiGroup.trim()) {
-    ElMessage.warning('请填写完整 API 信息')
+    ElMessage.warning(t('Please complete API information'))
     return
   }
 
@@ -289,16 +290,16 @@ async function submitApi() {
       dialogMode.value === 'create' ? await createApi(payload) : await updateApi(payload)
 
     if (response.code === 'OK') {
-      ElMessage.success(dialogMode.value === 'create' ? 'API 已创建' : 'API 已更新')
+      ElMessage.success(t(dialogMode.value === 'create' ? 'API created' : 'API updated'))
       dialogVisible.value = false
       await loadBaseData()
       await loadApis()
       return
     }
 
-    ElMessage.error(response.message || '保存 API 失败')
+    ElMessage.error(response.message || t('Failed to save API'))
   } catch {
-    ElMessage.error('保存 API 失败')
+    ElMessage.error(t('Failed to save API'))
   } finally {
     submitting.value = false
   }
@@ -311,7 +312,7 @@ async function openRoleDialog(api: ApiRecord) {
     const selection = await fetchApiRoles(api.path, api.method)
     selectedAuthorityIds.value = selection.authorityIds
   } catch {
-    ElMessage.error('获取 API 角色失败')
+    ElMessage.error(t('Failed to load API roles'))
   }
 }
 
@@ -326,14 +327,14 @@ async function submitApiRoles() {
       selectedAuthorityIds.value
     )
     if (response.code === 'OK') {
-      ElMessage.success('API 角色已更新')
+      ElMessage.success(t('API roles updated'))
       roleDialogVisible.value = false
       return
     }
 
-    ElMessage.error(response.message || '保存 API 角色失败')
+    ElMessage.error(response.message || t('Failed to save API roles'))
   } catch {
-    ElMessage.error('保存 API 角色失败')
+    ElMessage.error(t('Failed to save API roles'))
   } finally {
     roleSubmitting.value = false
   }
@@ -341,7 +342,7 @@ async function submitApiRoles() {
 
 async function handleDelete(api: ApiRecord) {
   try {
-    await ElMessageBox.confirm(`确定删除接口“${api.method} ${api.path}”吗？`, '提示', {
+    await ElMessageBox.confirm(t('Delete API "{name}"?', { name: `${api.method} ${api.path}` }), t('Notice'), {
       type: 'warning'
     })
   } catch {
@@ -351,15 +352,15 @@ async function handleDelete(api: ApiRecord) {
   try {
     const response = await deleteApi(api.ID)
     if (response.code === 'OK') {
-      ElMessage.success('API 已删除')
+      ElMessage.success(t('API deleted'))
       await loadBaseData()
       await loadApis()
       return
     }
 
-    ElMessage.error(response.message || '删除 API 失败')
+    ElMessage.error(response.message || t('Failed to delete API'))
   } catch {
-    ElMessage.error('删除 API 失败')
+    ElMessage.error(t('Failed to delete API'))
   }
 }
 

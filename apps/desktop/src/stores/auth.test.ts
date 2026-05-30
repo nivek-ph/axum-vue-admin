@@ -23,7 +23,7 @@ describe('auth store', () => {
     store.setSession('token-123', {
       ID: 1,
       userName: 'admin',
-      nickName: '系统管理员'
+      nickName: 'System Administrator'
     })
 
     expect(store.token).toBe('token-123')
@@ -39,7 +39,7 @@ describe('auth store', () => {
     store.setSession('token-123', {
       ID: 1,
       userName: 'admin',
-      nickName: '系统管理员'
+      nickName: 'System Administrator'
     })
     store.clearToken()
 

@@ -18,7 +18,7 @@ describe('files api adapter', () => {
 
   it('normalizes category tree payload', () => {
     const result = normalizeCategoryListResponse({
-      data: [{ ID: 1, name: '图片', pid: 0, children: [] }]
+      data: [{ ID: 1, name: 'Images', pid: 0, children: [] }]
     })
 
     expect(result).toHaveLength(1)

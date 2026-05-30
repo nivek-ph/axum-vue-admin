@@ -9,8 +9,8 @@ describe('menu api adapter', () => {
         {
           ID: 1,
           name: 'dashboard',
-          meta: { title: '仪表盘' },
-          children: [{ ID: 2, name: 'users', meta: { title: '用户' } }]
+          meta: { title: 'Dashboard' },
+          children: [{ ID: 2, name: 'users', meta: { title: 'User' } }]
         }
       ]
     })

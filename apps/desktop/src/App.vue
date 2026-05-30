@@ -1,8 +1,8 @@
 <template>
-  <UApp>
+  <div class="app-root">
     <RouterView />
     <ToastHost />
-  </UApp>
+  </div>
 </template>
 
 <script setup lang="ts">

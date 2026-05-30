@@ -6,7 +6,7 @@ create table if not exists sys_users (
     nick_name text not null,
     header_img text not null,
     authority_id bigint not null default 888,
-    authority_name text not null default '超级管理员',
+    authority_name text not null default 'Super Admin',
     default_router text not null default 'dashboard',
     enable boolean not null default true,
     origin_setting jsonb,

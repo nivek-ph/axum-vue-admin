@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
-import { ElementCompat } from '@/ui/elementCompat'
+import { UiComponents } from '@/components/ui'
 import { createRouter, createMemoryHistory } from 'vue-router'
 
 import UserListView from './UserListView.vue'
@@ -13,10 +13,10 @@ describe('UserListView', () => {
     })
     const wrapper = mount(UserListView, {
       global: {
-        plugins: [ElementCompat, router]
+        plugins: [UiComponents, router]
       }
     })
 
-    expect(wrapper.text()).toContain('用户管理')
+    expect(wrapper.text()).toContain('Users')
   })
 })

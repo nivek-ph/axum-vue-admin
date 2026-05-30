@@ -174,7 +174,7 @@ impl AppError {
     }
 }
 
-const MSG_INTERNAL_GENERIC: &str = "服务器开小差了，请稍后再试";
+const MSG_INTERNAL_GENERIC: &str = "internal server error";
 
 fn public_response_message(kind: &ErrorKind, diagnostic: &str) -> String {
     match kind {
@@ -183,10 +183,10 @@ fn public_response_message(kind: &ErrorKind, diagnostic: &str) -> String {
         }
         ErrorKind::Http(status, _, _) => {
             if *status == StatusCode::REQUEST_TIMEOUT {
-                return "请求处理超时，请稍后再试".to_string();
+                return "request timed out".to_string();
             }
             if *status == StatusCode::SERVICE_UNAVAILABLE {
-                return "服务暂时不可用，请稍后再试".to_string();
+                return "service unavailable".to_string();
             }
             if status.is_server_error() {
                 return MSG_INTERNAL_GENERIC.to_string();

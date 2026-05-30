@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { ElementCompat } from '@/ui/elementCompat'
+import { UiComponents } from '@/components/ui'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/api/dictionaries', () => ({
@@ -16,11 +16,11 @@ describe('DictionaryListView', () => {
   it('renders dictionaries heading', async () => {
     const wrapper = mount(DictionaryListView, {
       global: {
-        plugins: [ElementCompat]
+        plugins: [UiComponents]
       }
     })
 
     await Promise.resolve()
-    expect(wrapper.text()).toContain('字典管理')
+    expect(wrapper.text()).toContain('Dictionary management')
   })
 })

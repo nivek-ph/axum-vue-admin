@@ -43,7 +43,7 @@ pub async fn delete_authority(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::authority::delete_authority(&state.pool, payload).await?;
 
-    Ok(Json(ApiResponse::ok_message("删除成功")))
+    Ok(Json(ApiResponse::ok_message("deleted")))
 }
 
 pub async fn delete_authority_by_id(
@@ -56,7 +56,7 @@ pub async fn delete_authority_by_id(
     )
     .await?;
 
-    Ok(Json(ApiResponse::ok_message("删除成功")))
+    Ok(Json(ApiResponse::ok_message("deleted")))
 }
 
 pub async fn copy_authority(
@@ -96,7 +96,7 @@ pub async fn set_role_users(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::authority::set_role_users(&state.pool, payload).await?;
 
-    Ok(Json(ApiResponse::ok_message("设置成功")))
+    Ok(Json(ApiResponse::ok_message("saved")))
 }
 
 pub async fn set_role_users_by_id(
@@ -107,9 +107,9 @@ pub async fn set_role_users_by_id(
     payload.authority_id = authority_id;
     system::authority::set_role_users(&state.pool, payload).await?;
 
-    Ok(Json(ApiResponse::ok_message("设置成功")))
+    Ok(Json(ApiResponse::ok_message("saved")))
 }
 
 pub async fn set_data_authority() -> Json<ApiResponse<Value>> {
-    Json(ApiResponse::ok_message("设置成功"))
+    Json(ApiResponse::ok_message("saved"))
 }

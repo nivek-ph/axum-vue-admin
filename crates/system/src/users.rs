@@ -159,15 +159,15 @@ pub struct LoginResult {
 
 #[derive(Debug, thiserror::Error)]
 pub enum LoginError {
-    #[error("用户名或密码错误")]
+    #[error("invalid username or password")]
     InvalidCredentials,
-    #[error("用户已被禁用")]
+    #[error("user is disabled")]
     Disabled,
-    #[error("用户不存在")]
+    #[error("user not found")]
     UserNotFound,
-    #[error("用户已存在")]
+    #[error("user already exists")]
     UserAlreadyExists,
-    #[error("密码错误")]
+    #[error("invalid password")]
     InvalidPassword,
     #[error("{0}")]
     Auth(#[from] AuthError),
@@ -201,6 +201,11 @@ pub async fn ensure_admin_user(
     nick_name: &str,
 ) -> Result<(), sqlx::Error> {
     if find_by_username(pool, username).await?.is_some() {
+        sqlx::query("update sys_users set nick_name = $1 where username = $2")
+            .bind(nick_name)
+            .bind(username)
+            .execute(pool)
+            .await?;
         return Ok(());
     }
 
@@ -232,7 +237,7 @@ pub async fn ensure_admin_user(
     .bind(nick_name)
     .bind("https://qmplusimg.henrongyi.top/gva_header.jpg")
     .bind(888_i64)
-    .bind("超级管理员")
+    .bind("Super Admin")
     .bind("dashboard")
     .execute(pool)
     .await?;

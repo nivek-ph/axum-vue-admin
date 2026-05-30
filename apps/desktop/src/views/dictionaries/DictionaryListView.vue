@@ -2,21 +2,21 @@
   <div class="admin-page">
     <section class="page-hero">
       <div class="page-hero-main">
-        <span class="page-hero-kicker">Dictionary Center</span>
-        <h2 class="page-hero-title">字典管理</h2>
-        <p class="page-hero-subtitle">字典页保留核心数据字典与明细树查看能力，便于后台基础数据维护。</p>
+        <span class="page-hero-kicker">{{ $t('Dictionaries') }}</span>
+        <h2 class="page-hero-title">{{ $t('Dictionary management') }}</h2>
+        <p class="page-hero-subtitle">{{ $t('Manage dictionaries and dictionary detail trees.') }}</p>
 
         <div class="page-metrics">
           <div class="page-metric">
-            <div class="page-metric-label">字典总数</div>
+            <div class="page-metric-label">{{ $t('Total dictionaries') }}</div>
             <div class="page-metric-value">{{ dictionaries.length }}</div>
           </div>
           <div class="page-metric">
-            <div class="page-metric-label">启用字典</div>
+            <div class="page-metric-label">{{ $t('Enabled dictionaries') }}</div>
             <div class="page-metric-value">{{ enabledCount }}</div>
           </div>
           <div class="page-metric">
-            <div class="page-metric-label">当前明细</div>
+            <div class="page-metric-label">{{ $t('Current details') }}</div>
             <div class="page-metric-value">{{ detailCount }}</div>
           </div>
         </div>
@@ -24,12 +24,12 @@
 
       <aside class="page-hero-side">
         <div>
-          <div class="page-note-label">模块摘要</div>
+          <div class="page-note-label">{{ $t('Current data') }}</div>
           <div class="page-note-value">{{ summary }}</div>
         </div>
         <div class="page-hero-actions">
-          <el-button @click="loadDictionaries" :loading="loading">刷新字典</el-button>
-          <el-button type="primary" @click="openCreateDialog">新增字典</el-button>
+          <UiButton @click="loadDictionaries" :loading="loading">{{ $t('Refresh dictionaries') }}</UiButton>
+          <UiButton type="primary" @click="openCreateDialog">{{ $t('New dictionary') }}</UiButton>
         </div>
       </aside>
     </section>
@@ -38,150 +38,150 @@
       <article class="page-panel">
         <div class="page-panel-header">
           <div>
-            <h3 class="page-panel-title">字典列表</h3>
-            <p class="page-panel-subtitle">选择字典后，右侧显示该字典的树形明细。</p>
+            <h3 class="page-panel-title">{{ $t('Dictionary list') }}</h3>
+            <p class="page-panel-subtitle">{{ $t('Select a dictionary to show its detail tree on the right.') }}</p>
           </div>
         </div>
 
         <div class="page-panel-toolbar inline-filter">
-          <el-input v-model="filters.name" placeholder="按名称过滤" clearable />
-          <el-button type="primary" @click="loadDictionaries">查询</el-button>
+          <UiInput v-model="filters.name" placeholder="Filter by name" clearable />
+          <UiButton type="primary" @click="loadDictionaries">{{ $t('Search') }}</UiButton>
         </div>
 
         <div class="surface-card">
-          <el-table
+          <UiTable
             :data="dictionaries"
-            v-loading="loading"
+            :loading="loading"
             highlight-current-row
             style="width: 100%"
             @current-change="handleSelectDictionary"
           >
-            <el-table-column prop="ID" label="ID" width="80" />
-            <el-table-column prop="name" label="名称" min-width="140" />
-            <el-table-column prop="type" label="类型" min-width="120" />
-            <el-table-column label="状态" width="100">
-              <template #default="{ row }">
-                <el-tag :type="row.status ? 'success' : 'info'">
-                  {{ row.status ? '启用' : '停用' }}
-                </el-tag>
+             <UiTableColumn prop="ID" label="ID" width="80" />
+          <UiTableColumn prop="name" label="Name" min-width="140" />
+          <UiTableColumn prop="type" label="Type" min-width="120" />
+          <UiTableColumn label="Status" width="100">
+            <template #default="{ row }">
+                <UiTag :type="row.status ? 'success' : 'info'">
+                  {{ $t(row.status ? 'Enabled' : 'Inactive') }}
+                </UiTag>
               </template>
-            </el-table-column>
-            <el-table-column label="操作" width="180">
-              <template #default="{ row }">
-                <el-button link type="primary" @click.stop="openEditDialog(row)">编辑</el-button>
-                <el-button link type="danger" @click.stop="handleDelete(row.ID)">删除</el-button>
+            </UiTableColumn>
+             <UiTableColumn label="Actions" width="180">
+            <template #default="{ row }">
+                <UiButton link type="primary" @click.stop="openEditDialog(row)">{{ $t('Edit') }}</UiButton>
+                <UiButton link type="danger" @click.stop="handleDelete(row.ID)">{{ $t('Delete') }}</UiButton>
               </template>
-            </el-table-column>
-          </el-table>
+            </UiTableColumn>
+          </UiTable>
         </div>
       </article>
 
       <article class="page-panel">
         <div class="page-panel-header">
           <div>
-            <h3 class="page-panel-title">字典明细</h3>
+            <h3 class="page-panel-title">{{ $t('Dictionary details') }}</h3>
             <p class="page-panel-subtitle">
-              {{ selectedDictionary ? `${selectedDictionary.name} (${selectedDictionary.type})` : '选择左侧字典查看明细树' }}
+              {{ selectedDictionary ? `${selectedDictionary.name} (${selectedDictionary.type})` : $t('Select a dictionary to view details') }}
             </p>
           </div>
         </div>
 
         <div class="surface-card">
-          <el-table
+          <UiTable
             :data="details"
             row-key="ID"
             default-expand-all
-            v-loading="detailLoading"
+            :loading="detailLoading"
             style="width: 100%"
           >
-            <el-table-column prop="label" label="标签" min-width="140" />
-            <el-table-column prop="value" label="值" min-width="140" />
-            <el-table-column prop="extend" label="扩展" min-width="140" />
-            <el-table-column prop="sort" label="排序" width="80" />
-            <el-table-column label="状态" width="100">
-              <template #default="{ row }">
-                <el-tag :type="row.status ? 'success' : 'info'">
-                  {{ row.status ? '启用' : '停用' }}
-                </el-tag>
+             <UiTableColumn prop="label" label="Label" min-width="140" />
+          <UiTableColumn prop="value" label="Value" min-width="140" />
+          <UiTableColumn prop="extend" label="Extra" min-width="140" />
+          <UiTableColumn prop="sort" label="Sort" width="80" />
+          <UiTableColumn label="Status" width="100">
+            <template #default="{ row }">
+                <UiTag :type="row.status ? 'success' : 'info'">
+                  {{ $t(row.status ? 'Enabled' : 'Inactive') }}
+                </UiTag>
               </template>
-            </el-table-column>
-            <el-table-column label="操作" width="240">
-              <template #default="{ row }">
-                <el-button link @click="openCreateChildDialog(row)">新增子项</el-button>
-                <el-button link type="primary" @click="openDetailDialog(row)">编辑</el-button>
-                <el-button link type="danger" @click="handleDeleteDetail(row.ID)">删除</el-button>
+            </UiTableColumn>
+             <UiTableColumn label="Actions" width="240">
+            <template #default="{ row }">
+                <UiButton link @click="openCreateChildDialog(row)">{{ $t('New child') }}</UiButton>
+                <UiButton link type="primary" @click="openDetailDialog(row)">{{ $t('Edit') }}</UiButton>
+                <UiButton link type="danger" @click="handleDeleteDetail(row.ID)">{{ $t('Delete') }}</UiButton>
               </template>
-            </el-table-column>
-          </el-table>
+            </UiTableColumn>
+          </UiTable>
         </div>
 
         <div class="page-panel-toolbar inline-filter detail-actions">
-          <el-button :disabled="!selectedDictionary" @click="openDetailDialog()">新增顶级明细</el-button>
+          <UiButton :disabled="!selectedDictionary" @click="openDetailDialog()">{{ $t('New root detail') }}</UiButton>
         </div>
       </article>
     </section>
 
-    <el-dialog v-model="dialogVisible" :title="dialogMode === 'create' ? '新增字典' : '编辑字典'" width="560px">
-      <el-form label-width="90px" @submit.prevent="submitDictionary">
-        <el-form-item label="名称">
-          <el-input v-model="form.name" placeholder="例如：状态字典" />
-        </el-form-item>
-        <el-form-item label="类型">
-          <el-input v-model="form.type" placeholder="例如：status" />
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-switch v-model="statusSwitch" active-text="启用" inactive-text="停用" />
-        </el-form-item>
-        <el-form-item label="说明">
-          <el-input v-model="form.desc" type="textarea" :rows="3" placeholder="字典说明" />
-        </el-form-item>
-      </el-form>
+    <UiDialog v-model="dialogVisible" :title="dialogMode === 'create' ? 'New dictionary' : 'Edit dictionary'" width="560px">
+      <UiForm labelWidth="90px" @submit.prevent="submitDictionary">
+        <UiFormItem label="Name">
+          <UiInput v-model="form.name" placeholder="Example: status dictionary" />
+        </UiFormItem>
+        <UiFormItem label="Type">
+          <UiInput v-model="form.type" placeholder="Example: status" />
+        </UiFormItem>
+        <UiFormItem label="Status">
+          <UiSwitch v-model="statusSwitch" active-text="Enabled" inactive-text="Inactive" />
+        </UiFormItem>
+        <UiFormItem label="Notes">
+          <UiInput v-model="form.desc" type="textarea" :rows="3" placeholder="Dictionary description" />
+        </UiFormItem>
+      </UiForm>
 
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="submitDictionary">保存</el-button>
+        <UiButton @click="dialogVisible = false">{{ $t('Cancel') }}</UiButton>
+        <UiButton type="primary" :loading="submitting" @click="submitDictionary">{{ $t('Save') }}</UiButton>
       </template>
-    </el-dialog>
+    </UiDialog>
 
-    <el-dialog
+    <UiDialog
       v-model="detailDialogVisible"
-      :title="detailDialogMode === 'create' ? '新增字典明细' : '编辑字典明细'"
+      :title="detailDialogMode === 'create' ? 'New detail' : 'Edit detail'"
       width="560px"
     >
-      <el-form label-width="100px" @submit.prevent="submitDetail">
-        <el-form-item label="父级明细">
-          <el-select v-model="detailForm.parentID" class="w-full" clearable>
-            <el-option :value="null" label="顶级明细" />
-            <el-option
+      <UiForm labelWidth="100px" @submit.prevent="submitDetail">
+        <UiFormItem label="Parent detail">
+          <UiSelect v-model="detailForm.parentID" class="w-full" clearable>
+            <UiOption :value="null" label="Root detail" />
+            <UiOption
               v-for="item in flattenedDetailOptions"
               :key="item.ID"
               :label="item.label"
               :value="item.ID"
             />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="标签">
-          <el-input v-model="detailForm.label" placeholder="例如：启用" />
-        </el-form-item>
-        <el-form-item label="值">
-          <el-input v-model="detailForm.value" placeholder="例如：enabled" />
-        </el-form-item>
-        <el-form-item label="扩展">
-          <el-input v-model="detailForm.extend" placeholder="扩展字段" />
-        </el-form-item>
-        <el-form-item label="排序">
-          <el-input-number v-model="detailForm.sort" :min="0" :precision="0" class="w-full" />
-        </el-form-item>
-        <el-form-item label="状态">
-          <el-switch v-model="detailStatusSwitch" active-text="启用" inactive-text="停用" />
-        </el-form-item>
-      </el-form>
+          </UiSelect>
+        </UiFormItem>
+        <UiFormItem label="Label">
+          <UiInput v-model="detailForm.label" placeholder="Example: enabled label" />
+        </UiFormItem>
+        <UiFormItem label="Value">
+          <UiInput v-model="detailForm.value" placeholder="Example: enabled value" />
+        </UiFormItem>
+        <UiFormItem label="Extra">
+          <UiInput v-model="detailForm.extend" placeholder="Extra field" />
+        </UiFormItem>
+        <UiFormItem label="Sort">
+          <UiInputNumber v-model="detailForm.sort" :min="0" :precision="0" class="w-full" />
+        </UiFormItem>
+        <UiFormItem label="Status">
+          <UiSwitch v-model="detailStatusSwitch" active-text="Enabled" inactive-text="Inactive" />
+        </UiFormItem>
+      </UiForm>
 
       <template #footer>
-        <el-button @click="detailDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="detailSubmitting" @click="submitDetail">保存</el-button>
+        <UiButton @click="detailDialogVisible = false">{{ $t('Cancel') }}</UiButton>
+        <UiButton type="primary" :loading="detailSubmitting" @click="submitDetail">{{ $t('Save') }}</UiButton>
       </template>
-    </el-dialog>
+    </UiDialog>
   </div>
 </template>
 
@@ -202,6 +202,7 @@ import {
   type DictionaryRecord
 } from '@/api/dictionaries'
 import { usePageChrome } from '@/composables/usePageChrome'
+import { t } from '@/i18n'
 
 type DialogMode = 'create' | 'edit'
 type DetailDialogMode = 'create' | 'edit'
@@ -239,7 +240,7 @@ const detailForm = reactive({
   sysDictionaryID: 0,
   parentID: null as number | null
 })
-const { summary } = usePageChrome(dictionaries, '条字典')
+const { summary } = usePageChrome(dictionaries, 'dictionaries')
 const enabledCount = computed(() => dictionaries.value.filter((item) => item.status).length)
 const detailCount = computed(() => flattenDetails(details.value).length)
 const flattenedDetailOptions = computed(() => flattenDetails(details.value))
@@ -286,7 +287,7 @@ async function loadDictionaries() {
       }
     }
   } catch {
-    ElMessage.error('获取字典列表失败')
+    ElMessage.error(t('Failed to load dictionaries'))
   } finally {
     loading.value = false
   }
@@ -297,7 +298,7 @@ async function loadDetails(sysDictionaryID: number) {
   try {
     details.value = await fetchDictionaryDetails(sysDictionaryID)
   } catch {
-    ElMessage.error('获取字典明细失败')
+    ElMessage.error(t('Failed to load dictionary details'))
   } finally {
     detailLoading.value = false
   }
@@ -324,7 +325,7 @@ function openEditDialog(item: DictionaryRecord) {
 
 function openDetailDialog(item?: DictionaryDetailRecord) {
   if (!selectedDictionary.value) {
-    ElMessage.warning('请先选择字典')
+    ElMessage.warning(t('Select a dictionary first'))
     return
   }
 
@@ -347,7 +348,7 @@ function openDetailDialog(item?: DictionaryDetailRecord) {
 
 function openCreateChildDialog(parent: DictionaryDetailRecord) {
   if (!selectedDictionary.value) {
-    ElMessage.warning('请先选择字典')
+    ElMessage.warning(t('Select a dictionary first'))
     return
   }
 
@@ -359,7 +360,7 @@ function openCreateChildDialog(parent: DictionaryDetailRecord) {
 
 async function submitDictionary() {
   if (!form.name.trim() || !form.type.trim()) {
-    ElMessage.warning('请填写完整字典信息')
+    ElMessage.warning(t('Please complete dictionary information'))
     return
   }
 
@@ -379,14 +380,14 @@ async function submitDictionary() {
         : await updateDictionary(payload)
 
     if (response.code === 'OK') {
-      ElMessage.success(dialogMode.value === 'create' ? '字典已创建' : '字典已更新')
+      ElMessage.success(t(dialogMode.value === 'create' ? 'Dictionary created' : 'Dictionary updated'))
       dialogVisible.value = false
       await loadDictionaries()
       return
     }
-    ElMessage.error(response.message || '保存字典失败')
+    ElMessage.error(response.message || t('Failed to save dictionary'))
   } catch {
-    ElMessage.error('保存字典失败')
+    ElMessage.error(t('Failed to save dictionary'))
   } finally {
     submitting.value = false
   }
@@ -394,7 +395,7 @@ async function submitDictionary() {
 
 async function handleDelete(id: number) {
   try {
-    await ElMessageBox.confirm('确定删除该字典吗？', '提示', { type: 'warning' })
+    await ElMessageBox.confirm(t('Delete this dictionary?'), t('Notice'), { type: 'warning' })
   } catch {
     return
   }
@@ -402,7 +403,7 @@ async function handleDelete(id: number) {
   try {
     const response = await deleteDictionary(id)
     if (response.code === 'OK') {
-      ElMessage.success('字典已删除')
+      ElMessage.success(t('Dictionary deleted'))
       if (selectedDictionary.value?.ID === id) {
         selectedDictionary.value = null
         details.value = []
@@ -410,16 +411,16 @@ async function handleDelete(id: number) {
       await loadDictionaries()
       return
     }
-    ElMessage.error(response.message || '删除字典失败')
+    ElMessage.error(response.message || t('Failed to delete dictionary'))
   } catch {
-    ElMessage.error('删除字典失败')
+    ElMessage.error(t('Failed to delete dictionary'))
   }
 }
 
 async function submitDetail() {
   if (!selectedDictionary.value) return
   if (!detailForm.label.trim() || !detailForm.value.trim()) {
-    ElMessage.warning('请填写完整明细信息')
+    ElMessage.warning(t('Please complete detail information'))
     return
   }
 
@@ -442,14 +443,14 @@ async function submitDetail() {
         : await updateDictionaryDetail(payload)
 
     if (response.code === 'OK') {
-      ElMessage.success(detailDialogMode.value === 'create' ? '字典明细已创建' : '字典明细已更新')
+      ElMessage.success(t(detailDialogMode.value === 'create' ? 'Dictionary detail created' : 'Dictionary detail updated'))
       detailDialogVisible.value = false
       await loadDetails(selectedDictionary.value.ID)
       return
     }
-    ElMessage.error(response.message || '保存字典明细失败')
+    ElMessage.error(response.message || t('Failed to save dictionary detail'))
   } catch {
-    ElMessage.error('保存字典明细失败')
+    ElMessage.error(t('Failed to save dictionary detail'))
   } finally {
     detailSubmitting.value = false
   }
@@ -459,7 +460,7 @@ async function handleDeleteDetail(id: number) {
   if (!selectedDictionary.value) return
 
   try {
-    await ElMessageBox.confirm('确定删除该字典明细吗？', '提示', { type: 'warning' })
+    await ElMessageBox.confirm(t('Delete this dictionary detail?'), t('Notice'), { type: 'warning' })
   } catch {
     return
   }
@@ -467,13 +468,13 @@ async function handleDeleteDetail(id: number) {
   try {
     const response = await deleteDictionaryDetail(id)
     if (response.code === 'OK') {
-      ElMessage.success('字典明细已删除')
+      ElMessage.success(t('Dictionary detail deleted'))
       await loadDetails(selectedDictionary.value.ID)
       return
     }
-    ElMessage.error(response.message || '删除字典明细失败')
+    ElMessage.error(response.message || t('Failed to delete dictionary detail'))
   } catch {
-    ElMessage.error('删除字典明细失败')
+    ElMessage.error(t('Failed to delete dictionary detail'))
   }
 }
 

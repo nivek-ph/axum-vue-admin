@@ -2,19 +2,19 @@
   <div class="admin-page">
     <section class="page-hero">
       <div class="page-hero-main">
-        <span class="page-hero-kicker">Overview</span>
-        <h2 class="page-hero-title">核心控制台</h2>
+        <span class="page-hero-kicker">{{ $t('Overview') }}</span>
+        <h2 class="page-hero-title">{{ $t('Dashboard') }}</h2>
         <p class="page-hero-subtitle">
-          桌面端只保留核心 admin 能力。你现在看到的是一套收敛后的后台壳，角色、菜单、API 和用户管理是当前主轴。
+          {{ $t('Central access to the main admin modules: users, roles, menus, and API permissions.') }}
         </p>
 
         <div class="page-metrics">
           <div class="page-metric">
-            <div class="page-metric-label">可用入口</div>
+            <div class="page-metric-label">{{ $t('Entries') }}</div>
             <div class="page-metric-value">{{ menuStore.items.length }}</div>
           </div>
           <div class="page-metric">
-            <div class="page-metric-label">当前身份</div>
+            <div class="page-metric-label">{{ $t('Current identity') }}</div>
             <div class="page-metric-value">{{ currentRole }}</div>
           </div>
         </div>
@@ -22,12 +22,12 @@
 
       <aside class="page-hero-side">
         <div>
-          <div class="page-note-label">当前摘要</div>
-          <div class="page-note-value">壳层、登录、用户、角色、菜单、API 已统一到同一套视觉语言。</div>
+          <div class="page-note-label">{{ $t('System overview') }}</div>
+          <div class="page-note-value">{{ $t('Users, roles, menus, and API management are available.') }}</div>
         </div>
         <div class="page-hero-actions">
-          <el-button @click="router.push('/users')">用户管理</el-button>
-          <el-button type="primary" @click="router.push('/roles')">角色管理</el-button>
+          <UiButton @click="router.push('/users')">{{ $t('Users') }}</UiButton>
+          <UiButton type="primary" @click="router.push('/roles')">{{ $t('Roles') }}</UiButton>
         </div>
       </aside>
     </section>
@@ -36,8 +36,8 @@
       <article class="page-panel">
         <div class="page-panel-header">
           <div>
-            <h3 class="page-panel-title">快捷入口</h3>
-            <p class="page-panel-subtitle">优先处理当前已经接好的核心页面。</p>
+            <h3 class="page-panel-title">{{ $t('Shortcuts') }}</h3>
+            <p class="page-panel-subtitle">{{ $t('Open the core pages that are already wired.') }}</p>
           </div>
         </div>
 
@@ -49,8 +49,8 @@
             type="button"
             @click="router.push(item.path)"
           >
-            <div class="shortcut-title">{{ item.title }}</div>
-            <div class="shortcut-subtitle">{{ item.description }}</div>
+            <div class="shortcut-title">{{ $t(item.title) }}</div>
+            <div class="shortcut-subtitle">{{ $t(item.description) }}</div>
           </button>
         </div>
       </article>
@@ -63,6 +63,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
+import { t } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useMenuStore } from '@/stores/menu'
 
@@ -70,13 +71,13 @@ const router = useRouter()
 const authStore = useAuthStore()
 const menuStore = useMenuStore()
 
-const currentRole = computed(() => authStore.userInfo?.authority?.authorityName || '访客')
+const currentRole = computed(() => authStore.userInfo?.authority?.authorityName || t('Guest'))
 
 const quickLinks = [
-  { path: '/users', title: '用户管理', description: '查看用户状态、重置密码、清理账号。' },
-  { path: '/roles', title: '角色管理', description: '维护角色树、默认路由和成员归属。' },
-  { path: '/menus', title: '菜单管理', description: '整理桌面端菜单结构和角色可见范围。' },
-  { path: '/apis', title: 'API 管理', description: '登记核心接口并分配角色访问权限。' }
+  { path: '/users', title: 'Users', description: 'Review user status, reset passwords, and remove accounts.' },
+  { path: '/roles', title: 'Roles', description: 'Manage role trees, default routes, and members.' },
+  { path: '/menus', title: 'Menus', description: 'Manage menu structure and role visibility.' },
+  { path: '/apis', title: 'API management', description: 'Register APIs and assign role access.' }
 ]
 </script>
 

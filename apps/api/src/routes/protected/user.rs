@@ -63,7 +63,7 @@ pub async fn admin_register(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::users::register_user(&state.pool, &state.password_service, payload).await?;
 
-    Ok(Json(ApiResponse::ok_message("注册成功")))
+    Ok(Json(ApiResponse::ok_message("registered")))
 }
 
 pub async fn change_password(
@@ -73,7 +73,7 @@ pub async fn change_password(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::users::change_password(&state.pool, &state.password_service, user.id, payload).await?;
 
-    Ok(Json(ApiResponse::ok_message("修改成功")))
+    Ok(Json(ApiResponse::ok_message("updated")))
 }
 
 pub async fn set_user_info(
@@ -82,7 +82,7 @@ pub async fn set_user_info(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::users::update_user(&state.pool, payload).await?;
 
-    Ok(Json(ApiResponse::ok_message("修改成功")))
+    Ok(Json(ApiResponse::ok_message("updated")))
 }
 
 pub async fn set_user_info_by_id(
@@ -93,7 +93,7 @@ pub async fn set_user_info_by_id(
     payload.id = id;
     system::users::update_user(&state.pool, payload).await?;
 
-    Ok(Json(ApiResponse::ok_message("修改成功")))
+    Ok(Json(ApiResponse::ok_message("updated")))
 }
 
 pub async fn set_self_info(
@@ -103,7 +103,7 @@ pub async fn set_self_info(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::users::set_self_info(&state.pool, user.id, payload).await?;
 
-    Ok(Json(ApiResponse::ok_message("修改成功")))
+    Ok(Json(ApiResponse::ok_message("updated")))
 }
 
 pub async fn set_self_setting(
@@ -113,7 +113,7 @@ pub async fn set_self_setting(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::users::set_self_setting(&state.pool, user.id, payload).await?;
 
-    Ok(Json(ApiResponse::ok_message("修改成功")))
+    Ok(Json(ApiResponse::ok_message("updated")))
 }
 
 pub async fn delete_user(
@@ -122,7 +122,7 @@ pub async fn delete_user(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::users::delete_user(&state.pool, payload).await?;
 
-    Ok(Json(ApiResponse::ok_message("删除成功")))
+    Ok(Json(ApiResponse::ok_message("deleted")))
 }
 
 pub async fn delete_user_by_id(
@@ -131,7 +131,7 @@ pub async fn delete_user_by_id(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::users::delete_user(&state.pool, system::users::DeleteUserRequest { id }).await?;
 
-    Ok(Json(ApiResponse::ok_message("删除成功")))
+    Ok(Json(ApiResponse::ok_message("deleted")))
 }
 
 pub async fn reset_password(
@@ -140,7 +140,7 @@ pub async fn reset_password(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::users::reset_password(&state.pool, &state.password_service, payload).await?;
 
-    Ok(Json(ApiResponse::ok_message("密码重置成功")))
+    Ok(Json(ApiResponse::ok_message("password reset")))
 }
 
 pub async fn reset_password_by_id(
@@ -151,7 +151,7 @@ pub async fn reset_password_by_id(
     payload.id = id;
     system::users::reset_password(&state.pool, &state.password_service, payload).await?;
 
-    Ok(Json(ApiResponse::ok_message("密码重置成功")))
+    Ok(Json(ApiResponse::ok_message("password reset")))
 }
 
 pub async fn set_user_authorities(
@@ -160,7 +160,7 @@ pub async fn set_user_authorities(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     system::users::set_user_authorities(&state.pool, payload).await?;
 
-    Ok(Json(ApiResponse::ok_message("角色设置成功")))
+    Ok(Json(ApiResponse::ok_message("role updated")))
 }
 
 pub async fn set_user_authorities_by_id(
@@ -171,7 +171,7 @@ pub async fn set_user_authorities_by_id(
     payload.id = id;
     system::users::set_user_authorities(&state.pool, payload).await?;
 
-    Ok(Json(ApiResponse::ok_message("角色设置成功")))
+    Ok(Json(ApiResponse::ok_message("role updated")))
 }
 
 pub async fn set_user_authority(
@@ -185,5 +185,5 @@ pub async fn set_user_authority(
         .ok_or_spec(errors::AUTHORITY_ID_REQUIRED)?;
     system::users::set_user_authority(&state.pool, user.id, authority_id).await?;
 
-    Ok(Json(ApiResponse::ok_message("切换成功")))
+    Ok(Json(ApiResponse::ok_message("switched")))
 }
