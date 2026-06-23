@@ -29,7 +29,7 @@
         </div>
         <div class="page-hero-actions">
           <UiButton @click="loadConfig" :loading="loading">{{ $t('Refresh config') }}</UiButton>
-          <UiButton type="primary" @click="router.push('/system-state')">{{ $t('View status') }}</UiButton>
+          <UiButton v-if="canViewStatus" type="primary" @click="router.push('/system-state')">{{ $t('View status') }}</UiButton>
         </div>
       </aside>
     </section>
@@ -101,8 +101,10 @@ import { ElMessage } from '@/ui/feedback'
 
 import { fetchSystemConfig, type SystemConfig } from '@/api/system'
 import { t } from '@/i18n'
+import { useMenuStore } from '@/stores/menu'
 
 const router = useRouter()
+const menuStore = useMenuStore()
 const loading = ref(false)
 const config = reactive<SystemConfig>({
   system: { env: '', addr: '', 'db-type': '' },
@@ -114,6 +116,7 @@ const addrLabel = computed(() => {
   if (!config.system.addr) return '-'
   return config.system.addr.replace('127.0.0.1:', ':')
 })
+const canViewStatus = computed(() => menuStore.canAccessRouteName('system-state'))
 
 async function loadConfig() {
   loading.value = true

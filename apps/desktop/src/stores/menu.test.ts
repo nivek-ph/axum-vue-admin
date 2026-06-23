@@ -1,9 +1,17 @@
+import { createPinia, setActivePinia } from 'pinia'
 import { describe, expect, it } from 'vitest'
 
-import { buildCoreMenuItems } from './menu'
+import { buildCoreMenuItems, useMenuStore } from './menu'
 
 describe('menu store helpers', () => {
-  it('keeps core menu coverage while applying backend labels and paths', () => {
+  it('keeps core menu coverage before remote access rules are loaded', () => {
+    const items = buildCoreMenuItems()
+
+    expect(items.some((item) => item.key === 'dashboard')).toBe(true)
+    expect(items.some((item) => item.key === 'roles')).toBe(true)
+  })
+
+  it('filters core menus to the remote menus available to the current role', () => {
     const items = buildCoreMenuItems([
       {
         name: 'users',
@@ -27,6 +35,41 @@ describe('menu store helpers', () => {
       label: 'Users',
       path: '/system/users'
     })
-    expect(items.some((item) => item.key === 'roles')).toBe(true)
+    expect(items.some((item) => item.key === 'roles')).toBe(false)
+  })
+
+  it('supports nested remote menu records from the backend tree', () => {
+    const items = buildCoreMenuItems([
+      {
+        name: 'system',
+        meta: { title: 'System' },
+        children: [
+          {
+            name: 'menus',
+            path: 'menus',
+            meta: { title: 'Menus' }
+          }
+        ]
+      }
+    ])
+
+    expect(items).toEqual([
+      {
+        key: 'menus',
+        label: 'Menus',
+        path: '/menus'
+      }
+    ])
+  })
+
+  it('falls back to profile when a role has no authorized menus', () => {
+    setActivePinia(createPinia())
+    const menuStore = useMenuStore()
+
+    menuStore.setAuthorizedMenus([])
+
+    expect(menuStore.firstAuthorizedPath()).toBe('/profile')
+    expect(menuStore.canAccessRouteName('dashboard')).toBe(false)
+    expect(menuStore.canAccessRouteName('profile')).toBe(true)
   })
 })

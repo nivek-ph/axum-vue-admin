@@ -1,0 +1,55 @@
+import { createPinia, setActivePinia } from 'pinia'
+import { describe, expect, it, vi } from 'vitest'
+
+import { getMenu, getUserInfo } from '@/api/auth'
+import { writeAuthSession } from './authStorage'
+import { bootstrapAuthSession } from './bootstrapAuth'
+import { useMenuStore } from './menu'
+
+vi.mock('@/api/auth', () => ({
+  getUserInfo: vi.fn(),
+  getMenu: vi.fn()
+}))
+
+describe('bootstrapAuthSession', () => {
+  it('restores the current user menu permissions from the backend', async () => {
+    setActivePinia(createPinia())
+    vi.mocked(getUserInfo).mockResolvedValue({
+      code: 'OK',
+      message: 'ok',
+      data: {
+        userInfo: {
+          ID: 1,
+          userName: 'operator',
+          nickName: 'Operator',
+          authority: {
+            authorityId: 999,
+            authorityName: 'Operator',
+            defaultRouter: 'dashboard'
+          }
+        }
+      }
+    })
+    vi.mocked(getMenu).mockResolvedValue({
+      code: 'OK',
+      message: 'ok',
+      data: {
+        menus: [{ name: 'dashboard', path: 'dashboard', meta: { title: 'Dashboard' } }]
+      }
+    })
+    writeAuthSession({
+      token: 'token-123',
+      userInfo: {
+        ID: 1,
+        userName: 'operator',
+        nickName: 'Operator'
+      }
+    })
+
+    await bootstrapAuthSession()
+
+    const menuStore = useMenuStore()
+    expect(menuStore.items).toEqual([{ key: 'dashboard', label: 'Dashboard', path: '/dashboard' }])
+    expect(menuStore.canAccessRouteName('roles')).toBe(false)
+  })
+})

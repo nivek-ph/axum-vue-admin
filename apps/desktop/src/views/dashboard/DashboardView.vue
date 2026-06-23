@@ -26,8 +26,14 @@
           <div class="page-note-value">{{ $t('Users, roles, menus, and API management are available.') }}</div>
         </div>
         <div class="page-hero-actions">
-          <UiButton @click="router.push('/users')">{{ $t('Users') }}</UiButton>
-          <UiButton type="primary" @click="router.push('/roles')">{{ $t('Roles') }}</UiButton>
+          <UiButton
+            v-for="action in heroActions"
+            :key="action.name"
+            :type="action.type"
+            @click="router.push(action.path)"
+          >
+            {{ $t(action.title) }}
+          </UiButton>
         </div>
       </aside>
     </section>
@@ -73,12 +79,19 @@ const menuStore = useMenuStore()
 
 const currentRole = computed(() => authStore.userInfo?.authority?.authorityName || t('Guest'))
 
-const quickLinks = [
-  { path: '/users', title: 'Users', description: 'Review user status, reset passwords, and remove accounts.' },
-  { path: '/roles', title: 'Roles', description: 'Manage role trees, default routes, and members.' },
-  { path: '/menus', title: 'Menus', description: 'Manage menu structure and role visibility.' },
-  { path: '/apis', title: 'API management', description: 'Register APIs and assign role access.' }
+const allQuickLinks = [
+  { name: 'users', path: '/users', title: 'Users', description: 'Review user status, reset passwords, and remove accounts.' },
+  { name: 'roles', path: '/roles', title: 'Roles', description: 'Manage role trees, default routes, and members.' },
+  { name: 'menus', path: '/menus', title: 'Menus', description: 'Manage menu structure and role visibility.' },
+  { name: 'apis', path: '/apis', title: 'API management', description: 'Register APIs and assign role access.' }
 ]
+const quickLinks = computed(() => allQuickLinks.filter((item) => menuStore.canAccessRouteName(item.name)))
+const heroActions = computed(() =>
+  [
+    { name: 'users', path: '/users', title: 'Users', type: 'default' },
+    { name: 'roles', path: '/roles', title: 'Roles', type: 'primary' }
+  ].filter((item) => menuStore.canAccessRouteName(item.name))
+)
 </script>
 
 <style scoped>

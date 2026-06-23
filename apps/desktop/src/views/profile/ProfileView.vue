@@ -29,9 +29,9 @@
           <div class="page-note-label">{{ $t('Identity') }}</div>
           <div class="page-note-value">{{ $t('Shows current account, role, and default route.') }}</div>
         </div>
-        <div class="page-hero-actions">
-          <UiButton @click="router.push('/dashboard')">{{ $t('Back to dashboard') }}</UiButton>
-          <UiButton type="primary" @click="router.push('/users')">{{ $t('View users') }}</UiButton>
+        <div v-if="canOpenDashboard || canOpenUsers" class="page-hero-actions">
+          <UiButton v-if="canOpenDashboard" @click="router.push('/dashboard')">{{ $t('Back to dashboard') }}</UiButton>
+          <UiButton v-if="canOpenUsers" type="primary" @click="router.push('/users')">{{ $t('View users') }}</UiButton>
         </div>
       </aside>
     </section>
@@ -63,12 +63,17 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useAuthStore } from '@/stores/auth'
+import { useMenuStore } from '@/stores/menu'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const menuStore = useMenuStore()
+const canOpenDashboard = computed(() => menuStore.canAccessRouteName('dashboard'))
+const canOpenUsers = computed(() => menuStore.canAccessRouteName('users'))
 </script>
 
 <style scoped>

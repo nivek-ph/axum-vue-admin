@@ -15,6 +15,7 @@ const zh: Record<string, string> = {
   'Default admin: admin / 123456': '默认管理员：admin / 123456',
   'Admin Console': '管理后台',
   'Local API': '本地 API',
+  Logout: '退出登录',
   'Not signed in': '未登录',
   Guest: '访客',
   Core: '核心管理',
