@@ -57,7 +57,9 @@
           <UiTableColumn label="Actions" width="260">
             <template #default="{ row }">
               <UiButton link type="primary" @click="openEditDialog(row)">{{ $t('Edit') }}</UiButton>
-              <UiButton link @click="openUserDialog(row)">{{ $t('Assign members') }}</UiButton>
+              <UiButton link data-test="assign-members-button" @click="openUserDialog(row)">
+                {{ $t('Assign members') }}
+              </UiButton>
               <UiButton
                 link
                 type="danger"
@@ -113,23 +115,47 @@
     </UiDialog>
 
     <UiDialog v-model="userDialogVisible" title="Assign members" width="520px">
-      <div class="dialog-summary">
-        {{ selectedAuthority?.authorityName || $t('Role') }}
+      <div class="member-panel">
+        <div class="member-panel-header">
+          <div>
+            <div class="member-role-label">{{ $t('Role') }}</div>
+            <div class="member-role-name">{{ selectedAuthority?.authorityName || '-' }}</div>
+          </div>
+          <div class="member-count">
+            <span>{{ $t('Selected members') }}</span>
+            <strong>{{ selectedUserIds.length }} / {{ userOptions.length }}</strong>
+          </div>
+        </div>
+
+        <UiInput v-model="memberSearch" placeholder="Search users" />
+
+        <div class="member-list" data-test="member-list">
+          <label
+            v-for="user in filteredUserOptions"
+            :key="user.ID"
+            :class="['member-card', selectedUserIds.includes(user.ID) && 'is-selected']"
+          >
+            <input
+              class="member-checkbox"
+              type="checkbox"
+              :checked="selectedUserIds.includes(user.ID)"
+              @change="toggleUserSelection(user.ID)"
+            />
+            <span class="member-checkmark">
+              <span v-if="selectedUserIds.includes(user.ID)">✓</span>
+            </span>
+            <span class="member-avatar">{{ userInitial(user) }}</span>
+            <span class="member-main">
+              <span class="member-name">{{ user.nickName || user.userName }}</span>
+              <span class="member-meta">{{ user.userName }}<span v-if="user.email"> · {{ user.email }}</span></span>
+            </span>
+          </label>
+
+          <div v-if="filteredUserOptions.length === 0" class="member-empty">
+            {{ $t(userOptions.length === 0 ? 'No users available' : 'No matching users') }}
+          </div>
+        </div>
       </div>
-      <UiSelect
-        v-model="selectedUserIds"
-        multiple
-        filterable
-        class="w-full"
-        placeholder="Select users"
-      >
-        <UiOption
-          v-for="user in userOptions"
-          :key="user.ID"
-          :label="`${user.nickName || user.userName} (${user.userName})`"
-          :value="user.ID"
-        />
-      </UiSelect>
 
       <template #footer>
         <UiButton @click="userDialogVisible = false">{{ $t('Cancel') }}</UiButton>
@@ -170,6 +196,7 @@ const userSubmitting = ref(false)
 const selectedAuthority = ref<AuthorityRecord | null>(null)
 const userOptions = ref<UserRecord[]>([])
 const selectedUserIds = ref<number[]>([])
+const memberSearch = ref('')
 const form = reactive({
   authorityId: 0,
   authorityName: '',
@@ -181,6 +208,15 @@ const authorityOptions = computed(() => flattenAuthorities(authorities.value))
 const { total, summary } = usePageChrome(authorities, 'roles')
 const rootRoleCount = computed(() => authorityOptions.value.filter((item) => item.parentId === 0).length)
 const defaultRouterLabel = computed(() => authorityOptions.value[0]?.defaultRouter || 'dashboard')
+const filteredUserOptions = computed(() => {
+  const keyword = memberSearch.value.trim().toLowerCase()
+  if (!keyword) return userOptions.value
+  return userOptions.value.filter((user) =>
+    [user.userName, user.nickName, user.email, user.phone]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(keyword))
+  )
+})
 
 function flattenAuthorities(list: AuthorityRecord[]): AuthorityRecord[] {
   return list.flatMap((item) => [item, ...flattenAuthorities(item.children || [])])
@@ -258,6 +294,7 @@ async function submitAuthority() {
 
 async function openUserDialog(authority: AuthorityRecord) {
   selectedAuthority.value = authority
+  memberSearch.value = ''
   userDialogVisible.value = true
   try {
     const [users, userIds] = await Promise.all([
@@ -269,6 +306,16 @@ async function openUserDialog(authority: AuthorityRecord) {
   } catch {
     ElMessage.error(t('Failed to load role members'))
   }
+}
+
+function toggleUserSelection(userId: number) {
+  selectedUserIds.value = selectedUserIds.value.includes(userId)
+    ? selectedUserIds.value.filter((id) => id !== userId)
+    : [...selectedUserIds.value, userId]
+}
+
+function userInitial(user: UserRecord) {
+  return (user.nickName || user.userName || '?').slice(0, 1).toUpperCase()
 }
 
 async function submitRoleUsers() {
@@ -318,6 +365,148 @@ onMounted(() => {
   loadAuthorities()
 })
 </script>
+
+<style scoped>
+.member-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.member-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid #e7e5e4;
+  border-radius: 14px;
+  background: #fafaf9;
+  padding: 14px;
+}
+
+.member-role-label,
+.member-count span {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.member-role-name {
+  margin-top: 4px;
+  color: #18181b;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.member-count {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+}
+
+.member-count strong {
+  color: #18181b;
+  font-size: 18px;
+}
+
+.member-list {
+  display: grid;
+  gap: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.member-card {
+  display: grid;
+  grid-template-columns: 22px 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-height: 58px;
+  border: 1px solid #e7e5e4;
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+}
+
+.member-card:hover,
+.member-card.is-selected {
+  border-color: #18181b;
+  background: #fafaf9;
+}
+
+.member-card.is-selected {
+  box-shadow: 0 8px 24px rgba(24, 24, 27, 0.08);
+}
+
+.member-checkbox {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.member-checkmark {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border: 1px solid #d6d3d1;
+  border-radius: 7px;
+  color: #ffffff;
+  background: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.member-card.is-selected .member-checkmark {
+  border-color: #18181b;
+  background: #18181b;
+}
+
+.member-avatar {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 999px;
+  background: #f5f5f4;
+  color: #27272a;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.member-main {
+  min-width: 0;
+}
+
+.member-name,
+.member-meta {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-name {
+  color: #18181b;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.member-meta {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.member-empty {
+  border: 1px dashed #d6d3d1;
+  border-radius: 14px;
+  padding: 24px;
+  color: var(--text-muted);
+  text-align: center;
+}
+</style>
 
 <style scoped>
 .dialog-summary {

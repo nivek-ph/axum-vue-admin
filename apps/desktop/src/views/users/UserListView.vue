@@ -29,7 +29,6 @@
         </div>
         <div class="page-hero-actions">
           <UiButton @click="loadUsers" :loading="loading">{{ $t('Refresh list') }}</UiButton>
-          <UiButton type="primary" @click="router.push('/roles')">{{ $t('View roles') }}</UiButton>
         </div>
       </aside>
     </section>
@@ -40,6 +39,9 @@
           <h3 class="page-panel-title">{{ $t('Accounts') }}</h3>
           <p class="page-panel-subtitle">{{ $t('Common actions stay inline for faster operation.') }}</p>
         </div>
+        <UiButton data-test="new-user-button" type="primary" @click="openCreateDialog">
+          {{ $t('New user') }}
+        </UiButton>
       </div>
 
       <div class="surface-card">
@@ -63,44 +65,137 @@
           </UiTableColumn>
           <UiTableColumn label="Actions" width="220">
             <template #default="{ row }">
-              <UiButton link type="primary" @click="handleResetPassword(row.ID)">{{ $t('Reset password') }}</UiButton>
+              <UiButton link @click="handleResetPassword(row.ID)">{{ $t('Reset password') }}</UiButton>
               <UiButton link type="danger" @click="handleDelete(row.ID)">{{ $t('Delete') }}</UiButton>
             </template>
           </UiTableColumn>
         </UiTable>
       </div>
     </section>
+
+    <UiDialog v-model="createDialogVisible" title="New user" width="560px">
+      <UiForm class="user-form" @submit.prevent="handleCreateUser">
+        <UiFormItem label="Username">
+          <UiInput v-model="createForm.userName" placeholder="Username" />
+        </UiFormItem>
+        <UiFormItem label="Nickname">
+          <UiInput v-model="createForm.nickName" placeholder="Nickname" />
+        </UiFormItem>
+        <UiFormItem label="Password">
+          <UiInput v-model="createForm.password" type="password" placeholder="Password" showPassword />
+        </UiFormItem>
+        <UiFormItem label="Role">
+          <UiSelect v-model="createForm.authorityId" data-test="user-role-select" placeholder="Select role">
+            <UiOption
+              v-for="role in roleOptions"
+              :key="role.authorityId"
+              :label="role.authorityName"
+              :value="role.authorityId"
+            />
+          </UiSelect>
+        </UiFormItem>
+        <UiFormItem label="Phone">
+          <UiInput v-model="createForm.phone" placeholder="Phone" />
+        </UiFormItem>
+        <UiFormItem label="Email">
+          <UiInput v-model="createForm.email" placeholder="Email" />
+        </UiFormItem>
+        <UiFormItem label="Status">
+          <UiSelect v-model="createForm.enable">
+            <UiOption label="Enabled" :value="1" />
+            <UiOption label="Disabled" :value="0" />
+          </UiSelect>
+        </UiFormItem>
+      </UiForm>
+      <template #footer>
+        <UiButton @click="createDialogVisible = false">{{ $t('Cancel') }}</UiButton>
+        <UiButton type="primary" :loading="createUserMutation.isPending.value" @click="handleCreateUser">
+          {{ $t('Create') }}
+        </UiButton>
+      </template>
+    </UiDialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from '@/ui/feedback'
 
 import { usePageChrome } from '@/composables/usePageChrome'
-import { deleteUser, fetchUsers, resetUserPassword, type UserRecord } from '@/api/users'
 import { getApiErrorMessage } from '@/api/http'
 import { t } from '@/i18n'
+import { useCreateUserMutation, useDeleteUserMutation, useResetUserPasswordMutation, useUserRolesQuery, useUsersQuery } from './userQueries'
 
-const router = useRouter()
-const users = ref<UserRecord[]>([])
-const loading = ref(false)
+const usersQuery = useUsersQuery()
+const rolesQuery = useUserRolesQuery()
+const createUserMutation = useCreateUserMutation()
+const deleteUserMutation = useDeleteUserMutation()
+const resetUserPasswordMutation = useResetUserPasswordMutation()
+const users = computed(() => usersQuery.data.value?.list || [])
+const loading = computed(() => usersQuery.isFetching.value || deleteUserMutation.isPending.value)
+const createDialogVisible = ref(false)
+const createForm = reactive({
+  userName: '',
+  nickName: '',
+  password: '123456',
+  phone: '',
+  email: '',
+  enable: 1,
+  authorityId: undefined as number | undefined
+})
 const { total, summary } = usePageChrome(users, 'users')
 const enabledCount = computed(() => users.value.filter((item) => item.enable === 1).length)
 const roleCount = computed(
   () => new Set(users.value.map((item) => item.authority?.authorityName).filter(Boolean)).size
 )
+const roleOptions = computed(() => rolesQuery.data.value || [])
+
+watch(roleOptions, (roles) => {
+  if (createDialogVisible.value && !createForm.authorityId) {
+    createForm.authorityId = roles[0]?.authorityId
+  }
+})
 
 async function loadUsers() {
-  loading.value = true
   try {
-    const result = await fetchUsers()
-    users.value = result.list
+    await usersQuery.refetch()
   } catch (err) {
     ElMessage.error(getApiErrorMessage(err, t('Failed to load users')))
-  } finally {
-    loading.value = false
+  }
+}
+
+function resetCreateForm() {
+  createForm.userName = ''
+  createForm.nickName = ''
+  createForm.password = '123456'
+  createForm.phone = ''
+  createForm.email = ''
+  createForm.enable = 1
+  createForm.authorityId = roleOptions.value[0]?.authorityId
+}
+
+function openCreateDialog() {
+  resetCreateForm()
+  createDialogVisible.value = true
+}
+
+async function handleCreateUser() {
+  if (!createForm.userName.trim() || !createForm.nickName.trim() || !createForm.password || !createForm.authorityId) {
+    ElMessage.error(t('Username, nickname, password, and role are required'))
+    return
+  }
+
+  try {
+    const res = await createUserMutation.mutateAsync({ ...createForm })
+    if (res.code === 'OK') {
+      ElMessage.success(t('Created'))
+      createDialogVisible.value = false
+      resetCreateForm()
+    } else {
+      ElMessage.error(res.message || t('Create failed'))
+    }
+  } catch (err) {
+    ElMessage.error(getApiErrorMessage(err, t('Create failed')))
   }
 }
 
@@ -114,10 +209,9 @@ async function handleDelete(id: number) {
   }
 
   try {
-    const res = await deleteUser(id)
+    const res = await deleteUserMutation.mutateAsync(id)
     if (res.code === 'OK') {
       ElMessage.success(t('Deleted'))
-      await loadUsers()
     } else {
       ElMessage.error(res.message || t('Delete failed'))
     }
@@ -128,7 +222,7 @@ async function handleDelete(id: number) {
 
 async function handleResetPassword(id: number) {
   try {
-    const res = await resetUserPassword(id, '123456')
+    const res = await resetUserPasswordMutation.mutateAsync({ id, password: '123456' })
     if (res.code === 'OK') {
       ElMessage.success(t('Password reset to 123456'))
     } else {
@@ -138,8 +232,11 @@ async function handleResetPassword(id: number) {
     ElMessage.error(getApiErrorMessage(err, t('Reset failed')))
   }
 }
-
-onMounted(() => {
-  loadUsers()
-})
 </script>
+
+<style scoped>
+.user-form {
+  display: grid;
+  gap: 14px;
+}
+</style>

@@ -1,7 +1,7 @@
-import { computed, type Ref } from 'vue'
+import { computed, type ComputedRef, type Ref } from 'vue'
 import { t } from '@/i18n'
 
-export function usePageChrome<T>(items: Ref<T[]>, subjectLabel: string) {
+export function usePageChrome<T>(items: Ref<T[]> | ComputedRef<T[]>, subjectLabel: string) {
   const total = computed(() => items.value.length)
   const translatedSubject = computed(() => t(subjectLabel))
   const nounLabel = computed(() => translatedSubject.value.replace(/^\p{Script=Han}/u, ''))

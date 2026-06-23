@@ -21,6 +21,26 @@ export interface UserListResult {
   pageSize: number
 }
 
+export interface CreateUserForm {
+  userName: string
+  nickName: string
+  password: string
+  phone?: string
+  email?: string
+  enable: number
+  authorityId?: number
+}
+
+export interface CreateUserPayload {
+  userName: string
+  nickName: string
+  passWord: string
+  phone?: string
+  email?: string
+  enable: number
+  authorityId?: number
+}
+
 export function normalizeUserListResponse(payload: any): UserListResult {
   return {
     list: payload?.data?.list || [],
@@ -30,12 +50,28 @@ export function normalizeUserListResponse(payload: any): UserListResult {
   }
 }
 
+export function buildCreateUserPayload(form: CreateUserForm): CreateUserPayload {
+  return {
+    userName: form.userName.trim(),
+    nickName: form.nickName.trim(),
+    passWord: form.password,
+    phone: form.phone?.trim() || undefined,
+    email: form.email?.trim() || undefined,
+    enable: form.enable,
+    authorityId: form.authorityId
+  }
+}
+
 export async function fetchUsers(page = 1, pageSize = 10) {
   const res = await http.get('/users', {
     ...withAuthHeaders(),
     params: { page, pageSize }
   })
   return normalizeUserListResponse(res)
+}
+
+export async function createUser(form: CreateUserForm) {
+  return http.post('/users', buildCreateUserPayload(form), withAuthHeaders())
 }
 
 export async function deleteUser(id: number) {

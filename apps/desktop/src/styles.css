@@ -583,6 +583,79 @@ textarea.compat-input {
   color: #92400e;
 }
 
+.app-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: rgba(24, 24, 27, 0.34);
+  padding: 18px;
+}
+
+.app-confirm {
+  width: min(420px, 100%);
+  border: 1px solid rgba(60, 60, 67, 0.18);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.18), 0 4px 16px rgba(0, 0, 0, 0.08);
+  padding: 20px;
+  backdrop-filter: saturate(180%) blur(18px);
+}
+
+.app-confirm-header h2 {
+  margin: 0;
+  color: #1d1d1f;
+  font-size: 18px;
+  font-weight: 750;
+}
+
+.app-confirm-message {
+  margin: 14px 0 0;
+  color: rgba(60, 60, 67, 0.78);
+  font-size: 15px;
+  font-weight: 560;
+  line-height: 1.55;
+}
+
+.app-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.app-confirm-button {
+  min-height: 40px;
+  border-radius: 12px;
+  padding: 0 16px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+.app-confirm-button--default {
+  border: 1px solid rgba(60, 60, 67, 0.2);
+  background: #ffffff;
+  color: #1d1d1f;
+}
+
+.app-confirm-button--default:hover {
+  background: #f5f5f7;
+}
+
+.app-confirm-button--primary {
+  border: 1px solid #1d1d1f;
+  background: #1d1d1f;
+  color: #ffffff;
+}
+
+.app-confirm-button--primary:hover {
+  background: #333336;
+}
+
 .inline-filter {
   display: flex;
   flex-wrap: wrap;

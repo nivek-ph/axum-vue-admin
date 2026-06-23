@@ -7,6 +7,9 @@
     <section
       class="max-h-[90vh] w-full overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-2xl"
       :style="{ maxWidth: width || '560px' }"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="title ? t(title) : undefined"
       @click.stop
     >
       <header class="flex items-center justify-between gap-4 border-b border-stone-200 px-5 py-4">
@@ -14,6 +17,7 @@
         <button
           type="button"
           class="grid h-8 w-8 place-items-center rounded-lg text-xl text-zinc-500 transition hover:bg-stone-100 hover:text-zinc-900"
+          aria-label="Close"
           @click="$emit('update:modelValue', false)"
         >
           ×
