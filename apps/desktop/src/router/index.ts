@@ -2,6 +2,7 @@ import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-rou
 
 import AppLayout from '@/layouts/AppLayout.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useMenuStore } from '@/stores/menu'
 
 const LoginView = () => import('@/views/auth/LoginView.vue')
 const DashboardView = () => import('@/views/dashboard/DashboardView.vue')
@@ -50,11 +51,15 @@ export function createAppRouter() {
 
   router.beforeEach((to) => {
     const authStore = useAuthStore()
+    const menuStore = useMenuStore()
     if (to.name !== 'login' && !authStore.isAuthenticated) {
       return { name: 'login' }
     }
     if (to.name === 'login' && authStore.isAuthenticated) {
       return { name: 'dashboard' }
+    }
+    if (!menuStore.canAccessRouteName(to.name)) {
+      return { name: menuStore.firstAuthorizedRouteName() }
     }
     return true
   })

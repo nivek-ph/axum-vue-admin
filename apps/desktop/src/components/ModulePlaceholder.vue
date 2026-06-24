@@ -29,7 +29,7 @@
         </div>
         <div class="page-hero-actions">
           <UiButton @click="router.back()">{{ $t('Back') }}</UiButton>
-          <UiButton type="primary" @click="router.push(primaryActionPath)">
+          <UiButton v-if="canOpenPrimaryAction" type="primary" @click="router.push(primaryActionPath)">
             {{ $t(primaryActionLabel) }}
           </UiButton>
         </div>
@@ -64,9 +64,12 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-withDefaults(
+import { useMenuStore } from '@/stores/menu'
+
+const props = withDefaults(
   defineProps<{
     kicker: string
     title: string
@@ -90,6 +93,8 @@ withDefaults(
 )
 
 const router = useRouter()
+const menuStore = useMenuStore()
+const canOpenPrimaryAction = computed(() => menuStore.canAccessPath(props.primaryActionPath))
 </script>
 
 <style scoped>

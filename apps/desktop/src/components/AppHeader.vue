@@ -22,13 +22,25 @@
           </div>
         </div>
       </div>
+      <button
+        v-if="authStore.isAuthenticated"
+        class="logout-button"
+        type="button"
+        data-test="logout-button"
+        :aria-label="$t('Logout')"
+        :title="$t('Logout')"
+        @click="logout"
+      >
+        <LogOut :size="17" />
+      </button>
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
+import { LogOut } from '@lucide/vue'
 import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import LanguageSwitch from '@/components/LanguageSwitch.vue'
 import { t } from '@/i18n'
@@ -38,6 +50,7 @@ import { useMenuStore } from '@/stores/menu'
 const authStore = useAuthStore()
 const menuStore = useMenuStore()
 const route = useRoute()
+const router = useRouter()
 
 const currentTitle = computed(() => {
   const matched = menuStore.items.find((item) => item.path === route.path)
@@ -48,6 +61,12 @@ const userInitial = computed(() => {
   const source = authStore.userInfo?.nickName || authStore.userInfo?.userName || 'A'
   return source.slice(0, 1).toUpperCase()
 })
+
+function logout() {
+  authStore.clearToken()
+  menuStore.resetAccess()
+  router.replace('/login')
+}
 </script>
 
 <style scoped>
@@ -127,5 +146,28 @@ const userInitial = computed(() => {
   margin-top: 2px;
   color: var(--text-muted);
   font-size: 12px;
+}
+
+.logout-button {
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  border: 1px solid var(--panel-border);
+  background: #ffffff;
+  color: #52525b;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease,
+    color 0.16s ease;
+}
+
+.logout-button:hover {
+  border-color: #d4d4d8;
+  background: #f7f7f8;
+  color: #18181b;
 }
 </style>

@@ -47,7 +47,7 @@ import { getMenu, getUserInfo, login } from '@/api/auth'
 import { getApiErrorMessage } from '@/api/http'
 import { t } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
-import { buildCoreMenuItems, useMenuStore } from '@/stores/menu'
+import { isSuperAdminAuthority, useMenuStore } from '@/stores/menu'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -69,18 +69,31 @@ async function handleLogin() {
       ElMessage.error(res.message || t('Sign in failed'))
       return
     }
-    authStore.setSession(res.data.token, res.data.user)
+    const loginToken = res.data?.token
+    const loginUser = res.data?.user
+    if (!loginToken || !loginUser) {
+      authStore.clearToken()
+      menuStore.resetAccess()
+      ElMessage.error(res.message || t('Sign in failed'))
+      return
+    }
+
+    authStore.setSession(loginToken, loginUser)
     const [userInfoRes, menuRes] = await Promise.all([
-      getUserInfo(res.data.token),
-      getMenu(res.data.token)
+      getUserInfo(loginToken),
+      getMenu(loginToken)
     ])
-    if (userInfoRes.code === 'OK') {
-      authStore.setSession(res.data.token, userInfoRes.data.userInfo)
+    if (menuRes.code !== 'OK') {
+      authStore.clearToken()
+      menuStore.resetAccess()
+      ElMessage.error(menuRes.message || t('Failed to load menus'))
+      return
     }
-    if (menuRes.code === 'OK') {
-      menuStore.setItems(buildCoreMenuItems(menuRes.data.menus || []))
-    }
-    await router.push('/dashboard')
+
+    const currentUser = userInfoRes.code === 'OK' ? userInfoRes.data?.userInfo || loginUser : loginUser
+    authStore.setSession(loginToken, currentUser)
+    menuStore.setAuthorizedMenus(menuRes.data?.menus || [], isSuperAdminAuthority(currentUser.authority?.authorityId))
+    await router.push(menuStore.firstAuthorizedPath())
   } catch (err) {
     ElMessage.error(getApiErrorMessage(err, t('Sign in failed')))
   } finally {

@@ -29,7 +29,7 @@
         </div>
         <div class="page-hero-actions">
           <UiButton @click="loadState" :loading="loading">{{ $t('Refresh status') }}</UiButton>
-          <UiButton type="primary" @click="router.push('/system-config')">{{ $t('View config') }}</UiButton>
+          <UiButton v-if="canViewConfig" type="primary" @click="router.push('/system-config')">{{ $t('View config') }}</UiButton>
         </div>
       </aside>
     </section>
@@ -106,8 +106,10 @@ import {
   type SystemConfig
 } from '@/api/system'
 import { t } from '@/i18n'
+import { useMenuStore } from '@/stores/menu'
 
 const router = useRouter()
+const menuStore = useMenuStore()
 const loading = ref(false)
 const config = reactive<SystemConfig>({
   system: { env: '', addr: '', 'db-type': '' },
@@ -131,6 +133,7 @@ const diskPreview = computed(() => {
   if (!disk) return '-'
   return `${disk.mountPoint} · ${disk.usedGb}/${disk.totalGb} GB`
 })
+const canViewConfig = computed(() => menuStore.canAccessRouteName('system-config'))
 
 async function loadState() {
   loading.value = true

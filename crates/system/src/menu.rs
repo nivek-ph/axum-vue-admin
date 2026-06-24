@@ -1,3 +1,5 @@
+use std::collections::{HashMap, HashSet};
+
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
@@ -214,6 +216,17 @@ pub async fn get_menu_tree_for_authority(
     pool: &sqlx::PgPool,
     authority_id: i64,
 ) -> Result<Vec<MenuView>, MenuError> {
+    let authorized_menu_ids: Vec<i64> = sqlx::query_scalar(
+        "select menu_id from sys_role_menus where authority_id = $1 order by menu_id",
+    )
+    .bind(authority_id)
+    .fetch_all(pool)
+    .await?;
+
+    if authorized_menu_ids.is_empty() {
+        return Ok(Vec::new());
+    }
+
     let rows = sqlx::query_as::<_, MenuRecord>(
         r#"
         select
@@ -234,14 +247,12 @@ pub async fn get_menu_tree_for_authority(
             m.parameters,
             m.menu_btn
         from sys_menus m
-        inner join sys_role_menus rm on rm.menu_id = m.id
-        where rm.authority_id = $1
         order by m.sort asc, m.id asc
         "#,
     )
-    .bind(authority_id)
     .fetch_all(pool)
     .await?;
+    let rows = filter_authorized_with_ancestors(&rows, &authorized_menu_ids);
 
     Ok(build_tree(&rows, 0))
 }
@@ -489,6 +500,35 @@ async fn replace_authority_menus(
     Ok(())
 }
 
+fn filter_authorized_with_ancestors(
+    rows: &[MenuRecord],
+    authorized_menu_ids: &[i64],
+) -> Vec<MenuRecord> {
+    let rows_by_id = rows
+        .iter()
+        .map(|row| (row.id, row))
+        .collect::<HashMap<_, _>>();
+    let mut included_ids = HashSet::new();
+
+    for menu_id in authorized_menu_ids {
+        let mut current_id = *menu_id;
+        while current_id != 0 {
+            let Some(row) = rows_by_id.get(&current_id) else {
+                break;
+            };
+            if !included_ids.insert(current_id) {
+                break;
+            }
+            current_id = row.parent_id;
+        }
+    }
+
+    rows.iter()
+        .filter(|row| included_ids.contains(&row.id))
+        .cloned()
+        .collect()
+}
+
 fn build_tree(rows: &[MenuRecord], parent_id: i64) -> Vec<MenuView> {
     let mut menus = rows
         .iter()
@@ -552,4 +592,43 @@ pub struct MenuRoleSelection {
     pub authority_ids: Vec<i64>,
     #[serde(rename = "defaultRouterAuthorityIds")]
     pub default_router_authority_ids: Vec<i64>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn menu_record(id: i64, parent_id: i64, name: &str) -> MenuRecord {
+        MenuRecord {
+            id,
+            parent_id,
+            path: name.to_string(),
+            name: name.to_string(),
+            hidden: false,
+            component: format!("view/{name}.vue"),
+            sort: id as i32,
+            active_name: String::new(),
+            keep_alive: false,
+            default_menu: false,
+            title: name.to_string(),
+            icon: String::new(),
+            close_tab: false,
+            transition_type: String::new(),
+            parameters: Some(serde_json::json!([])),
+            menu_btn: Some(serde_json::json!([])),
+        }
+    }
+
+    #[test]
+    fn keeps_ancestors_for_authorized_child_menus() {
+        let rows = vec![menu_record(1, 0, "system"), menu_record(2, 1, "users")];
+
+        let filtered = filter_authorized_with_ancestors(&rows, &[2]);
+        let tree = build_tree(&filtered, 0);
+
+        assert_eq!(tree.len(), 1);
+        assert_eq!(tree[0].name, "system");
+        assert_eq!(tree[0].children.len(), 1);
+        assert_eq!(tree[0].children[0].name, "users");
+    }
 }
