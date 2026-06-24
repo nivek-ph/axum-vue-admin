@@ -69,14 +69,20 @@ async function handleLogin() {
       ElMessage.error(res.message || t('Sign in failed'))
       return
     }
-    authStore.setSession(res.data.token, res.data.user)
-    const [userInfoRes, menuRes] = await Promise.all([
-      getUserInfo(res.data.token),
-      getMenu(res.data.token)
-    ])
-    if (userInfoRes.code === 'OK') {
-      authStore.setSession(res.data.token, userInfoRes.data.userInfo)
+    const loginToken = res.data?.token
+    const loginUser = res.data?.user
+    if (!loginToken || !loginUser) {
+      authStore.clearToken()
+      menuStore.resetAccess()
+      ElMessage.error(res.message || t('Sign in failed'))
+      return
     }
+
+    authStore.setSession(loginToken, loginUser)
+    const [userInfoRes, menuRes] = await Promise.all([
+      getUserInfo(loginToken),
+      getMenu(loginToken)
+    ])
     if (menuRes.code !== 'OK') {
       authStore.clearToken()
       menuStore.resetAccess()
@@ -84,8 +90,9 @@ async function handleLogin() {
       return
     }
 
-    const currentUser = userInfoRes.code === 'OK' ? userInfoRes.data.userInfo : res.data.user
-    menuStore.setAuthorizedMenus(menuRes.data.menus || [], isSuperAdminAuthority(currentUser.authority?.authorityId))
+    const currentUser = userInfoRes.code === 'OK' ? userInfoRes.data?.userInfo || loginUser : loginUser
+    authStore.setSession(loginToken, currentUser)
+    menuStore.setAuthorizedMenus(menuRes.data?.menus || [], isSuperAdminAuthority(currentUser.authority?.authorityId))
     await router.push(menuStore.firstAuthorizedPath())
   } catch (err) {
     ElMessage.error(getApiErrorMessage(err, t('Sign in failed')))

@@ -1,0 +1,82 @@
+import { flushPromises, mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
+import { createMemoryHistory, createRouter } from 'vue-router'
+import { describe, expect, it, vi } from 'vitest'
+
+import { getMenu, getUserInfo, login } from '@/api/auth'
+import { UiComponents } from '@/components/ui'
+import { ElMessage } from '@/ui/feedback'
+import { useAuthStore } from '@/stores/auth'
+import { useMenuStore } from '@/stores/menu'
+import LoginView from './LoginView.vue'
+
+vi.mock('@/api/auth', () => ({
+  login: vi.fn(),
+  getUserInfo: vi.fn(),
+  getMenu: vi.fn()
+}))
+
+vi.mock('@/ui/feedback', () => ({
+  ElMessage: {
+    error: vi.fn()
+  }
+}))
+
+describe('LoginView', () => {
+  it('handles successful login responses with missing optional menu details', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/login', name: 'login', component: LoginView },
+        { path: '/profile', name: 'profile', component: { template: '<div />' } }
+      ]
+    })
+    vi.mocked(login).mockResolvedValue({
+      code: 'OK',
+      message: 'ok',
+      data: {
+        token: 'token-123',
+        user: {
+          ID: 1,
+          userName: 'operator',
+          nickName: 'Operator',
+          authority: {
+            authorityId: 999,
+            authorityName: 'Operator',
+            defaultRouter: 'dashboard'
+          }
+        }
+      }
+    })
+    vi.mocked(getUserInfo).mockResolvedValue({
+      code: 'OK',
+      message: 'ok',
+      data: {}
+    } as Awaited<ReturnType<typeof getUserInfo>>)
+    vi.mocked(getMenu).mockResolvedValue({
+      code: 'OK',
+      message: 'ok',
+      data: {}
+    } as Awaited<ReturnType<typeof getMenu>>)
+    await router.push('/login')
+    await router.isReady()
+
+    const wrapper = mount(LoginView, {
+      global: {
+        plugins: [UiComponents, pinia, router]
+      }
+    })
+
+    await wrapper.find('button.w-full').trigger('click')
+    await flushPromises()
+
+    const authStore = useAuthStore()
+    const menuStore = useMenuStore()
+    expect(authStore.isAuthenticated).toBe(true)
+    expect(menuStore.firstAuthorizedPath()).toBe('/profile')
+    expect(router.currentRoute.value.name).toBe('profile')
+    expect(ElMessage.error).not.toHaveBeenCalled()
+  })
+})

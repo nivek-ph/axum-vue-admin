@@ -33,6 +33,7 @@ export interface RemoteMenuItem {
 }
 
 const coreMenuKeys = new Set(coreMenuItems.map((item) => item.key))
+const coreMenuByKey = new Map(coreMenuItems.map((item) => [item.key, item]))
 const unrestrictedRouteNames = new Set(['login', 'profile'])
 
 function normalizePath(path: string) {
@@ -51,14 +52,17 @@ export function buildCoreMenuItems(remoteMenus?: RemoteMenuItem[]) {
   const remoteMap = new Map(
     flattenRemoteMenus(remoteMenus)
       .filter((item) => item.name && coreMenuKeys.has(item.name))
-      .map((item) => [
-        item.name,
-        {
-          key: item.name,
-          label: item.meta?.title || item.name,
-          path: `/${(item.path || item.name).replace(/^\/+/, '')}`
-        } satisfies CoreMenuItem
-      ])
+      .map((item) => {
+        const coreItem = coreMenuByKey.get(item.name)
+        return [
+          item.name,
+          {
+            key: item.name,
+            label: item.meta?.title || coreItem?.label || item.name,
+            path: coreItem?.path || normalizePath(item.name)
+          } satisfies CoreMenuItem
+        ]
+      })
   )
 
   return coreMenuItems.filter((item) => remoteMap.has(item.key)).map((item) => remoteMap.get(item.key) || item)

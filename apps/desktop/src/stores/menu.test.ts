@@ -28,12 +28,12 @@ describe('menu store helpers', () => {
     expect(items).toContainEqual({
       key: 'dashboard',
       label: 'Workbench',
-      path: '/home'
+      path: '/dashboard'
     })
     expect(items).toContainEqual({
       key: 'users',
       label: 'Users',
-      path: '/system/users'
+      path: '/users'
     })
     expect(items.some((item) => item.key === 'roles')).toBe(false)
   })

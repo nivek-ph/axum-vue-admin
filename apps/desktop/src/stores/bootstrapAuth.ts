@@ -22,10 +22,16 @@ export async function bootstrapAuthSession() {
       return;
     }
 
-    const userInfo = userInfoResponse.data.userInfo;
+    const userInfo = userInfoResponse.data?.userInfo;
+    if (!userInfo) {
+      authStore.clearToken();
+      menuStore.resetAccess();
+      return;
+    }
+
     authStore.setSession(authStore.token, userInfo);
     menuStore.setAuthorizedMenus(
-      menuResponse.data.menus || [],
+      menuResponse.data?.menus || [],
       isSuperAdminAuthority(userInfo.authority?.authorityId)
     );
   } catch {
