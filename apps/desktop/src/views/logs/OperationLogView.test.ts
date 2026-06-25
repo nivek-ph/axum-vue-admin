@@ -25,5 +25,7 @@ describe('OperationLogView', () => {
 
     await Promise.resolve()
     expect(wrapper.text()).toContain('Operation logs')
+    expect(wrapper.find('.page-panel-actions').text()).not.toContain('Search')
+    expect(wrapper.find('.operation-log-filter').text()).toContain('Search')
   })
 })

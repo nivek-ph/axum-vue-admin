@@ -106,7 +106,8 @@ function logout() {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
+  height: 48px;
+  padding: 0 14px;
   border-radius: 12px;
   border: 1px solid var(--panel-border);
   background: #ffffff;
@@ -126,8 +127,8 @@ function logout() {
 }
 
 .user-avatar {
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   border-radius: 10px;
   display: grid;
   place-items: center;
@@ -149,8 +150,8 @@ function logout() {
 }
 
 .logout-button {
-  width: 42px;
-  height: 42px;
+  width: 48px;
+  height: 48px;
   display: inline-flex;
   align-items: center;
   justify-content: center;

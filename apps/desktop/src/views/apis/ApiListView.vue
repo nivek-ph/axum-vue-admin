@@ -3,8 +3,8 @@
     <section class="page-hero">
       <div class="page-hero-main">
         <span class="page-hero-kicker">{{ $t('API directory') }}</span>
-        <h2 class="page-hero-title">{{ $t('API management') }}</h2>
-        <p class="page-hero-subtitle">{{ $t('Register APIs, search endpoints, and manage role access.') }}</p>
+        <h2 class="page-hero-title">{{ $t('API directory') }}</h2>
+        <p class="page-hero-subtitle">{{ $t('Review registered backend endpoints.') }}</p>
 
         <div class="page-metrics">
           <div class="page-metric">
@@ -22,16 +22,6 @@
         </div>
       </div>
 
-      <aside class="page-hero-side">
-        <div>
-          <div class="page-note-label">{{ $t('Current data') }}</div>
-          <div class="page-note-value">{{ summary }}</div>
-        </div>
-        <div class="page-hero-actions">
-          <UiButton @click="loadApis" :loading="loading">{{ $t('Refresh APIs') }}</UiButton>
-          <UiButton type="primary" @click="openCreateDialog">{{ $t('New API') }}</UiButton>
-        </div>
-      </aside>
     </section>
 
     <section class="page-panel">
@@ -39,6 +29,10 @@
         <div>
           <h3 class="page-panel-title">{{ $t('API directory') }}</h3>
           <p class="page-panel-subtitle">{{ $t('Filter by path, description, group, and method.') }}</p>
+        </div>
+        <div class="page-panel-actions">
+          <UiButton @click="loadApis" :loading="loading">{{ $t('Refresh') }}</UiButton>
+          <UiButton v-if="canCreateApi" type="primary" @click="openCreateDialog">{{ $t('New') }}</UiButton>
         </div>
       </div>
 
@@ -65,11 +59,11 @@
           <UiTableColumn prop="path" label="Path" min-width="260" />
           <UiTableColumn prop="description" label="Description" min-width="180" />
           <UiTableColumn prop="apiGroup" label="Group" min-width="120" />
-          <UiTableColumn label="Actions" width="260">
+          <UiTableColumn v-if="hasApiActions" label="Actions" width="260">
             <template #default="{ row }">
-              <UiButton link type="primary" @click="openEditDialog(row)">{{ $t('Edit') }}</UiButton>
-              <UiButton link @click="openRoleDialog(row)">{{ $t('Assign roles') }}</UiButton>
-              <UiButton link type="danger" @click="handleDelete(row)">{{ $t('Delete') }}</UiButton>
+              <UiButton v-if="canUpdateApi" link type="primary" @click="openEditDialog(row)">{{ $t('Edit') }}</UiButton>
+              <UiButton v-if="canAssignApiRoles" link @click="openRoleDialog(row)">{{ $t('Assign roles') }}</UiButton>
+              <UiButton v-if="canDeleteApi" link type="danger" @click="handleDelete(row)">{{ $t('Delete') }}</UiButton>
             </template>
           </UiTableColumn>
         </UiTable>
@@ -159,12 +153,13 @@ import {
   updateApi,
   type ApiRecord
 } from '@/api/apis'
-import { usePageChrome } from '@/composables/usePageChrome'
+import { useAuthStore } from '@/stores/auth'
 import { t } from '@/i18n'
 
 type DialogMode = 'create' | 'edit'
 
 const methodOptions = ['GET', 'POST', 'PUT', 'DELETE']
+const authStore = useAuthStore()
 const authorities = ref<AuthorityRecord[]>([])
 const apiGroups = ref<string[]>([])
 const apis = ref<ApiRecord[]>([])
@@ -194,7 +189,13 @@ const form = reactive<ApiRecord>({
 })
 
 const authorityOptions = computed(() => flattenAuthorities(authorities.value))
-const { summary } = usePageChrome(apis, 'APIs')
+const canCreateApi = computed(() => authStore.can('system:api:create'))
+const canUpdateApi = computed(() => authStore.can('system:api:update'))
+const canDeleteApi = computed(() => authStore.can('system:api:delete'))
+const canAssignApiRoles = computed(
+  () => authStore.can('system:api:list-roles') && authStore.can('system:api:assign-roles')
+)
+const hasApiActions = computed(() => canUpdateApi.value || canAssignApiRoles.value || canDeleteApi.value)
 
 function flattenAuthorities(list: AuthorityRecord[]): AuthorityRecord[] {
   return list.flatMap((item) => [item, ...flattenAuthorities(item.children || [])])
@@ -306,6 +307,7 @@ async function submitApi() {
 }
 
 async function openRoleDialog(api: ApiRecord) {
+  if (!canAssignApiRoles.value) return
   selectedApi.value = api
   roleDialogVisible.value = true
   try {

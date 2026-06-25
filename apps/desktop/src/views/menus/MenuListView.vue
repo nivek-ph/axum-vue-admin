@@ -22,29 +22,23 @@
         </div>
       </div>
 
-      <aside class="page-hero-side">
-        <div>
-          <div class="page-note-label">{{ $t('Current data') }}</div>
-          <div class="page-note-value">{{ summary }}</div>
-        </div>
-        <div class="page-hero-actions">
-          <UiButton @click="loadData" :loading="loading">{{ $t('Refresh structure') }}</UiButton>
-          <UiButton type="primary" @click="openCreateDialog">{{ $t('New menu') }}</UiButton>
-        </div>
-      </aside>
     </section>
 
     <section class="page-panel">
       <div class="page-panel-header">
         <div>
           <h3 class="page-panel-title">{{ $t('Menu structure') }}</h3>
-          <p class="page-panel-subtitle">{{ $t('Keep common fields visible and handle advanced fields in dialogs.') }}</p>
+          <p class="page-panel-subtitle">{{ $t('Edit common menu fields.') }}</p>
+        </div>
+        <div class="page-panel-actions">
+          <UiButton @click="loadData" :loading="loading">{{ $t('Refresh') }}</UiButton>
+          <UiButton type="primary" @click="openCreateDialog">{{ $t('New') }}</UiButton>
         </div>
       </div>
 
       <div class="surface-card">
         <UiTable
-          :data="menus"
+          :data="navigationMenus"
           row-key="ID"
           default-expand-all
           :loading="loading"
@@ -208,9 +202,10 @@ const selectedAuthorityIds = ref<number[]>([])
 const defaultRouterAuthorityIds = ref<number[]>([])
 const form = reactive(createEmptyMenu())
 
-const menuOptions = computed(() => flattenMenus(menus.value))
+const navigationMenus = computed(() => filterNavigationMenus(menus.value))
+const menuOptions = computed(() => flattenMenus(navigationMenus.value))
 const authorityOptions = computed(() => flattenAuthorities(authorities.value))
-const { total, summary } = usePageChrome(menus, 'menus')
+const { total } = usePageChrome(menus, 'menus')
 const rootMenuCount = computed(() => menuOptions.value.filter((item) => item.parentId === 0).length)
 const hiddenMenuCount = computed(() => menuOptions.value.filter((item) => item.hidden).length)
 
@@ -260,6 +255,15 @@ function assignForm(next: MenuRecord) {
   form.parameters = next.parameters.map((item) => ({ ...item }))
   form.menuBtn = next.menuBtn.map((item) => ({ ...item }))
   form.children = []
+}
+
+function filterNavigationMenus(list: MenuRecord[]): MenuRecord[] {
+  return list
+    .filter((item) => item.menuType !== 'action')
+    .map((item) => ({
+      ...item,
+      children: filterNavigationMenus(item.children || [])
+    }))
 }
 
 function flattenMenus(list: MenuRecord[]): MenuRecord[] {

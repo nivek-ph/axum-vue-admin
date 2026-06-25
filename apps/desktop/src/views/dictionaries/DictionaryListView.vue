@@ -22,28 +22,22 @@
         </div>
       </div>
 
-      <aside class="page-hero-side">
-        <div>
-          <div class="page-note-label">{{ $t('Current data') }}</div>
-          <div class="page-note-value">{{ summary }}</div>
-        </div>
-        <div class="page-hero-actions">
-          <UiButton @click="loadDictionaries" :loading="loading">{{ $t('Refresh dictionaries') }}</UiButton>
-          <UiButton type="primary" @click="openCreateDialog">{{ $t('New dictionary') }}</UiButton>
-        </div>
-      </aside>
     </section>
 
     <section class="dictionary-grid">
       <article class="page-panel">
-        <div class="page-panel-header">
-          <div>
+        <div class="page-panel-header dictionary-list-header">
+          <div class="dictionary-list-heading">
             <h3 class="page-panel-title">{{ $t('Dictionary list') }}</h3>
-            <p class="page-panel-subtitle">{{ $t('Select a dictionary to show its detail tree on the right.') }}</p>
+            <p class="page-panel-subtitle">{{ $t('Select a dictionary to view details.') }}</p>
+          </div>
+          <div class="page-panel-actions dictionary-list-actions">
+            <UiButton @click="loadDictionaries" :loading="loading">{{ $t('Refresh') }}</UiButton>
+            <UiButton type="primary" @click="openCreateDialog">{{ $t('New') }}</UiButton>
           </div>
         </div>
 
-        <div class="page-panel-toolbar inline-filter">
+        <div class="page-panel-toolbar inline-filter dictionary-list-filter">
           <UiInput v-model="filters.name" placeholder="Filter by name" clearable />
           <UiButton type="primary" @click="loadDictionaries">{{ $t('Search') }}</UiButton>
         </div>
@@ -201,7 +195,6 @@ import {
   type DictionaryDetailRecord,
   type DictionaryRecord
 } from '@/api/dictionaries'
-import { usePageChrome } from '@/composables/usePageChrome'
 import { t } from '@/i18n'
 
 type DialogMode = 'create' | 'edit'
@@ -240,7 +233,6 @@ const detailForm = reactive({
   sysDictionaryID: 0,
   parentID: null as number | null
 })
-const { summary } = usePageChrome(dictionaries, 'dictionaries')
 const enabledCount = computed(() => dictionaries.value.filter((item) => item.status).length)
 const detailCount = computed(() => flattenDetails(details.value).length)
 const flattenedDetailOptions = computed(() => flattenDetails(details.value))
@@ -494,6 +486,19 @@ onMounted(() => {
   margin-top: 12px;
 }
 
+.dictionary-list-header {
+  align-items: flex-start;
+}
+
+.dictionary-list-heading {
+  min-width: 0;
+}
+
+.dictionary-list-actions {
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+}
+
 .w-full {
   width: 100%;
 }
@@ -502,5 +507,10 @@ onMounted(() => {
   .dictionary-grid {
     grid-template-columns: 1fr;
   }
+
+  .dictionary-list-actions {
+    flex-wrap: wrap;
+  }
 }
+
 </style>

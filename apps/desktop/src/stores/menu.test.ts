@@ -27,7 +27,7 @@ describe('menu store helpers', () => {
 
     expect(items).toContainEqual({
       key: 'dashboard',
-      label: 'Workbench',
+      label: 'Dashboard',
       path: '/dashboard'
     })
     expect(items).toContainEqual({
@@ -36,6 +36,24 @@ describe('menu store helpers', () => {
       path: '/users'
     })
     expect(items.some((item) => item.key === 'roles')).toBe(false)
+  })
+
+  it('uses frontend core labels instead of stale backend titles', () => {
+    const items = buildCoreMenuItems([
+      {
+        name: 'roles',
+        path: 'roles',
+        meta: { title: 'Role' }
+      }
+    ])
+
+    expect(items).toEqual([
+      {
+        key: 'roles',
+        label: 'Roles',
+        path: '/roles'
+      }
+    ])
   })
 
   it('supports nested remote menu records from the backend tree', () => {

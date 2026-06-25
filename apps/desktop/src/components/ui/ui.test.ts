@@ -1,137 +1,155 @@
-import { mount } from '@vue/test-utils'
-import { nextTick } from 'vue'
-import { describe, expect, it } from 'vitest'
+import { mount } from '@vue/test-utils';
+import { nextTick } from 'vue';
+import { describe, expect, it } from 'vitest';
 
-import UiButton from './UiButton.vue'
-import UiDialog from './UiDialog.vue'
-import UiInput from './UiInput.vue'
-import UiSelect from './UiSelect.vue'
-import UiTable from './UiTable.vue'
-import UiTableColumn from './UiTableColumn.vue'
-import UiTag from './UiTag.vue'
+import UiButton from './UiButton.vue';
+import UiDialog from './UiDialog.vue';
+import UiInput from './UiInput.vue';
+import UiSelect from './UiSelect.vue';
+import UiTable from './UiTable.vue';
+import UiTableColumn from './UiTableColumn.vue';
+import UiTag from './UiTag.vue';
 
 describe('ui primitives', () => {
   it('emits clicks from UiButton', async () => {
     const wrapper = mount(UiButton, {
       slots: {
-        default: 'Save'
-      }
-    })
+        default: 'Save',
+      },
+    });
 
-    await wrapper.get('button').trigger('click')
+    await wrapper.get('button').trigger('click');
 
-    expect(wrapper.emitted('click')).toHaveLength(1)
-  })
+    expect(wrapper.emitted('click')).toHaveLength(1);
+  });
+
+  it('uses neutral styling for primary link buttons', () => {
+    const wrapper = mount(UiButton, {
+      props: {
+        link: true,
+        type: 'primary',
+      },
+      slots: {
+        default: 'Edit',
+      },
+    });
+
+    const classes = wrapper.get('button').classes();
+    expect(classes).toContain('text-zinc-900');
+    expect(classes.some((item) => item.startsWith('text-blue-'))).toBe(false);
+  });
 
   it('updates UiInput model value', async () => {
     const wrapper = mount(UiInput, {
       props: {
-        modelValue: ''
-      }
-    })
+        modelValue: '',
+      },
+    });
 
-    await wrapper.get('input').setValue('admin')
+    await wrapper.get('input').setValue('admin');
 
-    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual(['admin'])
-  })
+    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual(['admin']);
+  });
 
   it('updates UiSelect model value from the application menu', async () => {
     const wrapper = mount(UiSelect, {
       props: {
-        modelValue: ''
+        modelValue: '',
       },
       slots: {
-        default: '<UiOption label="Enabled" value="enabled" />'
+        default: '<UiOption label="Enabled" value="enabled" />',
       },
       global: {
         components: {
-          UiOption: (await import('./UiOption.vue')).default
-        }
-      }
-    })
+          UiOption: (await import('./UiOption.vue')).default,
+        },
+      },
+    });
 
-    expect(wrapper.find('select').exists()).toBe(false)
+    expect(wrapper.find('select').exists()).toBe(false);
 
-    await wrapper.get('[data-test="ui-select-trigger"]').trigger('click')
-    const option = document.body.querySelector('[data-test="ui-select-option-0"]') as HTMLElement
-    option.click()
-    await nextTick()
+    await wrapper.get('[data-test="ui-select-trigger"]').trigger('click');
+    const option = document.body.querySelector('[data-test="ui-select-option-0"]') as HTMLElement;
+    option.click();
+    await nextTick();
 
-    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual(['enabled'])
-    wrapper.unmount()
-  })
+    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual(['enabled']);
+    wrapper.unmount();
+  });
 
   it('clears UiSelect model value from the application menu', async () => {
     const wrapper = mount(UiSelect, {
       props: {
         modelValue: 'enabled',
-        clearable: true
+        clearable: true,
+        placeholder: 'Method',
       },
       slots: {
-        default: '<UiOption label="Enabled" value="enabled" />'
+        default: '<UiOption label="Enabled" value="enabled" />',
       },
       global: {
         components: {
-          UiOption: (await import('./UiOption.vue')).default
-        }
-      }
-    })
+          UiOption: (await import('./UiOption.vue')).default,
+        },
+      },
+    });
 
-    await wrapper.get('[data-test="ui-select-trigger"]').trigger('click')
-    const clearOption = document.body.querySelector('[data-test="ui-select-clear"]') as HTMLElement
-    clearOption.click()
-    await nextTick()
+    await wrapper.get('[data-test="ui-select-trigger"]').trigger('click');
+    const clearOption = document.body.querySelector('[data-test="ui-select-clear"]') as HTMLElement;
+    expect(clearOption.textContent).toContain('All Method');
+    clearOption.click();
+    await nextTick();
 
-    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([undefined])
-    wrapper.unmount()
-  })
+    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([undefined]);
+    wrapper.unmount();
+  });
 
   it('updates UiSelect multiple values without closing the menu', async () => {
     const wrapper = mount(UiSelect, {
       props: {
         modelValue: [],
-        multiple: true
+        multiple: true,
       },
       slots: {
         default: `
           <UiOption label="Admin" value="admin" />
           <UiOption label="Editor" value="editor" />
-        `
+        `,
       },
       global: {
         components: {
-          UiOption: (await import('./UiOption.vue')).default
-        }
-      }
-    })
+          UiOption: (await import('./UiOption.vue')).default,
+        },
+      },
+    });
 
-    await wrapper.get('[data-test="ui-select-trigger"]').trigger('click')
-    ;(document.body.querySelector('[data-test="ui-select-option-0"]') as HTMLElement).click()
-    await nextTick()
+    await wrapper.get('[data-test="ui-select-trigger"]').trigger('click');
+    (document.body.querySelector('[data-test="ui-select-option-0"]') as HTMLElement).click();
+    await nextTick();
 
-    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([['admin']])
-    expect(document.body.querySelector('[data-test="ui-select-menu"]')).not.toBeNull()
+    expect(wrapper.emitted('update:modelValue')?.[0]).toEqual([['admin']]);
+    expect(document.body.querySelector('[data-test="ui-select-menu"]')).not.toBeNull();
 
-    await wrapper.setProps({ modelValue: ['admin'] })
-    ;(document.body.querySelector('[data-test="ui-select-option-1"]') as HTMLElement).click()
-    await nextTick()
+    await wrapper.setProps({ modelValue: ['admin'] });
+    (document.body.querySelector('[data-test="ui-select-option-1"]') as HTMLElement).click();
+    await nextTick();
 
-    expect(wrapper.emitted('update:modelValue')?.[1]).toEqual([['admin', 'editor']])
+    expect(wrapper.emitted('update:modelValue')?.[1]).toEqual([['admin', 'editor']]);
 
-    await wrapper.setProps({ modelValue: ['admin', 'editor'] })
-    ;(document.body.querySelector('[data-test="ui-select-option-0"]') as HTMLElement).click()
-    await nextTick()
+    await wrapper.setProps({ modelValue: ['admin', 'editor'] });
+    (document.body.querySelector('[data-test="ui-select-option-0"]') as HTMLElement).click();
+    await nextTick();
 
-    expect(wrapper.emitted('update:modelValue')?.[2]).toEqual([['editor']])
-    wrapper.unmount()
-  })
+    expect(wrapper.emitted('update:modelValue')?.[2]).toEqual([['editor']]);
+    wrapper.unmount();
+  });
 
   it('renders UiSelect menu as a fixed overlay outside clipped parents', async () => {
     const wrapper = mount(UiDialog, {
       attachTo: document.body,
       props: {
         modelValue: true,
-        title: 'Assign roles'
+        title: 'Assign roles',
       },
       slots: {
         default: `
@@ -140,31 +158,31 @@ describe('ui primitives', () => {
               <UiOption label="Admin" value="admin" />
             </UiSelect>
           </div>
-        `
+        `,
       },
       global: {
         components: {
           UiSelect,
-          UiOption: (await import('./UiOption.vue')).default
-        }
-      }
-    })
+          UiOption: (await import('./UiOption.vue')).default,
+        },
+      },
+    });
 
-    await wrapper.get('[data-test="ui-select-trigger"]').trigger('click')
-    const menu = document.body.querySelector('[data-test="ui-select-menu"]') as HTMLElement
+    await wrapper.get('[data-test="ui-select-trigger"]').trigger('click');
+    const menu = document.body.querySelector('[data-test="ui-select-menu"]') as HTMLElement;
 
-    expect(menu).not.toBeNull()
-    expect(menu.style.position).toBe('fixed')
+    expect(menu).not.toBeNull();
+    expect(menu.style.position).toBe('fixed');
 
-    wrapper.unmount()
-  })
+    wrapper.unmount();
+  });
 
   it('limits UiSelect menu height to available viewport space', async () => {
-    const originalInnerHeight = window.innerHeight
-    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 300 })
+    const originalInnerHeight = window.innerHeight;
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: 300 });
     const wrapper = mount(UiSelect, {
       props: {
-        modelValue: ''
+        modelValue: '',
       },
       slots: {
         default: `
@@ -174,56 +192,57 @@ describe('ui primitives', () => {
           <UiOption label="Four" value="four" />
           <UiOption label="Five" value="five" />
           <UiOption label="Six" value="six" />
-        `
+        `,
       },
       global: {
         components: {
-          UiOption: (await import('./UiOption.vue')).default
-        }
-      }
-    })
-    const trigger = wrapper.get('[data-test="ui-select-trigger"]').element as HTMLElement
-    trigger.getBoundingClientRect = () => ({
-      width: 220,
-      height: 42,
-      top: 80,
-      right: 228,
-      bottom: 122,
-      left: 8,
-      x: 8,
-      y: 80,
-      toJSON: () => ({})
-    } as DOMRect)
+          UiOption: (await import('./UiOption.vue')).default,
+        },
+      },
+    });
+    const trigger = wrapper.get('[data-test="ui-select-trigger"]').element as HTMLElement;
+    trigger.getBoundingClientRect = () =>
+      ({
+        width: 220,
+        height: 42,
+        top: 80,
+        right: 228,
+        bottom: 122,
+        left: 8,
+        x: 8,
+        y: 80,
+        toJSON: () => ({}),
+      }) as DOMRect;
 
-    await wrapper.get('[data-test="ui-select-trigger"]').trigger('click')
-    await nextTick()
-    const menu = document.body.querySelector('[data-test="ui-select-menu"]') as HTMLElement
+    await wrapper.get('[data-test="ui-select-trigger"]').trigger('click');
+    await nextTick();
+    const menu = document.body.querySelector('[data-test="ui-select-menu"]') as HTMLElement;
 
-    expect(menu.style.maxHeight).toBe('164px')
+    expect(menu.style.maxHeight).toBe('166px');
 
-    wrapper.unmount()
-    Object.defineProperty(window, 'innerHeight', { configurable: true, value: originalInnerHeight })
-  })
+    wrapper.unmount();
+    Object.defineProperty(window, 'innerHeight', { configurable: true, value: originalInnerHeight });
+  });
 
   it('renders UiDialog only when open', () => {
     const wrapper = mount(UiDialog, {
       props: {
         modelValue: true,
-        title: 'EditUser'
+        title: 'EditUser',
       },
       slots: {
-        default: 'Form content'
-      }
-    })
+        default: 'Form content',
+      },
+    });
 
-    expect(wrapper.text()).toContain('EditUser')
-    expect(wrapper.text()).toContain('Form content')
-  })
+    expect(wrapper.text()).toContain('EditUser');
+    expect(wrapper.text()).toContain('Form content');
+  });
 
   it('renders UiTable columns and scoped cells', async () => {
     const wrapper = mount(UiTable, {
       props: {
-        data: [{ name: 'admin', enable: 1 }]
+        data: [{ name: 'admin', enable: 1 }],
       },
       slots: {
         default: `
@@ -233,20 +252,42 @@ describe('ui primitives', () => {
               <UiTag :type="row.enable === 1 ? 'success' : 'danger'">Enabled</UiTag>
             </template>
           </UiTableColumn>
-        `
+        `,
       },
       global: {
         components: {
           UiTableColumn,
-          UiTag
-        }
-      }
-    })
+          UiTag,
+        },
+      },
+    });
 
-    await nextTick()
+    await nextTick();
 
-    expect(wrapper.text()).toContain('Username')
-    expect(wrapper.text()).toContain('admin')
-    expect(wrapper.text()).toContain('Enabled')
-  })
-})
+    expect(wrapper.text()).toContain('Username');
+    expect(wrapper.text()).toContain('admin');
+    expect(wrapper.text()).toContain('Enabled');
+  });
+
+  it('keeps existing UiTable rows visible while refreshing', async () => {
+    const wrapper = mount(UiTable, {
+      props: {
+        data: [{ name: 'admin' }],
+        loading: true,
+      },
+      slots: {
+        default: '<UiTableColumn prop="name" label="Username" />',
+      },
+      global: {
+        components: {
+          UiTableColumn,
+        },
+      },
+    });
+
+    await nextTick();
+
+    expect(wrapper.text()).toContain('admin');
+    expect(wrapper.text()).not.toContain('Loading');
+  });
+});

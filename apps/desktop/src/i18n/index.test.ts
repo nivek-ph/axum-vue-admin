@@ -29,6 +29,13 @@ describe('i18n', () => {
     setLocale('zh-CN')
 
     expect(t('Users')).toBe('用户管理')
+    expect(t('Role')).toBe('角色')
+    expect(t('Roles')).toBe('角色管理')
+    expect(t('Menu')).toBe('菜单管理')
+    expect(t('Param')).toBe('参数配置')
+    expect(t('Dictionary')).toBe('字典管理')
+    expect(t('File')).toBe('文件管理')
+    expect(t('All {label}', { label: t('Method') })).toBe('全部方法')
     expect(t('Refresh list')).toBe('刷新列表')
   })
 

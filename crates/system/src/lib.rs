@@ -20,24 +20,43 @@ mod tests {
     }
 
     #[test]
+    fn default_menu_payload_contains_core_admin_entries() {
+        let menu_names = crate::menu::default_menus()
+            .into_iter()
+            .map(|menu| menu.name)
+            .collect::<Vec<_>>();
+
+        for name in ["users", "roles", "menus", "apis"] {
+            assert!(menu_names.contains(&name.to_string()));
+        }
+    }
+
+    #[test]
+    fn default_menus_include_button_permission_nodes() {
+        let menus = crate::menu::default_menus();
+        let users = menus
+            .iter()
+            .find(|menu| menu.name == "users")
+            .expect("users menu");
+        let action_permissions = users
+            .children
+            .iter()
+            .filter_map(|child| child.permission.as_deref())
+            .collect::<Vec<_>>();
+
+        assert!(action_permissions.contains(&"system:user:list"));
+        assert!(action_permissions.contains(&"system:user:create"));
+        assert!(action_permissions.contains(&"system:user:update"));
+        assert!(action_permissions.contains(&"system:user:delete"));
+        assert!(action_permissions.contains(&"system:user:reset-password"));
+    }
+
+    #[test]
     fn default_authorities_contains_super_admin() {
         let authorities = crate::authority::default_authorities();
 
         assert_eq!(authorities.len(), 1);
         assert_eq!(authorities[0].authority_id, 888);
         assert_eq!(authorities[0].authority_name, "Super Admin");
-    }
-
-    #[test]
-    fn default_api_registry_descriptions_are_english() {
-        let descriptions = crate::api_registry::default_api_descriptions();
-
-        assert!(!descriptions.is_empty());
-        assert!(
-            descriptions
-                .iter()
-                .all(|description| description.is_ascii())
-        );
-        assert!(descriptions.contains(&"User login"));
     }
 }

@@ -1,11 +1,21 @@
-import { mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
 import { UiComponents } from '@/components/ui';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useAuthStore } from '@/stores/auth';
 
 vi.mock('@/api/apis', () => ({
   fetchApiGroups: vi.fn().mockResolvedValue([]),
   fetchApis: vi.fn().mockResolvedValue({
-    list: [],
+    list: [
+      {
+        ID: 1,
+        path: '/api/system/reload',
+        description: 'Reload system',
+        apiGroup: 'system',
+        method: 'POST',
+      },
+    ],
     total: 0,
     page: 1,
     pageSize: 10,
@@ -25,16 +35,54 @@ vi.mock('@/api/authorities', () => ({
 
 import ApiListView from './ApiListView.vue';
 
-describe('ApiListView', () => {
-  it('renders api management actions', async () => {
-    const wrapper = mount(ApiListView, {
-      global: {
-        plugins: [UiComponents],
-      },
-    });
+function mountWithAuthority(authorityId = 888, permissions: string[] = []) {
+  const pinia = createPinia();
+  setActivePinia(pinia);
+  const authStore = useAuthStore();
+  authStore.setSession('token-123', {
+    ID: authorityId === 888 ? 1 : 2,
+    userName: authorityId === 888 ? 'admin' : 'dev',
+    nickName: authorityId === 888 ? 'admin' : 'dev',
+    authority: {
+      authorityId,
+      authorityName: authorityId === 888 ? 'Super Admin' : 'Developer',
+      defaultRouter: 'dashboard',
+    },
+    permissions,
+  });
 
-    await Promise.resolve();
-    expect(wrapper.text()).toContain('API management');
-    expect(wrapper.text()).toContain('New API');
+  return mount(ApiListView, {
+    global: {
+      plugins: [pinia, UiComponents],
+    },
+  });
+}
+
+describe('ApiListView', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.localStorage.clear();
+  });
+
+  it('renders api management actions', async () => {
+    const wrapper = mountWithAuthority();
+
+    await flushPromises();
+    expect(wrapper.text()).toContain('API directory');
+    expect(wrapper.text()).toContain('New');
+    expect(wrapper.text()).toContain('Assign roles');
+    expect(wrapper.find('.inline-filter').exists()).toBe(true);
+    expect(wrapper.findAll('.inline-filter .ui-select')).toHaveLength(2);
+  });
+
+  it('hides privileged api actions for list-only roles', async () => {
+    const wrapper = mountWithAuthority(1001, ['system:api:list']);
+
+    await flushPromises();
+    expect(wrapper.text()).toContain('API directory');
+    expect(wrapper.text()).not.toContain('New');
+    expect(wrapper.text()).not.toContain('Assign roles');
+    expect(wrapper.text()).not.toContain('Edit');
+    expect(wrapper.text()).not.toContain('Delete');
   });
 });

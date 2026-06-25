@@ -12,7 +12,7 @@ const props = defineProps<{
 }>()
 
 const classes = computed(() => [
-  'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold',
+  'inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium',
   props.type === 'success' && 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
   props.type === 'danger' && 'bg-red-50 text-red-700 ring-1 ring-red-200',
   props.type === 'warning' && 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',

@@ -1,5 +1,5 @@
 <template>
-  <section v-bind="$attrs" class="rounded-2xl border border-stone-200 bg-white shadow-sm">
+  <section v-bind="$attrs" class="rounded-md border border-stone-200 bg-white shadow-sm">
     <slot />
   </section>
 </template>

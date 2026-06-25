@@ -22,33 +22,6 @@
         </div>
       </div>
 
-      <aside class="page-hero-side">
-        <div>
-          <div class="page-note-label">{{ $t('Current data') }}</div>
-          <div class="page-note-value">{{ summary }}</div>
-        </div>
-        <div v-if="selectedUpload.name" class="upload-preview">
-          <img v-if="selectedUpload.previewUrl" :src="selectedUpload.previewUrl" alt="preview" class="upload-preview-image" />
-          <div v-else class="upload-preview-fallback">{{ selectedUpload.extension || 'FILE' }}</div>
-          <div class="upload-preview-body">
-            <div class="upload-preview-name">{{ selectedUpload.name }}</div>
-            <div class="upload-preview-meta">
-              {{ selectedUpload.sizeLabel }} · {{ selectedUpload.classLabel }}
-            </div>
-            <div class="upload-progress-track">
-              <div class="upload-progress-bar" :style="{ width: `${uploadProgress}%` }" />
-            </div>
-            <div class="upload-preview-status">
-              {{ uploadStatusLabel }}
-            </div>
-          </div>
-        </div>
-        <div class="page-hero-actions">
-          <UiButton @click="loadData" :loading="loading">{{ $t('Refresh files') }}</UiButton>
-          <UiButton @click="triggerUpload">{{ $t('Upload file') }}</UiButton>
-          <UiButton type="primary" @click="openImportDialog">{{ $t('Import URL') }}</UiButton>
-        </div>
-      </aside>
     </section>
 
     <section class="file-grid">
@@ -84,14 +57,36 @@
       </article>
 
       <article class="page-panel">
-        <div class="page-panel-header">
-          <div>
+        <div class="page-panel-header file-list-header">
+          <div class="file-list-heading">
             <h3 class="page-panel-title">{{ $t('File list') }}</h3>
             <p class="page-panel-subtitle">{{ $t('File management covers list, categories, URL import, and rename.') }}</p>
           </div>
+          <div class="page-panel-actions file-list-actions">
+            <UiButton @click="loadData" :loading="loading">{{ $t('Refresh') }}</UiButton>
+            <UiButton @click="triggerUpload">{{ $t('Upload') }}</UiButton>
+            <UiButton type="primary" @click="openImportDialog">{{ $t('Import') }}</UiButton>
+          </div>
         </div>
 
-        <div class="page-panel-toolbar inline-filter">
+        <div v-if="selectedUpload.name" class="upload-preview">
+          <img v-if="selectedUpload.previewUrl" :src="selectedUpload.previewUrl" alt="preview" class="upload-preview-image" />
+          <div v-else class="upload-preview-fallback">{{ selectedUpload.extension || 'FILE' }}</div>
+          <div class="upload-preview-body">
+            <div class="upload-preview-name">{{ selectedUpload.name }}</div>
+            <div class="upload-preview-meta">
+              {{ selectedUpload.sizeLabel }} · {{ selectedUpload.classLabel }}
+            </div>
+            <div class="upload-progress-track">
+              <div class="upload-progress-bar" :style="{ width: `${uploadProgress}%` }" />
+            </div>
+            <div class="upload-preview-status">
+              {{ uploadStatusLabel }}
+            </div>
+          </div>
+        </div>
+
+        <div class="page-panel-toolbar inline-filter file-list-filter">
           <UiInput v-model="filters.keyword" placeholder="Filter by name or URL" clearable />
           <UiButton type="primary" @click="handleSearch">{{ $t('Search') }}</UiButton>
         </div>
@@ -311,12 +306,6 @@ const renameForm = reactive({
 })
 
 const flattenedCategories = computed(() => flattenCategories(categories.value))
-const summary = computed(() =>
-  t('Current total: {count} files, {categories} category nodes', {
-    count: files.total,
-    categories: flattenedCategories.value.length
-  })
-)
 const uploadStatusLabel = computed(() => {
   if (!selectedUpload.name) return ''
   if (uploading.value) return t('Uploading {progress}%', { progress: uploadProgress.value })
@@ -648,6 +637,20 @@ onBeforeUnmount(() => {
   gap: 6px;
 }
 
+.file-list-header {
+  align-items: flex-start;
+}
+
+.file-list-heading {
+  min-width: 0;
+}
+
+.file-list-actions {
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+}
+
 .pagination {
   display: flex;
   justify-content: flex-end;
@@ -791,5 +794,10 @@ onBeforeUnmount(() => {
   .file-grid {
     grid-template-columns: 1fr;
   }
+
+  .file-list-actions {
+    flex-wrap: wrap;
+  }
 }
+
 </style>

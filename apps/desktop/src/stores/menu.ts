@@ -9,13 +9,13 @@ export interface CoreMenuItem {
 
 const coreMenuItems: CoreMenuItem[] = [
   { key: 'dashboard', label: 'Dashboard', path: '/dashboard' },
-  { key: 'users', label: 'User', path: '/users' },
-  { key: 'roles', label: 'Role', path: '/roles' },
-  { key: 'menus', label: 'Menu', path: '/menus' },
-  { key: 'apis', label: 'API', path: '/apis' },
-  { key: 'params', label: 'Param', path: '/params' },
-  { key: 'dictionaries', label: 'Dictionary', path: '/dictionaries' },
-  { key: 'files', label: 'File', path: '/files' },
+  { key: 'users', label: 'Users', path: '/users' },
+  { key: 'roles', label: 'Roles', path: '/roles' },
+  { key: 'menus', label: 'Menus', path: '/menus' },
+  { key: 'apis', label: 'API directory', path: '/apis' },
+  { key: 'params', label: 'Params', path: '/params' },
+  { key: 'dictionaries', label: 'Dictionaries', path: '/dictionaries' },
+  { key: 'files', label: 'Files', path: '/files' },
   { key: 'login-logs', label: 'Login logs', path: '/login-logs' },
   { key: 'operation-logs', label: 'Operation logs', path: '/operation-logs' },
   { key: 'profile', label: 'Profile', path: '/profile' },
@@ -58,7 +58,7 @@ export function buildCoreMenuItems(remoteMenus?: RemoteMenuItem[]) {
           item.name,
           {
             key: item.name,
-            label: item.meta?.title || coreItem?.label || item.name,
+            label: coreItem?.label || item.meta?.title || item.name,
             path: coreItem?.path || normalizePath(item.name)
           } satisfies CoreMenuItem
         ]
@@ -68,8 +68,10 @@ export function buildCoreMenuItems(remoteMenus?: RemoteMenuItem[]) {
   return coreMenuItems.filter((item) => remoteMap.has(item.key)).map((item) => remoteMap.get(item.key) || item)
 }
 
+import { SUPER_ADMIN_AUTHORITY_ID } from '@/constants/auth'
+
 export function isSuperAdminAuthority(authorityId?: number) {
-  return authorityId === 888
+  return authorityId === SUPER_ADMIN_AUTHORITY_ID
 }
 
 export const useMenuStore = defineStore('menu', () => {

@@ -13,7 +13,10 @@ export interface AuthUserInfo {
     authorityName: string;
     defaultRouter: string;
   };
+  permissions?: string[];
 }
+
+import { SUPER_ADMIN_AUTHORITY_ID } from '@/constants/auth';
 
 export const useAuthStore = defineStore('auth', () => {
   const persisted = readAuthSession();
@@ -21,6 +24,7 @@ export const useAuthStore = defineStore('auth', () => {
   const userInfo = ref<AuthUserInfo | null>(persisted.userInfo);
 
   const isAuthenticated = computed(() => token.value.length > 0);
+  const permissionSet = computed(() => new Set(userInfo.value?.permissions || []));
 
   function persistSession() {
     writeAuthSession({
@@ -46,10 +50,17 @@ export const useAuthStore = defineStore('auth', () => {
     clearAuthSession();
   }
 
+  function can(permission: string) {
+    if (userInfo.value?.authority?.authorityId === SUPER_ADMIN_AUTHORITY_ID) return true;
+    return permissionSet.value.has(permission);
+  }
+
   return {
     token,
     userInfo,
     isAuthenticated,
+    permissionSet,
+    can,
     setToken,
     setSession,
     clearToken,

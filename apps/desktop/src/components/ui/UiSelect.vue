@@ -14,7 +14,7 @@
       @keydown.escape.prevent="closeMenu"
     >
       <span :class="['ui-select-value', !hasValue && 'is-placeholder']">{{ displayLabel }}</span>
-      <span class="ui-select-chevron">⌄</span>
+      <ChevronDown class="ui-select-chevron" aria-hidden="true" />
     </button>
     <Teleport to="body">
       <div
@@ -34,7 +34,7 @@
           :aria-selected="!hasValue"
           @click="clearValue"
         >
-          <span>{{ t(placeholder || 'Select') }}</span>
+          <span>{{ clearOptionLabel }}</span>
         </button>
         <button
           v-for="(option, index) in options"
@@ -47,7 +47,7 @@
           @click="selectOption(option.value)"
         >
           <span>{{ t(option.label) }}</span>
-          <span v-if="isSelected(option.value)" class="ui-select-check">✓</span>
+          <Check v-if="isSelected(option.value)" class="ui-select-check" aria-hidden="true" />
         </button>
         <div v-if="options.length === 0" class="ui-select-empty">{{ t('No options') }}</div>
       </div>
@@ -57,6 +57,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref } from 'vue'
+import { Check, ChevronDown } from '@lucide/vue'
 import { t } from '@/i18n'
 import { uiSelectKey, type UiOptionValue, type UiSelectContext, type UiSelectOption } from './UiOption.vue'
 
@@ -101,6 +102,7 @@ const selectedOptions = computed(() => {
 
 const hasValue = computed(() => selectedOptions.value.length > 0)
 const showClearOption = computed(() => !props.multiple && (props.clearable || props.placeholder))
+const clearOptionLabel = computed(() => props.placeholder ? t('All {label}', { label: t(props.placeholder) }) : t('Select'))
 const displayLabel = computed(() => {
   if (selectedOptions.value.length > 0) {
     return selectedOptions.value.map((option) => t(option.label)).join(', ')
@@ -161,14 +163,14 @@ function updateMenuPosition() {
   const viewportHeight = window.innerHeight || document.documentElement.clientHeight
   const viewportWidth = window.innerWidth || document.documentElement.clientWidth
   const itemCount = options.value.length + (showClearOption.value ? 1 : 0)
-  const preferredHeight = Math.min(240, Math.max(48, itemCount * 44 + 12))
-  const gap = 6
+  const preferredHeight = Math.min(224, Math.max(40, itemCount * 36 + 8))
+  const gap = 4
   const sidePadding = 8
   const availableAbove = Math.max(0, rect.top - sidePadding)
   const availableBelow = Math.max(0, viewportHeight - rect.bottom - sidePadding)
   const shouldOpenUp = availableBelow < preferredHeight + gap && availableAbove > availableBelow
   const availableSpace = shouldOpenUp ? availableAbove : availableBelow
-  const maxHeight = Math.max(48, Math.min(240, availableSpace - gap))
+  const maxHeight = Math.max(40, Math.min(224, availableSpace - gap))
   const menuHeight = Math.min(preferredHeight, maxHeight)
   const top = shouldOpenUp
     ? Math.max(sidePadding, rect.top - menuHeight - gap)
@@ -211,67 +213,66 @@ onBeforeUnmount(() => {
 .ui-select-trigger {
   display: flex;
   width: 100%;
-  min-height: 42px;
+  min-height: 40px;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  border: 1px solid rgba(60, 60, 67, 0.22);
-  border-radius: 14px;
-  background: linear-gradient(180deg, #ffffff 0%, #fbfbfd 100%);
+  gap: 8px;
+  border: 1px solid #d6d3d1;
+  border-radius: 6px;
+  background: #ffffff;
   padding: 8px 12px;
-  color: #1d1d1f;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  color: #18181b;
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, color 0.16s ease;
 }
 
 .ui-select-trigger:hover,
 .ui-select-trigger:focus-visible {
-  border-color: rgba(0, 122, 255, 0.5);
-  background: #ffffff;
-  box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.11), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  border-color: #a8a29e;
+  box-shadow: 0 0 0 2px rgba(24, 24, 27, 0.1);
   outline: none;
 }
 
 .ui-select-trigger:disabled {
   cursor: not-allowed;
-  background: #f5f5f7;
-  color: rgba(60, 60, 67, 0.45);
+  background: #f5f5f4;
+  color: #71717a;
 }
 
 .ui-select-value {
   min-width: 0;
   overflow: hidden;
-  color: #1d1d1f;
+  color: #18181b;
   font-size: 14px;
-  font-weight: 650;
+  font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .ui-select-value.is-placeholder,
 .ui-select-chevron {
-  color: rgba(60, 60, 67, 0.62);
+  color: #71717a;
 }
 
 .ui-select-chevron {
   flex: 0 0 auto;
-  font-size: 18px;
+  width: 16px;
+  height: 16px;
+  opacity: 0.72;
 }
 
 .ui-select-menu {
   z-index: 80;
   display: grid;
-  gap: 6px;
-  max-height: 240px;
+  gap: 2px;
+  max-height: 224px;
   overflow-y: auto;
-  border: 1px solid rgba(60, 60, 67, 0.18);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.96);
-  padding: 6px;
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
-  backdrop-filter: saturate(180%) blur(18px);
+  border: 1px solid #e7e5e4;
+  border-radius: 6px;
+  background: #ffffff;
+  padding: 4px;
+  box-shadow: 0 10px 24px rgba(24, 24, 27, 0.12);
 }
 
 .ui-select-option {
@@ -279,36 +280,37 @@ onBeforeUnmount(() => {
   width: 100%;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 4px;
   background: transparent;
-  padding: 10px;
-  color: #1d1d1f;
+  padding: 8px;
+  color: #18181b;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   text-align: left;
   cursor: pointer;
   transition: background 0.14s ease, color 0.14s ease;
 }
 
 .ui-select-option:hover {
-  background: rgba(0, 0, 0, 0.04);
+  background: #f5f5f4;
 }
 
 .ui-select-option:focus-visible {
-  background: rgba(0, 122, 255, 0.08);
+  background: #f5f5f4;
   outline: none;
 }
 
 .ui-select-option.is-selected {
-  background: rgba(0, 122, 255, 0.1);
-  color: #005ecb;
+  background: #f5f5f4;
+  color: #18181b;
 }
 
 .ui-select-check {
-  color: #007aff;
-  font-weight: 900;
+  width: 16px;
+  height: 16px;
+  color: #18181b;
 }
 
 .ui-select-empty {

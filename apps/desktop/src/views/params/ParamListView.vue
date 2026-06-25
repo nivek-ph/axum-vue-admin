@@ -22,23 +22,17 @@
         </div>
       </div>
 
-      <aside class="page-hero-side">
-        <div>
-          <div class="page-note-label">{{ $t('Current data') }}</div>
-          <div class="page-note-value">{{ summary }}</div>
-        </div>
-        <div class="page-hero-actions">
-          <UiButton @click="loadParams" :loading="loading">{{ $t('Refresh params') }}</UiButton>
-          <UiButton type="primary" @click="openCreateDialog">{{ $t('New param') }}</UiButton>
-        </div>
-      </aside>
     </section>
 
     <section class="page-panel">
       <div class="page-panel-header">
         <div>
           <h3 class="page-panel-title">{{ $t('Param list') }}</h3>
-          <p class="page-panel-subtitle">{{ $t('Filter by name and key while keeping the common CRUD flow.') }}</p>
+          <p class="page-panel-subtitle">{{ $t('Filter by name and key.') }}</p>
+        </div>
+        <div class="page-panel-actions">
+          <UiButton @click="loadParams" :loading="loading">{{ $t('Refresh') }}</UiButton>
+          <UiButton type="primary" @click="openCreateDialog">{{ $t('New') }}</UiButton>
         </div>
       </div>
 
@@ -104,7 +98,6 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from '@/ui/feedback'
 
-import { usePageChrome } from '@/composables/usePageChrome'
 import { createParam, deleteParam, fetchParams, updateParam, type ParamRecord } from '@/api/params'
 import { t } from '@/i18n'
 
@@ -129,7 +122,6 @@ const form = reactive<ParamRecord>({
   value: '',
   desc: ''
 })
-const { summary } = usePageChrome(params, 'params')
 const namespaceCount = computed(
   () => new Set(params.value.map((item) => item.key.split('.').shift()).filter(Boolean)).size
 )

@@ -21,6 +21,10 @@ pub mod menu {
     pub const MENU_NOT_FOUND: ErrorSpec = ErrorSpec::not_found("MENU_NOT_FOUND", "menu not found");
     pub const MENU_INVALID_PAYLOAD: ErrorSpec =
         ErrorSpec::validation("MENU_INVALID_PAYLOAD", "invalid menu payload");
+    pub const ROOT_AUTHORITY_IMMUTABLE: ErrorSpec = ErrorSpec::failed_precondition(
+        "ROOT_AUTHORITY_IMMUTABLE",
+        "default role permissions cannot be changed",
+    );
     pub const MENU_DB_FAILED: ErrorSpec =
         ErrorSpec::internal("MENU_DB_FAILED", "menu operation failed");
 }

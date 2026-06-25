@@ -13,8 +13,7 @@ describe('LanguageSwitch', () => {
 
     expect(buttons).toHaveLength(1);
     expect(wrapper.find('svg').exists()).toBe(true);
-    expect(wrapper.text()).not.toContain('文');
-    expect(wrapper.text()).not.toContain('A');
+    expect(wrapper.text()).toContain('EN');
     expect(buttons[0].attributes('aria-pressed')).toBe('false');
 
     await buttons[0].trigger('click');
@@ -22,5 +21,6 @@ describe('LanguageSwitch', () => {
     expect(currentLocale.value).toBe('en-US');
     expect(localStorage.getItem('axum-vue-admin.locale')).toBe('en-US');
     expect(buttons[0].attributes('aria-pressed')).toBe('true');
+    expect(wrapper.text()).toContain('中文');
   });
 });

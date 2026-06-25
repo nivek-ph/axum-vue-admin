@@ -22,19 +22,6 @@
         </div>
       </div>
 
-      <aside class="page-hero-side">
-        <div>
-          <div class="page-note-label">{{ $t('Module summary') }}</div>
-          <div class="page-note-value">{{ summary }}</div>
-        </div>
-        <div class="page-hero-actions">
-          <UiButton @click="loadLogs" :loading="loading">{{ $t('Refresh logs') }}</UiButton>
-          <UiButton :disabled="selectedIds.length === 0" @click="handleBatchDelete">
-            {{ $t('Batch delete') }}
-          </UiButton>
-          <UiButton type="primary" @click="page = 1; loadLogs()">{{ $t('Search again') }}</UiButton>
-        </div>
-      </aside>
     </section>
 
     <section class="page-panel">
@@ -42,6 +29,13 @@
         <div>
           <h3 class="page-panel-title">{{ $t('Login audit') }}</h3>
           <p class="page-panel-subtitle">{{ $t('Keep only core filters to reduce audit noise.') }}</p>
+        </div>
+        <div class="page-panel-actions">
+          <UiButton @click="loadLogs" :loading="loading">{{ $t('Refresh') }}</UiButton>
+          <UiButton :disabled="selectedIds.length === 0" @click="handleBatchDelete">
+            {{ $t('Delete') }}
+          </UiButton>
+          <UiButton type="primary" @click="page = 1; loadLogs()">{{ $t('Search') }}</UiButton>
         </div>
       </div>
 
@@ -95,7 +89,6 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from '@/ui/feedback'
 
-import { usePageChrome } from '@/composables/usePageChrome'
 import { deleteLoginLog, deleteLoginLogs, fetchLoginLogs, type LoginLogRecord } from '@/api/logs'
 import { t } from '@/i18n'
 
@@ -109,7 +102,6 @@ const filters = reactive({
 })
 const statusModel = ref<'success' | 'failed' | undefined>()
 const selectedIds = ref<number[]>([])
-const { summary } = usePageChrome(logs, 'login records')
 const failedCount = computed(() => logs.value.filter((item) => !item.status).length)
 
 async function loadLogs() {
