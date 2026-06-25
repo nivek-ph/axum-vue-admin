@@ -83,7 +83,7 @@ const allQuickLinks = [
   { name: 'users', path: '/users', title: 'Users', description: 'Review user status, reset passwords, and remove accounts.' },
   { name: 'roles', path: '/roles', title: 'Roles', description: 'Manage role trees, default routes, and members.' },
   { name: 'menus', path: '/menus', title: 'Menus', description: 'Manage menu structure and role visibility.' },
-  { name: 'apis', path: '/apis', title: 'API management', description: 'Register APIs and assign role access.' }
+  { name: 'apis', path: '/apis', title: 'API directory', description: 'Review registered backend endpoints.' }
 ]
 const quickLinks = computed(() => allQuickLinks.filter((item) => menuStore.canAccessRouteName(item.name)))
 const heroActions = computed(() =>

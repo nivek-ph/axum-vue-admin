@@ -21,16 +21,6 @@
           </div>
         </div>
       </div>
-
-      <aside class="page-hero-side">
-        <div>
-          <div class="page-note-label">{{ $t('Current data') }}</div>
-          <div class="page-note-value">{{ summary }}</div>
-        </div>
-        <div class="page-hero-actions">
-          <UiButton @click="loadUsers" :loading="loading">{{ $t('Refresh list') }}</UiButton>
-        </div>
-      </aside>
     </section>
 
     <section class="page-panel">
@@ -39,9 +29,12 @@
           <h3 class="page-panel-title">{{ $t('Accounts') }}</h3>
           <p class="page-panel-subtitle">{{ $t('Common actions stay inline for faster operation.') }}</p>
         </div>
-        <UiButton data-test="new-user-button" type="primary" @click="openCreateDialog">
-          {{ $t('New user') }}
-        </UiButton>
+        <div class="page-panel-actions">
+          <UiButton @click="loadUsers" :loading="loading">{{ $t('Refresh') }}</UiButton>
+          <UiButton data-test="new-user-button" type="primary" @click="openCreateDialog">
+            {{ $t('New') }}
+          </UiButton>
+        </div>
       </div>
 
       <div class="surface-card">
@@ -63,8 +56,9 @@
               </UiTag>
             </template>
           </UiTableColumn>
-          <UiTableColumn label="Actions" width="220">
+          <UiTableColumn label="Actions" width="280">
             <template #default="{ row }">
+              <UiButton link data-test="change-user-role-button" @click="openRoleDialog(row)">{{ $t('Change role') }}</UiButton>
               <UiButton link @click="handleResetPassword(row.ID)">{{ $t('Reset password') }}</UiButton>
               <UiButton link type="danger" @click="handleDelete(row.ID)">{{ $t('Delete') }}</UiButton>
             </template>
@@ -114,6 +108,30 @@
         </UiButton>
       </template>
     </UiDialog>
+
+    <UiDialog v-model="roleDialogVisible" title="Change user role" width="480px">
+      <UiForm class="user-form" @submit.prevent="handleUpdateUserRole">
+        <UiFormItem label="Username">
+          <UiInput :model-value="selectedUser?.userName || ''" disabled />
+        </UiFormItem>
+        <UiFormItem label="Role">
+          <UiSelect v-model="roleForm.authorityId" data-test="edit-user-role-select" placeholder="Select role">
+            <UiOption
+              v-for="role in roleOptions"
+              :key="role.authorityId"
+              :label="role.authorityName"
+              :value="role.authorityId"
+            />
+          </UiSelect>
+        </UiFormItem>
+      </UiForm>
+      <template #footer>
+        <UiButton @click="roleDialogVisible = false">{{ $t('Cancel') }}</UiButton>
+        <UiButton type="primary" :loading="updateUserAuthoritiesMutation.isPending.value" @click="handleUpdateUserRole">
+          {{ $t('Save') }}
+        </UiButton>
+      </template>
+    </UiDialog>
   </div>
 </template>
 
@@ -121,19 +139,23 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from '@/ui/feedback'
 
+import type { UserRecord } from '@/api/users'
 import { usePageChrome } from '@/composables/usePageChrome'
 import { getApiErrorMessage } from '@/api/http'
 import { t } from '@/i18n'
-import { useCreateUserMutation, useDeleteUserMutation, useResetUserPasswordMutation, useUserRolesQuery, useUsersQuery } from './userQueries'
+import { useCreateUserMutation, useDeleteUserMutation, useResetUserPasswordMutation, useUpdateUserAuthoritiesMutation, useUserRolesQuery, useUsersQuery } from './userQueries'
 
 const usersQuery = useUsersQuery()
 const rolesQuery = useUserRolesQuery()
 const createUserMutation = useCreateUserMutation()
 const deleteUserMutation = useDeleteUserMutation()
 const resetUserPasswordMutation = useResetUserPasswordMutation()
+const updateUserAuthoritiesMutation = useUpdateUserAuthoritiesMutation()
 const users = computed(() => usersQuery.data.value?.list || [])
-const loading = computed(() => usersQuery.isFetching.value || deleteUserMutation.isPending.value)
+const loading = computed(() => usersQuery.isFetching.value || deleteUserMutation.isPending.value || updateUserAuthoritiesMutation.isPending.value)
 const createDialogVisible = ref(false)
+const roleDialogVisible = ref(false)
+const selectedUser = ref<UserRecord>()
 const createForm = reactive({
   userName: '',
   nickName: '',
@@ -143,7 +165,10 @@ const createForm = reactive({
   enable: 1,
   authorityId: undefined as number | undefined
 })
-const { total, summary } = usePageChrome(users, 'users')
+const roleForm = reactive({
+  authorityId: undefined as number | undefined
+})
+const { total } = usePageChrome(users, 'users')
 const enabledCount = computed(() => users.value.filter((item) => item.enable === 1).length)
 const roleCount = computed(
   () => new Set(users.value.map((item) => item.authority?.authorityName).filter(Boolean)).size
@@ -179,6 +204,12 @@ function openCreateDialog() {
   createDialogVisible.value = true
 }
 
+function openRoleDialog(user: UserRecord) {
+  selectedUser.value = user
+  roleForm.authorityId = user.authority?.authorityId || roleOptions.value[0]?.authorityId
+  roleDialogVisible.value = true
+}
+
 async function handleCreateUser() {
   if (!createForm.userName.trim() || !createForm.nickName.trim() || !createForm.password || !createForm.authorityId) {
     ElMessage.error(t('Username, nickname, password, and role are required'))
@@ -196,6 +227,28 @@ async function handleCreateUser() {
     }
   } catch (err) {
     ElMessage.error(getApiErrorMessage(err, t('Create failed')))
+  }
+}
+
+async function handleUpdateUserRole() {
+  if (!selectedUser.value || !roleForm.authorityId) {
+    ElMessage.error(t('Select role'))
+    return
+  }
+
+  try {
+    const res = await updateUserAuthoritiesMutation.mutateAsync({
+      id: selectedUser.value.ID,
+      authorityId: roleForm.authorityId
+    })
+    if (res.code === 'OK') {
+      ElMessage.success(t('User role updated'))
+      roleDialogVisible.value = false
+    } else {
+      ElMessage.error(res.message || t('Failed to update user role'))
+    }
+  } catch (err) {
+    ElMessage.error(getApiErrorMessage(err, t('Failed to update user role')))
   }
 }
 

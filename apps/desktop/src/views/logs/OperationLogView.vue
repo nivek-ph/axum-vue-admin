@@ -22,19 +22,6 @@
         </div>
       </div>
 
-      <aside class="page-hero-side">
-        <div>
-          <div class="page-note-label">{{ $t('Module summary') }}</div>
-          <div class="page-note-value">{{ summary }}</div>
-        </div>
-        <div class="page-hero-actions">
-          <UiButton @click="loadLogs" :loading="loading">{{ $t('Refresh logs') }}</UiButton>
-          <UiButton :disabled="selectedIds.length === 0" @click="handleBatchDelete">
-            {{ $t('Batch delete') }}
-          </UiButton>
-          <UiButton type="primary" @click="page = 1; loadLogs()">{{ $t('Search again') }}</UiButton>
-        </div>
-      </aside>
     </section>
 
     <section class="page-panel">
@@ -43,9 +30,15 @@
           <h3 class="page-panel-title">{{ $t('Operation audit') }}</h3>
           <p class="page-panel-subtitle">{{ $t('Focus on method, path, and status without overloading the audit view.') }}</p>
         </div>
+        <div class="page-panel-actions">
+          <UiButton @click="loadLogs" :loading="loading">{{ $t('Refresh') }}</UiButton>
+          <UiButton :disabled="selectedIds.length === 0" @click="handleBatchDelete">
+            {{ $t('Delete') }}
+          </UiButton>
+        </div>
       </div>
 
-      <div class="page-panel-toolbar inline-filter">
+      <div class="page-panel-toolbar inline-filter operation-log-filter">
         <UiSelect v-model="filters.method" clearable placeholder="Method">
           <UiOption v-for="item in methodOptions" :key="item" :label="item" :value="item" />
         </UiSelect>
@@ -97,7 +90,6 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from '@/ui/feedback'
 
-import { usePageChrome } from '@/composables/usePageChrome'
 import { deleteOperationLogs, fetchOperationLogs, type OperationLogRecord } from '@/api/logs'
 import { t } from '@/i18n'
 
@@ -113,7 +105,6 @@ const filters = reactive({
 })
 const statusModel = ref<number | undefined>()
 const selectedIds = ref<number[]>([])
-const { summary } = usePageChrome(logs, 'operation records')
 const errorCount = computed(() => logs.value.filter((item) => item.status >= 400).length)
 
 async function loadLogs() {
@@ -185,4 +176,5 @@ onMounted(() => {
   justify-content: flex-end;
   margin-top: 16px;
 }
+
 </style>

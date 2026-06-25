@@ -4,12 +4,11 @@
       <div>
         <span class="panel-kicker">{{ $t('Role permissions') }}</span>
         <h2 class="workspace-title">{{ $t('Roles') }}</h2>
-        <p class="workspace-subtitle">按角色矩阵维护菜单和接口权限。</p>
+        <p class="workspace-subtitle">{{ $t('Manage unified permissions by page and button, shared by frontend and backend.') }}</p>
       </div>
       <div class="workspace-actions">
-        <span class="workspace-count">共 {{ total }} 个角色</span>
-        <UiButton @click="loadWorkbench" :loading="loading">{{ $t('Refresh list') }}</UiButton>
-        <UiButton type="primary" @click="openCreateDialog">{{ $t('New role') }}</UiButton>
+        <UiButton @click="loadWorkbench" :loading="loading">{{ $t('Refresh') }}</UiButton>
+        <UiButton v-if="canCreateRole" type="primary" @click="openCreateDialog">{{ $t('New') }}</UiButton>
       </div>
     </section>
 
@@ -17,13 +16,13 @@
       <aside class="role-sidebar">
         <div class="role-sidebar-header">
           <div>
-            <h3 class="role-sidebar-title">角色</h3>
-            <p class="role-sidebar-subtitle">{{ authorityOptions.length }} 个角色</p>
+            <h3 class="role-sidebar-title">{{ $t('Role') }}</h3>
+            <p class="role-sidebar-subtitle">{{ $t('Total {count} roles', { count: authorityOptions.length }) }}</p>
           </div>
-          <UiButton type="primary" @click="openCreateDialog">+</UiButton>
+          <UiButton v-if="canCreateRole" type="primary" @click="openCreateDialog">+</UiButton>
         </div>
 
-        <UiInput v-model="roleSearch" placeholder="搜索角色名称/ID" />
+        <UiInput v-model="roleSearch" placeholder="Search role name/ID" />
 
         <div class="role-list" data-test="role-list">
           <button
@@ -39,31 +38,34 @@
             </span>
           </button>
 
-          <div v-if="filteredAuthorityOptions.length === 0" class="empty-state">暂无匹配角色</div>
+          <div v-if="filteredAuthorityOptions.length === 0" class="empty-state">{{ $t('No matching roles') }}</div>
         </div>
       </aside>
 
       <section class="permission-panel">
         <div class="permission-panel-header">
           <div>
-            <p class="panel-kicker">{{ activeTab === 'users' ? '当前角色' : '权限矩阵' }}</p>
+            <p class="panel-kicker">{{ $t(activeTab === 'users' ? 'Current role' : 'Function permissions') }}</p>
             <h3 class="permission-title">
-              {{ activeTab === 'users' ? selectedAuthority?.authorityName || '请选择角色' : '全部角色权限' }}
+              {{ selectedAuthority?.authorityName || $t('Select a role') }}
             </h3>
             <p class="permission-subtitle">
               {{
                 activeTab === 'users'
                   ? selectedAuthority
-                    ? `默认入口：${selectedAuthority.defaultRouter || 'dashboard'}`
-                    : '从左侧选择角色后维护成员'
-                  : '每一列是一个角色，有权限就勾选。'
+                    ? $t('Default entry: {route}', { route: selectedAuthority.defaultRouter || 'dashboard' })
+                    : $t('Select a role from the left to manage members')
+                  : selectedAuthority
+                    ? $t('Select page access and operation buttons. Hover to inspect the mapped API.')
+                    : $t('Select a role from the left to manage function permissions')
               }}
             </p>
           </div>
 
           <div v-if="selectedAuthority && activeTab === 'users'" class="role-actions">
-            <UiButton @click="openEditDialog(selectedAuthority)">{{ $t('Edit') }}</UiButton>
+            <UiButton v-if="canUpdateRole" @click="openEditDialog(selectedAuthority)">{{ $t('Edit') }}</UiButton>
             <UiButton
+              v-if="canDeleteRole"
               type="danger"
               :disabled="selectedAuthority.authorityId === 888"
               @click="handleDelete(selectedAuthority)"
@@ -78,138 +80,107 @@
             data-test="function-permissions-tab"
             :class="['permission-tab', activeTab === 'menus' && 'is-active']"
             type="button"
-            @click="activeTab = 'menus'"
+            @click="switchTab('menus')"
           >
-            功能权限
+            {{ $t('Function permissions') }}
           </button>
           <button
-            data-test="api-permissions-tab"
-            :class="['permission-tab', activeTab === 'apis' && 'is-active']"
-            type="button"
-            @click="activeTab = 'apis'"
-          >
-            接口权限
-          </button>
-          <button
+            v-if="canViewRoleUsers"
             data-test="role-users-tab"
             :class="['permission-tab', activeTab === 'users' && 'is-active']"
             type="button"
-            @click="activeTab = 'users'"
+            @click="switchTab('users')"
           >
-            角色用户
+            {{ $t('Role users') }}
           </button>
         </div>
 
-        <div v-if="authorityOptions.length === 0" class="empty-state large">暂无角色数据</div>
+        <div v-if="authorityOptions.length === 0" class="empty-state large">{{ $t('No role data') }}</div>
 
-        <div v-else-if="activeTab === 'menus'" class="permission-content">
+        <div v-else-if="activeTab === 'menus' && selectedAuthority" class="permission-content">
           <div class="content-toolbar">
             <div>
-              <h4 class="content-title">功能权限</h4>
-              <p class="content-subtitle">每一列是一个角色，有权限就勾选。</p>
+              <h4 class="content-title">{{ $t('Function permissions') }}</h4>
+              <p class="content-subtitle">{{ $t('Select page access to include button permissions under that page and avoid visible pages with 403 APIs.') }}</p>
             </div>
             <UiButton
-              v-if="canManageMenuPermissions"
-              data-test="save-menu-permissions"
+              v-if="canManageFunctionPermissions"
+              data-test="save-function-permissions"
               type="primary"
-              :loading="menuSubmitting"
-              @click="saveMenuPermissions"
+              :loading="functionSubmitting"
+              @click="saveFunctionPermissions"
             >
-              保存权限
+              {{ $t('Save permissions') }}
             </UiButton>
           </div>
 
-          <div class="permission-matrix-scroll">
-            <table class="permission-matrix">
+          <div class="permission-catalog-scroll">
+            <table class="permission-catalog">
               <thead>
                 <tr>
-                  <th class="resource-column">菜单</th>
-                  <th class="route-column">路由</th>
-                  <th v-for="authority in authorityOptions" :key="authority.authorityId">
-                    {{ authority.authorityName }}
-                  </th>
+                  <th class="resource-column">{{ $t('Menu') }}</th>
+                  <th class="actions-column">{{ $t('Permission') }}</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="menu in flatMenus" :key="menu.ID">
                   <td class="resource-cell" :style="{ '--indent': `${menu.level * 22}px` }">
-                    {{ menuTitle(menu) }}
+                    <div class="menu-resource">
+                      <span class="menu-resource-title">{{ menuTitle(menu) }}</span>
+                      <span class="menu-resource-path">{{ menu.path }}</span>
+                    </div>
                   </td>
-                  <td class="route-cell">{{ menu.path }}</td>
-                  <td v-for="authority in authorityOptions" :key="authority.authorityId" class="check-cell">
-                    <input
-                      :data-test="`menu-permission-${menu.ID}-${authority.authorityId}`"
-                      type="checkbox"
-                      :disabled="!canManageMenuPermissions"
-                      :checked="isMenuRoleChecked(menu.ID, authority.authorityId)"
-                      @change="toggleMenuRole(menu.ID, authority.authorityId)"
-                    />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+                  <td class="actions-cell">
+                    <div class="permission-actions">
+                      <label
+                        class="permission-chip"
+                        :class="pageAccessChecked(menu) && 'is-checked'"
+                        data-test="page-access-chip"
+                      >
+                        <input
+                          :data-test="`menu-permission-${menu.ID}-${selectedAuthority.authorityId}`"
+                          type="checkbox"
+                          :disabled="!canManageFunctionPermissions"
+                          :checked="pageAccessChecked(menu)"
+                          @change="onPageAccessChange(menu, $event)"
+                        />
+                        <span class="permission-chip-label">{{ $t('Page access') }}</span>
+                        <span class="permission-chip-tip">{{ $t('Page visible') }} · {{ menu.path }}</span>
+                      </label>
 
-            <div v-if="flatMenus.length === 0" class="empty-state">暂无菜单数据</div>
-          </div>
-        </div>
+                      <label
+                        v-for="action in actionsForMenu(menu)"
+                        :key="action.ID"
+                        class="permission-chip"
+                        :class="actionAccessChecked(action) && 'is-checked'"
+                      >
+                        <input
+                          :data-test="`action-permission-${action.permission || action.ID}-${selectedAuthority.authorityId}`"
+                          type="checkbox"
+                          :disabled="!canManageFunctionPermissions"
+                          :checked="actionAccessChecked(action)"
+                          @change="onActionAccessChange(menu, action, $event)"
+                        />
+                        <span class="permission-chip-label">{{ actionTitle(action) }}</span>
+                        <span class="permission-chip-tip">{{ actionTip(action) }}</span>
+                      </label>
 
-        <div v-else-if="activeTab === 'apis'" class="permission-content">
-          <div class="content-toolbar">
-            <div>
-              <h4 class="content-title">接口权限</h4>
-              <p class="content-subtitle">每一列是一个角色，有权限就勾选。</p>
-            </div>
-            <UiButton
-              v-if="canManageApiPermissions"
-              data-test="save-api-permissions"
-              type="primary"
-              :loading="apiSubmitting"
-              @click="saveApiPermissions"
-            >
-              保存权限
-            </UiButton>
-          </div>
-
-          <div class="permission-matrix-scroll">
-            <table class="permission-matrix">
-              <thead>
-                <tr>
-                  <th class="resource-column">接口</th>
-                  <th class="route-column">说明</th>
-                  <th v-for="authority in authorityOptions" :key="authority.authorityId">
-                    {{ authority.authorityName }}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="api in apis" :key="apiPermissionKey(api.path, api.method)">
-                  <td class="resource-cell api-resource">
-                    <UiTag :type="methodTagType(api.method)">{{ api.method }}</UiTag>
-                    <span>{{ api.path }}</span>
-                  </td>
-                  <td class="route-cell">{{ api.description || api.apiGroup }}</td>
-                  <td v-for="authority in authorityOptions" :key="authority.authorityId" class="check-cell">
-                    <input
-                      :data-test="`api-permission-${api.method}-${api.path}-${authority.authorityId}`"
-                      type="checkbox"
-                      :disabled="!canManageApiPermissions"
-                      :checked="isApiRoleChecked(api, authority.authorityId)"
-                      @change="toggleApiRole(api, authority.authorityId)"
-                    />
+                      <span v-if="actionsForMenu(menu).length === 0" class="permission-empty">{{ $t('No button permissions') }}</span>
+                    </div>
                   </td>
                 </tr>
               </tbody>
             </table>
 
-            <div v-if="apis.length === 0" class="empty-state">暂无接口权限</div>
+            <div v-if="flatMenus.length === 0" class="empty-state">{{ $t('No menu data') }}</div>
           </div>
         </div>
 
         <div v-else-if="selectedAuthority" class="permission-content">
           <div class="content-toolbar">
             <div>
-              <h4 class="content-title">角色用户</h4>
-              <p class="content-subtitle">维护当前角色下的用户成员。</p>
+              <h4 class="content-title">{{ $t('Role users') }}</h4>
+              <p class="content-subtitle">{{ $t('Maintain users assigned to the current role.') }}</p>
             </div>
             <div class="member-count">
               <span>{{ $t('Selected members') }}</span>
@@ -219,7 +190,12 @@
 
           <div class="member-tools">
             <UiInput v-model="memberSearch" placeholder="Search users" />
-            <UiButton type="primary" :loading="userSubmitting" @click="submitRoleUsers">
+            <UiButton
+              v-if="canAssignRoleUsers"
+              type="primary"
+              :loading="userSubmitting"
+              @click="submitRoleUsers"
+            >
               {{ $t('Save members') }}
             </UiButton>
           </div>
@@ -252,7 +228,7 @@
           </div>
         </div>
 
-        <div v-else class="empty-state large">请先从左侧选择角色</div>
+        <div v-else class="empty-state large">{{ $t('Select a role from the left first') }}</div>
       </section>
     </section>
 
@@ -312,39 +288,29 @@ import {
   type AuthorityRecord
 } from '@/api/authorities'
 import {
-  apiPermissionKey,
-  fetchApiRoleMatrix,
-  fetchApis,
-  setApiRoles,
-  type ApiRecord
-} from '@/api/apis'
-import {
-  fetchMenuRoleMatrix,
-  fetchMenuList,
-  setMenuRoles,
+  fetchPermissionMenuRoleMatrix,
+  fetchPermissionMenuList,
+  setAuthorityMenus,
   type MenuRecord
 } from '@/api/menus'
 import { useAuthStore } from '@/stores/auth'
-import { usePageChrome } from '@/composables/usePageChrome'
 import { fetchUsers, type UserRecord } from '@/api/users'
 import { t } from '@/i18n'
 
 type DialogMode = 'create' | 'edit'
-type PermissionTab = 'menus' | 'apis' | 'users'
+type PermissionTab = 'menus' | 'users'
 type FlatMenu = MenuRecord & { level: number }
 
 const authorities = ref<AuthorityRecord[]>([])
 const menus = ref<MenuRecord[]>([])
-const apis = ref<ApiRecord[]>([])
 const menuRoleMatrix = ref<Record<number, number[]>>({})
-const apiRoleMatrix = ref<Record<string, number[]>>({})
 const loading = ref(false)
 const accessLoading = ref(false)
 const dialogVisible = ref(false)
 const dialogMode = ref<DialogMode>('create')
 const submitting = ref(false)
 const menuSubmitting = ref(false)
-const apiSubmitting = ref(false)
+const functionSubmitting = computed(() => menuSubmitting.value)
 const userSubmitting = ref(false)
 const selectedAuthorityId = ref<number | null>(null)
 const activeTab = ref<PermissionTab>('menus')
@@ -352,8 +318,7 @@ const roleSearch = ref('')
 const memberSearch = ref('')
 const userOptions = ref<UserRecord[]>([])
 const selectedUserIds = ref<number[]>([])
-const dirtyMenuIds = ref<number[]>([])
-const dirtyApiKeys = ref<string[]>([])
+const permissionsDirty = ref(false)
 const form = reactive({
   authorityId: 0,
   authorityName: '',
@@ -366,16 +331,14 @@ const authorityOptions = computed(() => flattenAuthorities(authorities.value))
 const selectedAuthority = computed(
   () => authorityOptions.value.find((item) => item.authorityId === selectedAuthorityId.value) || null
 )
-const { total } = usePageChrome(authorities, 'roles')
 const selectedUserIdSet = computed(() => new Set(selectedUserIds.value))
 const flatMenus = computed(() => flattenMenus(menus.value))
-const currentAuthorityId = computed(() => authStore.userInfo?.authority?.authorityId || null)
-const canManageMenuPermissions = computed(() =>
-  canCurrentRoleAccessApi('/api/menus/{id}/roles', 'PUT')
-)
-const canManageApiPermissions = computed(() =>
-  canCurrentRoleAccessApi('/api/routes/roles', 'PUT')
-)
+const canCreateRole = computed(() => authStore.can('system:role:create'))
+const canUpdateRole = computed(() => authStore.can('system:role:update'))
+const canDeleteRole = computed(() => authStore.can('system:role:delete'))
+const canAssignRoleUsers = computed(() => authStore.can('system:role:assign-users'))
+const canViewRoleUsers = computed(() => authStore.can('system:role:list-users') && authStore.can('system:user:list'))
+const canManageFunctionPermissions = computed(() => authStore.can('system:role:update-permission'))
 const filteredAuthorityOptions = computed(() => {
   const keyword = roleSearch.value.trim().toLowerCase()
   if (!keyword) return authorityOptions.value
@@ -400,10 +363,12 @@ function flattenAuthorities(list: AuthorityRecord[]): AuthorityRecord[] {
 }
 
 function flattenMenus(list: MenuRecord[], level = 0): FlatMenu[] {
-  return list.flatMap((item) => [
-    { ...item, level },
-    ...flattenMenus(item.children || [], level + 1)
-  ])
+  return list
+    .filter((item) => item.menuType !== 'action')
+    .flatMap((item) => [
+      { ...item, level },
+      ...flattenMenus((item.children || []).filter((child) => child.menuType !== 'action'), level + 1)
+    ])
 }
 
 function resetForm() {
@@ -416,27 +381,24 @@ function resetForm() {
 async function loadWorkbench() {
   loading.value = true
   try {
-    const [authorityList, menuTree, menuMatrix, apiResult, apiMatrix] = await Promise.all([
+    const [authorityList, menuTree, menuMatrix] = await Promise.all([
       fetchAuthorities(),
-      fetchMenuList(),
-      fetchMenuRoleMatrix(),
-      fetchApis({ page: 1, pageSize: 500 }),
-      fetchApiRoleMatrix()
+      fetchPermissionMenuList(),
+      fetchPermissionMenuRoleMatrix()
     ])
     authorities.value = authorityList
     menus.value = menuTree
     menuRoleMatrix.value = menuMatrix
-    apis.value = apiResult.list
-    apiRoleMatrix.value = apiMatrix
-    dirtyMenuIds.value = []
-    dirtyApiKeys.value = []
+    permissionsDirty.value = false
 
     const stillExists = authorityOptions.value.some((item) => item.authorityId === selectedAuthorityId.value)
     if (!stillExists) {
       selectedAuthorityId.value = authorityOptions.value[0]?.authorityId || null
+    } else if (!selectedAuthorityId.value) {
+      selectedAuthorityId.value = authorityOptions.value[0]?.authorityId || null
     }
 
-    if (selectedAuthorityId.value) {
+    if (selectedAuthorityId.value && activeTab.value === 'users' && canViewRoleUsers.value) {
       await loadRoleAccess()
     }
   } catch {
@@ -468,7 +430,16 @@ function selectAuthority(authority: AuthorityRecord) {
   if (selectedAuthorityId.value === authority.authorityId) return
   selectedAuthorityId.value = authority.authorityId
   memberSearch.value = ''
-  loadRoleAccess()
+  if (activeTab.value === 'users' && canViewRoleUsers.value) {
+    loadRoleAccess()
+  }
+}
+
+function switchTab(tab: PermissionTab) {
+  activeTab.value = tab
+  if (tab === 'users' && canViewRoleUsers.value) {
+    loadRoleAccess()
+  }
 }
 
 function openCreateDialog() {
@@ -524,15 +495,51 @@ async function submitAuthority() {
   }
 }
 
-function markDirty<T>(list: T[], value: T) {
-  return list.includes(value) ? list : [...list, value]
+function actionsForMenu(menu: MenuRecord) {
+  return (menu.children || [])
+    .filter((child) => child.menuType === 'action')
+    .sort((left, right) => left.sort - right.sort || left.ID - right.ID)
 }
 
-function canCurrentRoleAccessApi(path: string, method: string) {
-  const authorityId = currentAuthorityId.value
-  if (authorityId === 888) return true
-  if (!authorityId) return false
-  return (apiRoleMatrix.value[apiPermissionKey(path, method)] || []).includes(authorityId)
+function pageAccessChecked(menu: FlatMenu) {
+  if (!selectedAuthorityId.value) return false
+  return isMenuRoleChecked(menu.ID, selectedAuthorityId.value)
+}
+
+function actionAccessChecked(action: MenuRecord) {
+  if (!selectedAuthorityId.value) return false
+  return isMenuRoleChecked(action.ID, selectedAuthorityId.value)
+}
+
+function setMenuAccess(menuId: number, authorityId: number, enabled: boolean) {
+  const current = isMenuRoleChecked(menuId, authorityId)
+  if (current !== enabled) {
+    toggleMenuRole(menuId, authorityId)
+  }
+}
+
+function onPageAccessChange(menu: FlatMenu, event: Event) {
+  if (!selectedAuthorityId.value || !canManageFunctionPermissions.value) return
+
+  const enabled = (event.target as HTMLInputElement).checked
+  setMenuAccess(menu.ID, selectedAuthorityId.value, enabled)
+  for (const action of actionsForMenu(menu)) {
+    setMenuAccess(action.ID, selectedAuthorityId.value, enabled)
+  }
+}
+
+function onActionAccessChange(menu: FlatMenu, action: MenuRecord, event: Event) {
+  if (!selectedAuthorityId.value || !canManageFunctionPermissions.value) return
+
+  const enabled = (event.target as HTMLInputElement).checked
+  setMenuAccess(action.ID, selectedAuthorityId.value, enabled)
+  if (enabled) {
+    setMenuAccess(menu.ID, selectedAuthorityId.value, true)
+  }
+}
+
+async function saveFunctionPermissions() {
+  await saveMenuPermissions()
 }
 
 function isMenuRoleChecked(menuId: number, authorityId: number) {
@@ -540,7 +547,7 @@ function isMenuRoleChecked(menuId: number, authorityId: number) {
 }
 
 function toggleMenuRole(menuId: number, authorityId: number) {
-  if (!canManageMenuPermissions.value) return
+  if (!canManageFunctionPermissions.value) return
 
   const current = new Set(menuRoleMatrix.value[menuId] || [])
   if (current.has(authorityId)) {
@@ -552,77 +559,35 @@ function toggleMenuRole(menuId: number, authorityId: number) {
     ...menuRoleMatrix.value,
     [menuId]: [...current].sort((a, b) => a - b)
   }
-  dirtyMenuIds.value = markDirty(dirtyMenuIds.value, menuId)
+  permissionsDirty.value = true
 }
 
-async function saveMenuPermissions() {
-  if (!canManageMenuPermissions.value) return
+async function saveMenuPermissions(): Promise<boolean> {
+  if (!selectedAuthorityId.value || !canManageFunctionPermissions.value) return false
 
-  if (dirtyMenuIds.value.length === 0) {
+  if (!permissionsDirty.value) {
     ElMessage.success(t('Role permissions updated'))
-    return
+    return true
   }
 
   menuSubmitting.value = true
   try {
-    await Promise.all(
-      dirtyMenuIds.value.map((menuId) => setMenuRoles(menuId, menuRoleMatrix.value[menuId] || []))
-    )
-    menuRoleMatrix.value = await fetchMenuRoleMatrix()
-    dirtyMenuIds.value = []
+    const roleMenuIds = Object.entries(menuRoleMatrix.value)
+      .filter(([, authorityIds]) => authorityIds.includes(selectedAuthorityId.value as number))
+      .map(([menuId]) => Number(menuId))
+      .filter((menuId) => Number.isFinite(menuId))
+      .sort((left, right) => left - right)
+
+    await setAuthorityMenus(selectedAuthorityId.value, roleMenuIds)
+    menuRoleMatrix.value = await fetchPermissionMenuRoleMatrix()
+    permissionsDirty.value = false
     ElMessage.success(t('Role permissions updated'))
+    return true
   } catch {
     ElMessage.error(t('Failed to save permissions'))
+    return false
   } finally {
     menuSubmitting.value = false
-  }
-}
-
-function isApiRoleChecked(api: ApiRecord, authorityId: number) {
-  return (apiRoleMatrix.value[apiPermissionKey(api.path, api.method)] || []).includes(authorityId)
-}
-
-function toggleApiRole(api: ApiRecord, authorityId: number) {
-  if (!canManageApiPermissions.value) return
-
-  const key = apiPermissionKey(api.path, api.method)
-  const current = new Set(apiRoleMatrix.value[key] || [])
-  if (current.has(authorityId)) {
-    current.delete(authorityId)
-  } else {
-    current.add(authorityId)
-  }
-  apiRoleMatrix.value = {
-    ...apiRoleMatrix.value,
-    [key]: [...current].sort((a, b) => a - b)
-  }
-  dirtyApiKeys.value = markDirty(dirtyApiKeys.value, key)
-}
-
-async function saveApiPermissions() {
-  if (!canManageApiPermissions.value) return
-
-  if (dirtyApiKeys.value.length === 0) {
-    ElMessage.success(t('Role permissions updated'))
-    return
-  }
-
-  apiSubmitting.value = true
-  try {
-    await Promise.all(
-      dirtyApiKeys.value.map((key) => {
-        const api = apis.value.find((item) => apiPermissionKey(item.path, item.method) === key)
-        if (!api) return Promise.resolve()
-        return setApiRoles(api.path, api.method, apiRoleMatrix.value[key] || [])
-      })
-    )
-    apiRoleMatrix.value = await fetchApiRoleMatrix()
-    dirtyApiKeys.value = []
-    ElMessage.success(t('Role permissions updated'))
-  } catch {
-    ElMessage.error(t('Failed to save permissions'))
-  } finally {
-    apiSubmitting.value = false
   }
 }
 
@@ -637,14 +602,16 @@ function userInitial(user: UserRecord) {
 }
 
 function menuTitle(menu: MenuRecord) {
-  return menu.meta?.title || menu.name || menu.path
+  return t(menu.meta?.title || menu.name || menu.path)
 }
 
-function methodTagType(method: string) {
-  if (method === 'GET') return 'success'
-  if (method === 'POST') return 'primary'
-  if (method === 'PUT') return 'warning'
-  return 'danger'
+function actionTitle(action: MenuRecord) {
+  return t(action.meta?.title || action.permission || action.name)
+}
+
+function actionTip(action: MenuRecord) {
+  const route = [action.method, action.apiPath].filter(Boolean).join(' ')
+  return action.permission ? `${action.permission}${route ? ` · ${route}` : ''}` : route
 }
 
 async function submitRoleUsers() {
@@ -739,15 +706,9 @@ onMounted(() => {
 .workspace-actions {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: flex-end;
   gap: 10px;
-}
-
-.workspace-count {
-  color: var(--text-muted);
-  font-size: 13px;
-  font-weight: 650;
 }
 
 .role-sidebar,
@@ -905,6 +866,7 @@ onMounted(() => {
 }
 
 .permission-matrix-scroll,
+.permission-catalog-scroll,
 .member-list {
   border: 1px solid #e7e5e4;
   border-radius: 14px;
@@ -912,8 +874,141 @@ onMounted(() => {
   background: #ffffff;
 }
 
-.permission-matrix-scroll {
+.permission-matrix-scroll,
+.permission-catalog-scroll {
   overflow-x: auto;
+}
+
+.permission-catalog {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.permission-catalog th,
+.permission-catalog td {
+  border-bottom: 1px solid #f1f1f0;
+  padding: 14px 16px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.permission-catalog th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f5f5f4;
+  color: #52525b;
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.actions-column {
+  min-width: 420px;
+}
+
+.menu-resource {
+  display: grid;
+  gap: 4px;
+}
+
+.menu-resource-title {
+  color: #18181b;
+  font-weight: 700;
+}
+
+.menu-resource-path {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.permission-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 136px);
+  align-items: center;
+  gap: 8px 10px;
+}
+
+.permission-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: max-content;
+  max-width: 136px;
+  min-height: 34px;
+  border: 1px solid #e7e5e4;
+  border-radius: 999px;
+  background: #ffffff;
+  padding: 0 12px 0 10px;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+}
+
+.permission-chip:hover,
+.permission-chip.is-checked {
+  border-color: #18181b;
+  background: #fafaf9;
+}
+
+.permission-chip:hover {
+  box-shadow: 0 10px 24px rgba(24, 24, 27, 0.08);
+}
+
+.permission-chip input {
+  accent-color: #18181b;
+}
+
+.permission-chip-label {
+  color: #18181b;
+  font-size: 13px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.permission-chip-tip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  z-index: 3;
+  transform: translateX(-50%) translateY(4px);
+  min-width: max-content;
+  max-width: 360px;
+  border: 1px solid #e7e5e4;
+  border-radius: 10px;
+  background: #18181b;
+  color: #fafafa;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.permission-chip-tip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #18181b;
+}
+
+.permission-chip:hover .permission-chip-tip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.permission-empty {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  color: var(--text-muted);
+  font-size: 13px;
 }
 
 .permission-matrix {

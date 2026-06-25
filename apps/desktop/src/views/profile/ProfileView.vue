@@ -24,16 +24,6 @@
         </div>
       </div>
 
-      <aside class="page-hero-side">
-        <div>
-          <div class="page-note-label">{{ $t('Identity') }}</div>
-          <div class="page-note-value">{{ $t('Shows current account, role, and default route.') }}</div>
-        </div>
-        <div v-if="canOpenDashboard || canOpenUsers" class="page-hero-actions">
-          <UiButton v-if="canOpenDashboard" @click="router.push('/dashboard')">{{ $t('Back to dashboard') }}</UiButton>
-          <UiButton v-if="canOpenUsers" type="primary" @click="router.push('/users')">{{ $t('View users') }}</UiButton>
-        </div>
-      </aside>
     </section>
 
     <section class="page-panel">
@@ -41,6 +31,10 @@
         <div>
           <h3 class="page-panel-title">{{ $t('Identity card') }}</h3>
           <p class="page-panel-subtitle">{{ $t('A compact account identity view.') }}</p>
+        </div>
+        <div v-if="canOpenDashboard || canOpenUsers" class="page-panel-actions">
+          <UiButton v-if="canOpenDashboard" @click="router.push('/dashboard')">{{ $t('Dashboard') }}</UiButton>
+          <UiButton v-if="canOpenUsers" type="primary" @click="router.push('/users')">{{ $t('Users') }}</UiButton>
         </div>
       </div>
 

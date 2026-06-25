@@ -22,16 +22,6 @@
         </div>
       </div>
 
-      <aside class="page-hero-side">
-        <div>
-          <div class="page-note-label">{{ $t('Runtime overview') }}</div>
-          <div class="page-note-value">{{ summary }}</div>
-        </div>
-        <div class="page-hero-actions">
-          <UiButton @click="loadState" :loading="loading">{{ $t('Refresh status') }}</UiButton>
-          <UiButton v-if="canViewConfig" type="primary" @click="router.push('/system-config')">{{ $t('View config') }}</UiButton>
-        </div>
-      </aside>
     </section>
 
     <section class="dashboard-grid">
@@ -40,6 +30,9 @@
           <div>
             <h3 class="page-panel-title">{{ $t('Runtime config') }}</h3>
             <p class="page-panel-subtitle">{{ $t('Summary of system config from the backend.') }}</p>
+          </div>
+          <div class="page-panel-actions">
+            <UiButton @click="loadState" :loading="loading">{{ $t('Refresh') }}</UiButton>
           </div>
         </div>
 
@@ -96,7 +89,6 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { ElMessage } from '@/ui/feedback'
 
 import {
@@ -106,10 +98,7 @@ import {
   type SystemConfig
 } from '@/api/system'
 import { t } from '@/i18n'
-import { useMenuStore } from '@/stores/menu'
 
-const router = useRouter()
-const menuStore = useMenuStore()
 const loading = ref(false)
 const config = reactive<SystemConfig>({
   system: { env: '', addr: '', 'db-type': '' },
@@ -123,17 +112,12 @@ const server = reactive<ServerInfo>({
   disk: []
 })
 
-const summary = computed(() => {
-  const addr = config.system.addr || t('Not configured')
-  return t('Service {addr}, memory {percent}%', { addr, percent: server.ram.usedPercent || 0 })
-})
 const cpuPreview = computed(() => server.cpu.cpus.slice(0, 4).join(' / ') || '-')
 const diskPreview = computed(() => {
   const disk = server.disk[0]
   if (!disk) return '-'
   return `${disk.mountPoint} · ${disk.usedGb}/${disk.totalGb} GB`
 })
-const canViewConfig = computed(() => menuStore.canAccessRouteName('system-config'))
 
 async function loadState() {
   loading.value = true

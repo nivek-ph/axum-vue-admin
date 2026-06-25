@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  normalizeApiListResponse,
-  normalizeApiRoleMatrixResponse,
-  normalizeApiRoleSelection,
-  normalizeAuthorityApiListResponse,
-} from './apis';
+import { normalizeApiListResponse, normalizeApiRoleMatrixResponse, normalizeApiRoleSelection, normalizeAuthorityApiListResponse } from './apis';
 
 describe('api registry adapter', () => {
   it('normalizes paginated api payload', () => {

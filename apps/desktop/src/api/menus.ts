@@ -36,6 +36,10 @@ export interface MenuRecord {
   meta: MenuMeta
   parameters: MenuParameter[]
   menuBtn: MenuButton[]
+  menuType?: 'directory' | 'page' | 'action' | string
+  permission?: string | null
+  method?: string | null
+  apiPath?: string | null
   children: MenuRecord[]
 }
 
@@ -92,6 +96,11 @@ export async function fetchMenuList() {
   return normalizeMenuListResponse(response)
 }
 
+export async function fetchPermissionMenuList() {
+  const response = await http.get('/roles/permissions/tree', withAuthHeaders())
+  return normalizeMenuListResponse(response)
+}
+
 export async function createMenu(payload: MenuRecord) {
   return http.post('/menus', payload, withAuthHeaders())
 }
@@ -115,6 +124,11 @@ export async function setMenuRoles(menuId: number, authorityIds: number[]) {
 
 export async function fetchMenuRoleMatrix() {
   const response = await http.get('/menus/role-matrix', withAuthHeaders())
+  return normalizeMenuRoleMatrixResponse(response)
+}
+
+export async function fetchPermissionMenuRoleMatrix() {
+  const response = await http.get('/roles/permissions/role-matrix', withAuthHeaders())
   return normalizeMenuRoleMatrixResponse(response)
 }
 

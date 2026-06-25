@@ -31,6 +31,11 @@ pub fn router() -> Router<crate::state::AppState> {
             "/roles/{authority_id}/users",
             get(authority::get_users_by_authority_id).put(authority::set_role_users_by_id),
         )
+        .route("/roles/permissions/tree", get(menu::get_base_menu_tree))
+        .route(
+            "/roles/permissions/role-matrix",
+            get(menu::get_menu_role_matrix),
+        )
         .route("/roles/data-authority", put(authority::set_data_authority))
         .route(
             "/routes",

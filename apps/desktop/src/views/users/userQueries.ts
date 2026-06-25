@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 
 import { fetchAuthorities } from '@/api/authorities'
-import { createUser, deleteUser, fetchUsers, resetUserPassword, type CreateUserForm } from '@/api/users'
+import { createUser, deleteUser, fetchUsers, resetUserPassword, updateUserAuthorities, type CreateUserForm } from '@/api/users'
 
 export const userQueryKeys = {
   all: ['users'] as const,
@@ -35,6 +35,14 @@ export function useCreateUserMutation() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (form: CreateUserForm) => createUser(form),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: userQueryKeys.all })
+  })
+}
+
+export function useUpdateUserAuthoritiesMutation() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, authorityId }: { id: number; authorityId: number }) => updateUserAuthorities(id, authorityId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: userQueryKeys.all })
   })
 }

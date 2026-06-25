@@ -22,5 +22,7 @@ describe('DictionaryListView', () => {
 
     await Promise.resolve()
     expect(wrapper.text()).toContain('Dictionary management')
+    expect(wrapper.find('.dictionary-list-filter').exists()).toBe(true)
+    expect(wrapper.find('.dictionary-list-filter button').text()).toContain('Search')
   })
 })

@@ -41,6 +41,11 @@ export interface CreateUserPayload {
   authorityId?: number
 }
 
+export interface UpdateUserAuthoritiesPayload {
+  ID: number
+  authorityIds: number[]
+}
+
 export function normalizeUserListResponse(payload: any): UserListResult {
   return {
     list: payload?.data?.list || [],
@@ -62,6 +67,13 @@ export function buildCreateUserPayload(form: CreateUserForm): CreateUserPayload 
   }
 }
 
+export function buildUpdateUserAuthoritiesPayload(id: number, authorityId: number): UpdateUserAuthoritiesPayload {
+  return {
+    ID: id,
+    authorityIds: [authorityId]
+  }
+}
+
 export async function fetchUsers(page = 1, pageSize = 10) {
   const res = await http.get('/users', {
     ...withAuthHeaders(),
@@ -72,6 +84,10 @@ export async function fetchUsers(page = 1, pageSize = 10) {
 
 export async function createUser(form: CreateUserForm) {
   return http.post('/users', buildCreateUserPayload(form), withAuthHeaders())
+}
+
+export async function updateUserAuthorities(id: number, authorityId: number) {
+  return http.put(`/users/${id}/authorities`, buildUpdateUserAuthoritiesPayload(id, authorityId), withAuthHeaders())
 }
 
 export async function deleteUser(id: number) {

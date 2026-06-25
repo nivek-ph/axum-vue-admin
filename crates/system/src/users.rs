@@ -142,6 +142,7 @@ pub struct UserInfoView {
     pub email: String,
     #[serde(rename = "originSetting")]
     pub origin_setting: Option<serde_json::Value>,
+    pub permissions: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -253,7 +254,8 @@ pub async fn register_user(
     if find_by_username(pool, &payload.user_name).await?.is_some() {
         return Err(LoginError::UserAlreadyExists);
     }
-    let authority = authority_from_ids(payload.authority_id, payload.authority_ids.as_ref());
+    let authority =
+        resolve_authority(pool, payload.authority_id, payload.authority_ids.as_ref()).await?;
     let password_hash = password_service.hash_password(&payload.password)?;
 
     sqlx::query(
@@ -317,7 +319,7 @@ pub async fn login(
     let token = jwt_service.issue_token(record.id, &record.username, record.authority_id)?;
 
     Ok(LoginResult {
-        user: build_user_info(&record),
+        user: build_user_info(&record, Vec::new()),
         token,
     })
 }
@@ -330,10 +332,17 @@ pub async fn load_authenticated_user(
         .await?
         .ok_or(LoginError::UserNotFound)?;
 
+    let permissions = crate::menu::get_permissions_by_authority_id(pool, record.authority_id)
+        .await
+        .map_err(|error| match error {
+            crate::menu::MenuError::Database(error) => LoginError::Database(error),
+            other => LoginError::Database(sqlx::Error::Protocol(other.to_string())),
+        })?;
+
     Ok(AuthenticatedUser {
         id: record.id,
         authority_id: record.authority_id,
-        user: build_user_info(&record),
+        user: build_user_info(&record, permissions),
     })
 }
 
@@ -410,7 +419,12 @@ pub async fn get_user_list(
         .fetch_all(pool)
         .await?;
 
-    Ok((rows.iter().map(build_user_info).collect(), total))
+    Ok((
+        rows.iter()
+            .map(|record| build_user_info(record, Vec::new()))
+            .collect(),
+        total,
+    ))
 }
 
 pub async fn update_user(
@@ -477,7 +491,7 @@ pub async fn set_user_authorities(
     pool: &sqlx::PgPool,
     payload: SetUserAuthoritiesRequest,
 ) -> Result<(), LoginError> {
-    let authority = authority_from_ids(None, Some(&payload.authority_ids));
+    let authority = resolve_authority(pool, None, Some(&payload.authority_ids)).await?;
     sqlx::query(
         r#"
         update sys_users
@@ -502,7 +516,7 @@ pub async fn set_user_authority(
     user_id: i64,
     authority_id: i64,
 ) -> Result<(), LoginError> {
-    let authority = authority_from_ids(Some(authority_id), None);
+    let authority = resolve_authority(pool, Some(authority_id), None).await?;
     sqlx::query(
         r#"
         update sys_users
@@ -656,7 +670,7 @@ async fn find_by_id(pool: &sqlx::PgPool, user_id: i64) -> Result<Option<UserReco
     .await
 }
 
-fn build_user_info(record: &UserRecord) -> UserInfoView {
+fn build_user_info(record: &UserRecord, permissions: Vec<String>) -> UserInfoView {
     let authority = authority::AuthorityView {
         authority_id: record.authority_id,
         authority_name: record.authority_name.clone(),
@@ -678,20 +692,33 @@ fn build_user_info(record: &UserRecord) -> UserInfoView {
         phone: record.phone.clone().unwrap_or_default(),
         email: record.email.clone().unwrap_or_default(),
         origin_setting: record.origin_setting.clone(),
+        permissions,
     }
 }
 
-fn authority_from_ids(
+async fn resolve_authority(
+    pool: &sqlx::PgPool,
     authority_id: Option<i64>,
     authority_ids: Option<&Vec<i64>>,
-) -> authority::AuthorityView {
+) -> Result<authority::AuthorityView, LoginError> {
     let requested_id = authority_ids
         .and_then(|ids| ids.first().copied())
         .or(authority_id)
         .unwrap_or(888);
 
-    authority::default_authorities()
+    if let Some(record) = authority::get_authority_record(pool, requested_id).await? {
+        return Ok(authority::AuthorityView {
+            authority_id: record.authority_id,
+            authority_name: record.authority_name,
+            parent_id: record.parent_id,
+            default_router: record.default_router,
+            children: Vec::new(),
+            data_authority_id: Vec::new(),
+        });
+    }
+
+    Ok(authority::default_authorities()
         .into_iter()
         .find(|item| item.authority_id == requested_id)
-        .unwrap_or_else(|| authority::default_authorities()[0].clone())
+        .unwrap_or_else(|| authority::default_authorities()[0].clone()))
 }

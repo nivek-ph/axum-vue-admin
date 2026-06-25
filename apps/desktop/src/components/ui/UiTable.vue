@@ -3,9 +3,15 @@
     <span class="hidden">
       <slot />
     </span>
-    <div class="overflow-x-auto rounded-2xl border border-stone-200 bg-white">
+    <div class="relative overflow-x-auto rounded-md border border-stone-200 bg-white">
+      <div
+        v-if="loading && rows.length > 0"
+        class="absolute inset-x-0 top-0 z-10 h-0.5 overflow-hidden bg-stone-100"
+      >
+        <div class="h-full w-1/3 animate-pulse rounded-full bg-zinc-300" />
+      </div>
       <table v-bind="$attrs" class="w-full border-collapse text-left text-sm">
-        <thead class="bg-stone-50 text-xs font-bold text-zinc-600">
+        <thead class="bg-stone-50 text-xs font-medium text-zinc-600">
           <tr>
             <th
               v-for="column in columns"
@@ -23,8 +29,8 @@
             </th>
           </tr>
         </thead>
-        <tbody :class="loading ? 'opacity-60' : ''">
-          <tr v-if="loading">
+        <tbody :class="loading && rows.length > 0 ? 'pointer-events-none opacity-60' : ''">
+          <tr v-if="loading && rows.length === 0">
             <td :colspan="Math.max(columns.length, 1)" class="px-4 py-8 text-center text-zinc-500">
               {{ t('Loading') }}...
             </td>
@@ -38,13 +44,13 @@
             v-for="{ row, level } in rows"
             v-else
             :key="rowKey(row, level)"
-            class="border-b border-stone-100 last:border-b-0 hover:bg-stone-50"
+            class="border-b border-stone-100 last:border-b-0 hover:bg-stone-50/70"
             @click="$emit('current-change', row)"
           >
             <td
               v-for="(column, index) in columns"
               :key="String(column.id)"
-              class="px-4 py-4 text-zinc-800"
+              class="px-4 py-3 text-zinc-800"
               :style="{
                 width: normalizeSize(column.width),
                 minWidth: normalizeSize(column.minWidth),

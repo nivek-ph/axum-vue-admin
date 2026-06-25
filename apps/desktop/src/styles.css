@@ -75,6 +75,10 @@ a {
   padding: 24px;
 }
 
+.page-hero-main:only-child {
+  grid-column: 1 / -1;
+}
+
 .page-hero-side {
   border-radius: 24px;
   padding: 22px;
@@ -97,10 +101,16 @@ a {
 }
 
 .page-hero-subtitle {
-  margin: 10px 0 0;
-  max-width: 52ch;
+  margin: 8px 0 0;
+  max-width: 42ch;
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.page-hero-main:only-child .page-hero-subtitle {
+  max-width: none;
+  white-space: nowrap;
 }
 
 .page-hero-kicker {
@@ -173,6 +183,10 @@ a {
   padding: 6px 8px 18px;
 }
 
+.page-panel-header > div:first-child {
+  min-width: 0;
+}
+
 .page-panel-title {
   margin: 0;
   font-size: 18px;
@@ -185,10 +199,21 @@ a {
   font-size: 13px;
 }
 
+.page-panel-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .page-panel-toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  align-items: flex-start;
+  gap: 14px 12px;
+  margin-bottom: 18px;
 }
 
 .surface-card {
@@ -659,7 +684,59 @@ textarea.compat-input {
 .inline-filter {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 14px 12px;
+  align-items: center;
+}
+
+.inline-filter > input,
+.inline-filter > textarea,
+.inline-filter > .ui-select,
+.inline-filter > [data-test="ui-select-trigger"] {
+  flex: 1 1 180px;
+  min-width: 0;
+  width: 100%;
+  max-width: none;
+  min-height: 40px;
+  border-radius: 6px;
+}
+
+.inline-filter > .ui-select,
+.inline-filter > [data-test="ui-select-trigger"] {
+  flex-basis: 150px;
+  max-width: 220px;
+}
+
+.inline-filter > button {
+  flex: 0 0 auto;
+  width: auto;
+  min-height: 40px;
+  border-radius: 6px;
+  padding-right: 18px;
+  padding-left: 18px;
+}
+
+@media (max-width: 640px) {
+  .page-hero-main:only-child .page-hero-subtitle {
+    white-space: normal;
+  }
+
+  .inline-filter {
+    display: flex;
+  }
+
+  .inline-filter > input,
+  .inline-filter > textarea,
+  .inline-filter > .ui-select,
+  .inline-filter > [data-test="ui-select-trigger"],
+  .inline-filter > button {
+    flex-basis: 100%;
+    width: 100%;
+    max-width: none;
+  }
+
+  .page-panel-actions {
+    flex-wrap: wrap;
+  }
 }
 
 .content-fade-enter-active,

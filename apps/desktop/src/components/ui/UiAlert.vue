@@ -17,7 +17,7 @@ const props = defineProps<{
 }>()
 
 const classes = computed(() => [
-  'flex items-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold',
+  'flex items-center gap-2 rounded-md border px-4 py-3 text-sm font-medium',
   props.type === 'success' && 'border-emerald-200 bg-emerald-50 text-emerald-700',
   props.type === 'warning' && 'border-amber-200 bg-amber-50 text-amber-700',
   props.type === 'error' && 'border-red-200 bg-red-50 text-red-700',

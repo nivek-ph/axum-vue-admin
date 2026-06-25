@@ -5,7 +5,7 @@ use sqlx::FromRow;
 
 use admin_httpz::AppError;
 
-use crate::errors;
+use crate::{authority::SUPER_ADMIN_AUTHORITY_ID, errors};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MenuMeta {
@@ -58,7 +58,29 @@ pub struct MenuView {
     pub parameters: Vec<MenuParameter>,
     #[serde(rename = "menuBtn")]
     pub menu_btn: Vec<MenuButton>,
+    #[serde(rename = "menuType", default = "default_menu_type")]
+    pub menu_type: String,
+    #[serde(default)]
+    pub permission: Option<String>,
+    #[serde(default)]
+    pub method: Option<String>,
+    #[serde(rename = "apiPath", default)]
+    pub api_path: Option<String>,
     pub children: Vec<MenuView>,
+}
+
+fn default_menu_type() -> String {
+    "page".to_string()
+}
+
+#[derive(Debug, Clone, Copy)]
+struct DefaultAction {
+    name: &'static str,
+    title: &'static str,
+    permission: &'static str,
+    method: &'static str,
+    api_path: &'static str,
+    sort: i32,
 }
 
 pub fn default_menus() -> Vec<MenuView> {
@@ -69,26 +91,295 @@ pub fn default_menus() -> Vec<MenuView> {
             "Dashboard",
             "view/dashboard/index.vue",
             "odometer",
+            Vec::new(),
         ),
-        (2, "users", "User", "view/users/index.vue", "user"),
-        (3, "roles", "Role", "view/roles/index.vue", "shield"),
-        (4, "menus", "Menu", "view/menus/index.vue", "menu"),
-        (5, "apis", "API", "view/apis/index.vue", "route"),
-        (6, "params", "Param", "view/params/index.vue", "sliders"),
+        (
+            2,
+            "users",
+            "Users",
+            "view/users/index.vue",
+            "user",
+            vec![
+                DefaultAction {
+                    name: "users:list",
+                    title: "List",
+                    permission: "system:user:list",
+                    method: "GET",
+                    api_path: "/api/users",
+                    sort: 10,
+                },
+                DefaultAction {
+                    name: "users:create",
+                    title: "Create",
+                    permission: "system:user:create",
+                    method: "POST",
+                    api_path: "/api/users",
+                    sort: 20,
+                },
+                DefaultAction {
+                    name: "users:update",
+                    title: "Update",
+                    permission: "system:user:update",
+                    method: "PUT",
+                    api_path: "/api/users/{id}",
+                    sort: 30,
+                },
+                DefaultAction {
+                    name: "users:delete",
+                    title: "Delete",
+                    permission: "system:user:delete",
+                    method: "DELETE",
+                    api_path: "/api/users/{id}",
+                    sort: 40,
+                },
+                DefaultAction {
+                    name: "users:reset-password",
+                    title: "Reset password",
+                    permission: "system:user:reset-password",
+                    method: "POST",
+                    api_path: "/api/users/{id}/password/reset",
+                    sort: 50,
+                },
+            ],
+        ),
+        (
+            3,
+            "roles",
+            "Roles",
+            "view/roles/index.vue",
+            "shield",
+            vec![
+                DefaultAction {
+                    name: "roles:list",
+                    title: "List",
+                    permission: "system:role:list",
+                    method: "GET",
+                    api_path: "/api/roles",
+                    sort: 10,
+                },
+                DefaultAction {
+                    name: "roles:create",
+                    title: "Create",
+                    permission: "system:role:create",
+                    method: "POST",
+                    api_path: "/api/roles",
+                    sort: 20,
+                },
+                DefaultAction {
+                    name: "roles:update",
+                    title: "Update",
+                    permission: "system:role:update",
+                    method: "PUT",
+                    api_path: "/api/roles/{authority_id}",
+                    sort: 30,
+                },
+                DefaultAction {
+                    name: "roles:delete",
+                    title: "Delete",
+                    permission: "system:role:delete",
+                    method: "DELETE",
+                    api_path: "/api/roles/{authority_id}",
+                    sort: 40,
+                },
+                DefaultAction {
+                    name: "roles:list-users",
+                    title: "View members",
+                    permission: "system:role:list-users",
+                    method: "GET",
+                    api_path: "/api/roles/{authority_id}/users",
+                    sort: 50,
+                },
+                DefaultAction {
+                    name: "roles:assign-users",
+                    title: "Assign users",
+                    permission: "system:role:assign-users",
+                    method: "PUT",
+                    api_path: "/api/roles/{authority_id}/users",
+                    sort: 60,
+                },
+                DefaultAction {
+                    name: "roles:permission-tree",
+                    title: "Permission tree",
+                    permission: "system:role:permission-tree",
+                    method: "GET",
+                    api_path: "/api/roles/permissions/tree",
+                    sort: 70,
+                },
+                DefaultAction {
+                    name: "roles:permission-matrix",
+                    title: "Permission matrix",
+                    permission: "system:role:permission-matrix",
+                    method: "GET",
+                    api_path: "/api/roles/permissions/role-matrix",
+                    sort: 80,
+                },
+                DefaultAction {
+                    name: "roles:update-permission",
+                    title: "Save permissions",
+                    permission: "system:role:update-permission",
+                    method: "PUT",
+                    api_path: "/api/menus/authority",
+                    sort: 90,
+                },
+            ],
+        ),
+        (
+            4,
+            "menus",
+            "Menus",
+            "view/menus/index.vue",
+            "menu",
+            vec![
+                DefaultAction {
+                    name: "menus:list",
+                    title: "List",
+                    permission: "system:menu:list",
+                    method: "GET",
+                    api_path: "/api/menus",
+                    sort: 10,
+                },
+                DefaultAction {
+                    name: "menus:create",
+                    title: "Create",
+                    permission: "system:menu:create",
+                    method: "POST",
+                    api_path: "/api/menus",
+                    sort: 20,
+                },
+                DefaultAction {
+                    name: "menus:update",
+                    title: "Update",
+                    permission: "system:menu:update",
+                    method: "PUT",
+                    api_path: "/api/menus/{id}",
+                    sort: 30,
+                },
+                DefaultAction {
+                    name: "menus:delete",
+                    title: "Delete",
+                    permission: "system:menu:delete",
+                    method: "DELETE",
+                    api_path: "/api/menus/{id}",
+                    sort: 40,
+                },
+            ],
+        ),
+        (
+            5,
+            "apis",
+            "API directory",
+            "view/apis/index.vue",
+            "route",
+            vec![
+                DefaultAction {
+                    name: "apis:list",
+                    title: "List",
+                    permission: "system:api:list",
+                    method: "GET",
+                    api_path: "/api/routes",
+                    sort: 10,
+                },
+                DefaultAction {
+                    name: "apis:create",
+                    title: "Create",
+                    permission: "system:api:create",
+                    method: "POST",
+                    api_path: "/api/routes",
+                    sort: 20,
+                },
+                DefaultAction {
+                    name: "apis:update",
+                    title: "Update",
+                    permission: "system:api:update",
+                    method: "PUT",
+                    api_path: "/api/routes/{id}",
+                    sort: 30,
+                },
+                DefaultAction {
+                    name: "apis:delete",
+                    title: "Delete",
+                    permission: "system:api:delete",
+                    method: "DELETE",
+                    api_path: "/api/routes/{id}",
+                    sort: 40,
+                },
+                DefaultAction {
+                    name: "apis:list-roles",
+                    title: "View roles",
+                    permission: "system:api:list-roles",
+                    method: "GET",
+                    api_path: "/api/routes/roles",
+                    sort: 50,
+                },
+                DefaultAction {
+                    name: "apis:assign-roles",
+                    title: "Assign roles",
+                    permission: "system:api:assign-roles",
+                    method: "PUT",
+                    api_path: "/api/routes/roles",
+                    sort: 60,
+                },
+            ],
+        ),
+        (
+            6,
+            "params",
+            "Params",
+            "view/params/index.vue",
+            "sliders",
+            vec![DefaultAction {
+                name: "params:list",
+                title: "List",
+                permission: "system:param:list",
+                method: "GET",
+                api_path: "/api/params",
+                sort: 10,
+            }],
+        ),
         (
             7,
             "dictionaries",
-            "Dictionary",
+            "Dictionaries",
             "view/dictionaries/index.vue",
             "book",
+            vec![DefaultAction {
+                name: "dictionaries:list",
+                title: "List",
+                permission: "system:dictionary:list",
+                method: "GET",
+                api_path: "/api/dictionaries",
+                sort: 10,
+            }],
         ),
-        (8, "files", "File", "view/files/index.vue", "file"),
+        (
+            8,
+            "files",
+            "Files",
+            "view/files/index.vue",
+            "file",
+            vec![DefaultAction {
+                name: "files:list",
+                title: "List",
+                permission: "system:file:list",
+                method: "GET",
+                api_path: "/api/files",
+                sort: 10,
+            }],
+        ),
         (
             9,
             "login-logs",
             "Login logs",
             "view/login-logs/index.vue",
             "history",
+            vec![DefaultAction {
+                name: "login-logs:list",
+                title: "List",
+                permission: "system:login-log:list",
+                method: "GET",
+                api_path: "/api/login-logs",
+                sort: 10,
+            }],
         ),
         (
             10,
@@ -96,14 +387,47 @@ pub fn default_menus() -> Vec<MenuView> {
             "Operation logs",
             "view/operation-logs/index.vue",
             "list",
+            vec![DefaultAction {
+                name: "operation-logs:list",
+                title: "List",
+                permission: "system:operation-log:list",
+                method: "GET",
+                api_path: "/api/operation-logs",
+                sort: 10,
+            }],
         ),
-        (11, "profile", "Profile", "view/profile/index.vue", "user"),
+        (
+            11,
+            "profile",
+            "Profile",
+            "view/profile/index.vue",
+            "user",
+            Vec::new(),
+        ),
         (
             12,
             "system-config",
             "System config",
             "view/system-config/index.vue",
             "settings",
+            vec![
+                DefaultAction {
+                    name: "system-config:get",
+                    title: "View config",
+                    permission: "system:config:get",
+                    method: "GET",
+                    api_path: "/api/system/config",
+                    sort: 10,
+                },
+                DefaultAction {
+                    name: "system-config:update",
+                    title: "Update config",
+                    permission: "system:config:update",
+                    method: "PUT",
+                    api_path: "/api/system/config",
+                    sort: 20,
+                },
+            ],
         ),
         (
             13,
@@ -111,15 +435,32 @@ pub fn default_menus() -> Vec<MenuView> {
             "System status",
             "view/system-state/index.vue",
             "activity",
+            vec![DefaultAction {
+                name: "system-state:get",
+                title: "View status",
+                permission: "system:state:get",
+                method: "GET",
+                api_path: "/api/system/server-info",
+                sort: 10,
+            }],
         ),
     ]
     .into_iter()
-    .map(|(id, name, title, component, icon)| default_menu(id, name, title, component, icon))
+    .map(|(id, name, title, component, icon, actions)| {
+        default_menu(id, name, title, component, icon, actions)
+    })
     .collect()
 }
 
-fn default_menu(id: i64, name: &str, title: &str, component: &str, icon: &str) -> MenuView {
-    MenuView {
+fn default_menu(
+    id: i64,
+    name: &str,
+    title: &str,
+    component: &str,
+    icon: &str,
+    actions: Vec<DefaultAction>,
+) -> MenuView {
+    let mut menu = MenuView {
         id,
         parent_id: 0,
         path: name.to_string(),
@@ -138,6 +479,43 @@ fn default_menu(id: i64, name: &str, title: &str, component: &str, icon: &str) -
         },
         parameters: Vec::new(),
         menu_btn: Vec::new(),
+        menu_type: "page".to_string(),
+        permission: None,
+        method: None,
+        api_path: None,
+        children: Vec::new(),
+    };
+    menu.children = actions
+        .into_iter()
+        .map(|action| default_action(id, action))
+        .collect();
+    menu
+}
+
+fn default_action(parent_id: i64, action: DefaultAction) -> MenuView {
+    MenuView {
+        id: 0,
+        parent_id,
+        path: String::new(),
+        name: action.name.to_string(),
+        hidden: true,
+        component: String::new(),
+        sort: action.sort,
+        meta: MenuMeta {
+            active_name: String::new(),
+            keep_alive: false,
+            default_menu: false,
+            title: action.title.to_string(),
+            icon: String::new(),
+            close_tab: false,
+            transition_type: String::new(),
+        },
+        parameters: Vec::new(),
+        menu_btn: Vec::new(),
+        menu_type: "action".to_string(),
+        permission: Some(action.permission.to_string()),
+        method: Some(action.method.to_string()),
+        api_path: Some(action.api_path.to_string()),
         children: Vec::new(),
     }
 }
@@ -160,6 +538,10 @@ pub struct MenuRecord {
     pub transition_type: String,
     pub parameters: Option<serde_json::Value>,
     pub menu_btn: Option<serde_json::Value>,
+    pub menu_type: String,
+    pub permission: Option<String>,
+    pub method: Option<String>,
+    pub api_path: Option<String>,
 }
 
 #[derive(Debug, Clone, FromRow)]
@@ -226,64 +608,12 @@ impl From<MenuError> for AppError {
 }
 
 pub async fn ensure_default_menu(pool: &sqlx::PgPool) -> Result<(), sqlx::Error> {
-    for menu in default_menus() {
-        let menu_id: i64 = sqlx::query_scalar(
-            r#"
-            insert into sys_menus (
-                parent_id, path, name, hidden, component, sort,
-                active_name, keep_alive, default_menu, title, icon, close_tab, transition_type,
-                parameters, menu_btn
-            ) values (
-                $1, $2, $3, $4, $5, $6,
-                $7, $8, $9, $10, $11, $12, $13,
-                $14, $15
-            )
-            on conflict (name) do update
-            set parent_id = excluded.parent_id,
-                path = excluded.path,
-                hidden = excluded.hidden,
-                component = excluded.component,
-                sort = excluded.sort,
-                active_name = excluded.active_name,
-                keep_alive = excluded.keep_alive,
-                default_menu = excluded.default_menu,
-                title = excluded.title,
-                icon = excluded.icon,
-                close_tab = excluded.close_tab,
-                transition_type = excluded.transition_type,
-                parameters = excluded.parameters,
-                menu_btn = excluded.menu_btn
-            returning id
-            "#,
-        )
-        .bind(menu.parent_id)
-        .bind(menu.path)
-        .bind(menu.name)
-        .bind(menu.hidden)
-        .bind(menu.component)
-        .bind(menu.sort)
-        .bind(menu.meta.active_name)
-        .bind(menu.meta.keep_alive)
-        .bind(menu.meta.default_menu)
-        .bind(menu.meta.title)
-        .bind(menu.meta.icon)
-        .bind(menu.meta.close_tab)
-        .bind(menu.meta.transition_type)
-        .bind(serde_json::to_value(menu.parameters).unwrap_or_else(|_| serde_json::json!([])))
-        .bind(serde_json::to_value(menu.menu_btn).unwrap_or_else(|_| serde_json::json!([])))
-        .fetch_one(pool)
-        .await?;
-
-        sqlx::query(
-            r#"
-            insert into sys_role_menus (authority_id, menu_id)
-            values (888, $1)
-            on conflict do nothing
-            "#,
-        )
-        .bind(menu_id)
-        .execute(pool)
-        .await?;
+    for mut menu in default_menus() {
+        let children = std::mem::take(&mut menu.children);
+        let menu_id = insert_menu_node(pool, menu, 0).await?;
+        for child in children {
+            insert_menu_node(pool, child, menu_id).await?;
+        }
     }
 
     sqlx::query(
@@ -299,6 +629,80 @@ pub async fn ensure_default_menu(pool: &sqlx::PgPool) -> Result<(), sqlx::Error>
     .await?;
 
     Ok(())
+}
+
+async fn insert_menu_node(
+    pool: &sqlx::PgPool,
+    menu: MenuView,
+    parent_id: i64,
+) -> Result<i64, sqlx::Error> {
+    let menu_id: i64 = sqlx::query_scalar(
+        r#"
+        insert into sys_menus (
+            parent_id, path, name, hidden, component, sort,
+            active_name, keep_alive, default_menu, title, icon, close_tab, transition_type,
+            parameters, menu_btn, menu_type, permission, method, api_path
+        ) values (
+            $1, $2, $3, $4, $5, $6,
+            $7, $8, $9, $10, $11, $12, $13,
+            $14, $15, $16, $17, $18, $19
+        )
+        on conflict (name) do update
+        set parent_id = excluded.parent_id,
+            path = excluded.path,
+            hidden = excluded.hidden,
+            component = excluded.component,
+            sort = excluded.sort,
+            active_name = excluded.active_name,
+            keep_alive = excluded.keep_alive,
+            default_menu = excluded.default_menu,
+            title = excluded.title,
+            icon = excluded.icon,
+            close_tab = excluded.close_tab,
+            transition_type = excluded.transition_type,
+            parameters = excluded.parameters,
+            menu_btn = excluded.menu_btn,
+            menu_type = excluded.menu_type,
+            permission = excluded.permission,
+            method = excluded.method,
+            api_path = excluded.api_path
+        returning id
+        "#,
+    )
+    .bind(parent_id)
+    .bind(menu.path)
+    .bind(menu.name)
+    .bind(menu.hidden)
+    .bind(menu.component)
+    .bind(menu.sort)
+    .bind(menu.meta.active_name)
+    .bind(menu.meta.keep_alive)
+    .bind(menu.meta.default_menu)
+    .bind(menu.meta.title)
+    .bind(menu.meta.icon)
+    .bind(menu.meta.close_tab)
+    .bind(menu.meta.transition_type)
+    .bind(serde_json::to_value(menu.parameters).unwrap_or_else(|_| serde_json::json!([])))
+    .bind(serde_json::to_value(menu.menu_btn).unwrap_or_else(|_| serde_json::json!([])))
+    .bind(menu.menu_type)
+    .bind(menu.permission)
+    .bind(menu.method)
+    .bind(menu.api_path)
+    .fetch_one(pool)
+    .await?;
+
+    sqlx::query(
+        r#"
+        insert into sys_role_menus (authority_id, menu_id)
+        values (888, $1)
+        on conflict do nothing
+        "#,
+    )
+    .bind(menu_id)
+    .execute(pool)
+    .await?;
+
+    Ok(menu_id)
 }
 
 pub async fn get_menu_tree_for_authority(
@@ -334,14 +738,19 @@ pub async fn get_menu_tree_for_authority(
             m.close_tab,
             m.transition_type,
             m.parameters,
-            m.menu_btn
+            m.menu_btn,
+            m.menu_type,
+            m.permission,
+            m.method,
+            m.api_path
         from sys_menus m
         order by m.sort asc, m.id asc
         "#,
     )
     .fetch_all(pool)
     .await?;
-    let rows = filter_authorized_with_ancestors(&rows, &authorized_menu_ids);
+    let authorized_rows = filter_authorized_with_ancestors(&rows, &authorized_menu_ids);
+    let rows = filter_navigation_rows(&authorized_rows, &rows, &authorized_menu_ids);
 
     Ok(build_tree(&rows, 0))
 }
@@ -351,7 +760,8 @@ pub async fn get_menu_list(pool: &sqlx::PgPool) -> Result<Vec<MenuView>, MenuErr
         r#"
         select
             id, parent_id, path, name, hidden, component, sort, active_name, keep_alive,
-            default_menu, title, icon, close_tab, transition_type, parameters, menu_btn
+            default_menu, title, icon, close_tab, transition_type, parameters, menu_btn,
+            menu_type, permission, method, api_path
         from sys_menus
         order by sort asc, id asc
         "#,
@@ -372,11 +782,11 @@ pub async fn add_base_menu(pool: &sqlx::PgPool, payload: MenuView) -> Result<(),
         insert into sys_menus (
             parent_id, path, name, hidden, component, sort,
             active_name, keep_alive, default_menu, title, icon, close_tab, transition_type,
-            parameters, menu_btn
+            parameters, menu_btn, menu_type, permission, method, api_path
         ) values (
             $1, $2, $3, $4, $5, $6,
             $7, $8, $9, $10, $11, $12, $13,
-            $14, $15
+            $14, $15, $16, $17, $18, $19
         )
         "#,
     )
@@ -395,6 +805,10 @@ pub async fn add_base_menu(pool: &sqlx::PgPool, payload: MenuView) -> Result<(),
     .bind(payload.meta.transition_type)
     .bind(serde_json::to_value(payload.parameters).map_err(|_| MenuError::InvalidPayload)?)
     .bind(serde_json::to_value(payload.menu_btn).map_err(|_| MenuError::InvalidPayload)?)
+    .bind(payload.menu_type)
+    .bind(payload.permission)
+    .bind(payload.method)
+    .bind(payload.api_path)
     .execute(pool)
     .await?;
     Ok(())
@@ -418,8 +832,12 @@ pub async fn update_base_menu(pool: &sqlx::PgPool, payload: MenuView) -> Result<
             close_tab = $12,
             transition_type = $13,
             parameters = $14,
-            menu_btn = $15
-        where id = $16
+            menu_btn = $15,
+            menu_type = $16,
+            permission = $17,
+            method = $18,
+            api_path = $19
+        where id = $20
         "#,
     )
     .bind(payload.parent_id)
@@ -437,6 +855,10 @@ pub async fn update_base_menu(pool: &sqlx::PgPool, payload: MenuView) -> Result<
     .bind(payload.meta.transition_type)
     .bind(serde_json::to_value(payload.parameters).map_err(|_| MenuError::InvalidPayload)?)
     .bind(serde_json::to_value(payload.menu_btn).map_err(|_| MenuError::InvalidPayload)?)
+    .bind(payload.menu_type)
+    .bind(payload.permission)
+    .bind(payload.method)
+    .bind(payload.api_path)
     .bind(payload.id)
     .execute(pool)
     .await?;
@@ -460,7 +882,8 @@ pub async fn get_base_menu_by_id(pool: &sqlx::PgPool, menu_id: i64) -> Result<Me
         r#"
         select
             id, parent_id, path, name, hidden, component, sort, active_name, keep_alive,
-            default_menu, title, icon, close_tab, transition_type, parameters, menu_btn
+            default_menu, title, icon, close_tab, transition_type, parameters, menu_btn,
+            menu_type, permission, method, api_path
         from sys_menus
         where id = $1
         "#,
@@ -487,7 +910,8 @@ pub async fn get_menu_authority(
         r#"
         select
             id, parent_id, path, name, hidden, component, sort, active_name, keep_alive,
-            default_menu, title, icon, close_tab, transition_type, parameters, menu_btn
+            default_menu, title, icon, close_tab, transition_type, parameters, menu_btn,
+            menu_type, permission, method, api_path
         from sys_menus
         where id = any($1)
         order by sort asc, id asc
@@ -655,6 +1079,36 @@ fn filter_authorized_with_ancestors(
         .collect()
 }
 
+fn filter_navigation_rows(
+    authorized_rows: &[MenuRecord],
+    all_rows: &[MenuRecord],
+    authorized_menu_ids: &[i64],
+) -> Vec<MenuRecord> {
+    let authorized_ids = authorized_menu_ids.iter().copied().collect::<HashSet<_>>();
+    let mut page_ids_with_actions = HashSet::new();
+    let mut page_ids_with_authorized_actions = HashSet::new();
+
+    for row in all_rows {
+        if row.menu_type != "action" {
+            continue;
+        }
+        page_ids_with_actions.insert(row.parent_id);
+        if authorized_ids.contains(&row.id) {
+            page_ids_with_authorized_actions.insert(row.parent_id);
+        }
+    }
+
+    authorized_rows
+        .iter()
+        .filter(|row| row.menu_type != "action")
+        .filter(|row| {
+            !page_ids_with_actions.contains(&row.id)
+                || page_ids_with_authorized_actions.contains(&row.id)
+        })
+        .cloned()
+        .collect()
+}
+
 fn build_tree(rows: &[MenuRecord], parent_id: i64) -> Vec<MenuView> {
     let mut menus = rows
         .iter()
@@ -700,8 +1154,127 @@ fn build_menu_view(row: &MenuRecord) -> Result<MenuView, MenuError> {
                 .unwrap_or_else(|| serde_json::json!([])),
         )
         .map_err(|_| MenuError::InvalidPayload)?,
+        menu_type: row.menu_type.clone(),
+        permission: row.permission.clone(),
+        method: row.method.clone(),
+        api_path: row.api_path.clone(),
         children: Vec::new(),
     })
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PermissionAccessDecision {
+    Allowed,
+    Denied,
+    Unregistered,
+}
+
+#[derive(Debug, Clone, FromRow)]
+struct RegisteredPermissionPath {
+    pub id: i64,
+    pub api_path: String,
+}
+
+pub fn route_pattern_matches(pattern: &str, path: &str) -> bool {
+    let pattern_segments = pattern.trim_matches('/').split('/').collect::<Vec<_>>();
+    let path_segments = path.trim_matches('/').split('/').collect::<Vec<_>>();
+
+    pattern_segments.len() == path_segments.len()
+        && pattern_segments.iter().zip(path_segments.iter()).all(
+            |(pattern_segment, path_segment)| {
+                is_dynamic_segment(pattern_segment) || pattern_segment == path_segment
+            },
+        )
+}
+
+fn is_dynamic_segment(segment: &str) -> bool {
+    (segment.starts_with('{') && segment.ends_with('}')) || segment.starts_with(':')
+}
+
+pub async fn check_permission_access(
+    pool: &sqlx::PgPool,
+    authority_id: i64,
+    path: &str,
+    method: &str,
+) -> Result<PermissionAccessDecision, MenuError> {
+    if authority_id == SUPER_ADMIN_AUTHORITY_ID {
+        return Ok(PermissionAccessDecision::Allowed);
+    }
+
+    let method = method.to_ascii_uppercase();
+    let candidates = sqlx::query_as::<_, RegisteredPermissionPath>(
+        r#"
+        select id, api_path
+        from sys_menus
+        where menu_type = 'action'
+          and method = $1
+          and api_path is not null
+        order by api_path
+        "#,
+    )
+    .bind(method)
+    .fetch_all(pool)
+    .await?;
+
+    let exact_ids = candidates
+        .iter()
+        .filter(|permission| permission.api_path == path)
+        .map(|permission| permission.id)
+        .collect::<Vec<_>>();
+    let matched_menu_ids = if exact_ids.is_empty() {
+        candidates
+            .iter()
+            .filter(|permission| route_pattern_matches(&permission.api_path, path))
+            .map(|permission| permission.id)
+            .collect::<Vec<_>>()
+    } else {
+        exact_ids
+    };
+
+    if matched_menu_ids.is_empty() {
+        return Ok(PermissionAccessDecision::Unregistered);
+    }
+
+    let allowed: Option<i64> = sqlx::query_scalar(
+        r#"
+        select menu_id
+        from sys_role_menus
+        where authority_id = $1 and menu_id = any($2)
+        limit 1
+        "#,
+    )
+    .bind(authority_id)
+    .bind(&matched_menu_ids)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(if allowed.is_some() {
+        PermissionAccessDecision::Allowed
+    } else {
+        PermissionAccessDecision::Denied
+    })
+}
+
+pub async fn get_permissions_by_authority_id(
+    pool: &sqlx::PgPool,
+    authority_id: i64,
+) -> Result<Vec<String>, MenuError> {
+    let permissions = sqlx::query_scalar(
+        r#"
+        select m.permission
+        from sys_role_menus rm
+        inner join sys_menus m on m.id = rm.menu_id
+        where rm.authority_id = $1
+          and m.menu_type = 'action'
+          and m.permission is not null
+        order by m.permission
+        "#,
+    )
+    .bind(authority_id)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(permissions)
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -750,6 +1323,10 @@ mod tests {
             transition_type: String::new(),
             parameters: Some(serde_json::json!([])),
             menu_btn: Some(serde_json::json!([])),
+            menu_type: "page".to_string(),
+            permission: None,
+            method: None,
+            api_path: None,
         }
     }
 
@@ -764,5 +1341,36 @@ mod tests {
         assert_eq!(tree[0].name, "system");
         assert_eq!(tree[0].children.len(), 1);
         assert_eq!(tree[0].children[0].name, "users");
+    }
+
+    #[test]
+    fn navigation_hides_pages_without_authorized_actions() {
+        let mut users = menu_record(1, 0, "users");
+        let mut list = menu_record(2, 1, "users:list");
+        list.menu_type = "action".to_string();
+        list.permission = Some("system:user:list".to_string());
+
+        let visible =
+            filter_navigation_rows(&[users.clone()], &[users.clone(), list.clone()], &[1]);
+        assert!(visible.is_empty());
+
+        users.menu_type = "page".to_string();
+        let visible =
+            filter_navigation_rows(&[users.clone(), list.clone()], &[users, list], &[1, 2]);
+        assert_eq!(visible.len(), 1);
+        assert_eq!(visible[0].name, "users");
+    }
+
+    #[test]
+    fn route_pattern_matches_dynamic_permission_paths() {
+        assert!(route_pattern_matches("/api/users/{id}", "/api/users/2"));
+        assert!(route_pattern_matches(
+            "/api/roles/{authority_id}/permission",
+            "/api/roles/1/permission",
+        ));
+        assert!(!route_pattern_matches(
+            "/api/users/{id}",
+            "/api/users/2/password/reset",
+        ));
     }
 }

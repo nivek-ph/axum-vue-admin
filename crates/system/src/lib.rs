@@ -32,6 +32,26 @@ mod tests {
     }
 
     #[test]
+    fn default_menus_include_button_permission_nodes() {
+        let menus = crate::menu::default_menus();
+        let users = menus
+            .iter()
+            .find(|menu| menu.name == "users")
+            .expect("users menu");
+        let action_permissions = users
+            .children
+            .iter()
+            .filter_map(|child| child.permission.as_deref())
+            .collect::<Vec<_>>();
+
+        assert!(action_permissions.contains(&"system:user:list"));
+        assert!(action_permissions.contains(&"system:user:create"));
+        assert!(action_permissions.contains(&"system:user:update"));
+        assert!(action_permissions.contains(&"system:user:delete"));
+        assert!(action_permissions.contains(&"system:user:reset-password"));
+    }
+
+    #[test]
     fn default_authorities_contains_super_admin() {
         let authorities = crate::authority::default_authorities();
 

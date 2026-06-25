@@ -67,7 +67,7 @@ pub async fn require_auth(
     let user_id = user.id;
 
     if !is_self_service_endpoint(&method, &permission_path) {
-        match system::api_registry::check_api_access(
+        match system::menu::check_permission_access(
             &state.pool,
             user.authority_id,
             &permission_path,
@@ -75,9 +75,9 @@ pub async fn require_auth(
         )
         .await?
         {
-            system::api_registry::ApiAccessDecision::Allowed => {}
-            system::api_registry::ApiAccessDecision::Denied
-            | system::api_registry::ApiAccessDecision::Unregistered => {
+            system::menu::PermissionAccessDecision::Allowed => {}
+            system::menu::PermissionAccessDecision::Denied
+            | system::menu::PermissionAccessDecision::Unregistered => {
                 return Err(PERMISSION_DENIED.into());
             }
         }
