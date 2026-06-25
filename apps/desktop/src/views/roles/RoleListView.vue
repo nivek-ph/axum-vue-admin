@@ -67,7 +67,7 @@
             <UiButton
               v-if="canDeleteRole"
               type="danger"
-              :disabled="selectedAuthority.authorityId === 888"
+              :disabled="selectedAuthority.authorityId === SUPER_ADMIN_AUTHORITY_ID"
               @click="handleDelete(selectedAuthority)"
             >
               {{ $t('Delete') }}
@@ -104,7 +104,7 @@
               <p class="content-subtitle">{{ $t('Select page access to include button permissions under that page and avoid visible pages with 403 APIs.') }}</p>
             </div>
             <UiButton
-              v-if="canManageFunctionPermissions"
+              v-if="canManageFunctionPermissions && !isSuperAdminRole"
               data-test="save-function-permissions"
               type="primary"
               :loading="functionSubmitting"
@@ -140,7 +140,7 @@
                         <input
                           :data-test="`menu-permission-${menu.ID}-${selectedAuthority.authorityId}`"
                           type="checkbox"
-                          :disabled="!canManageFunctionPermissions"
+                          :disabled="isPermissionEditingDisabled"
                           :checked="pageAccessChecked(menu)"
                           @change="onPageAccessChange(menu, $event)"
                         />
@@ -157,7 +157,7 @@
                         <input
                           :data-test="`action-permission-${action.permission || action.ID}-${selectedAuthority.authorityId}`"
                           type="checkbox"
-                          :disabled="!canManageFunctionPermissions"
+                          :disabled="isPermissionEditingDisabled"
                           :checked="actionAccessChecked(action)"
                           @change="onActionAccessChange(menu, action, $event)"
                         />
@@ -296,6 +296,7 @@ import {
 import { useAuthStore } from '@/stores/auth'
 import { fetchUsers, type UserRecord } from '@/api/users'
 import { t } from '@/i18n'
+import { SUPER_ADMIN_AUTHORITY_ID } from '@/constants/auth'
 
 type DialogMode = 'create' | 'edit'
 type PermissionTab = 'menus' | 'users'
@@ -339,6 +340,12 @@ const canDeleteRole = computed(() => authStore.can('system:role:delete'))
 const canAssignRoleUsers = computed(() => authStore.can('system:role:assign-users'))
 const canViewRoleUsers = computed(() => authStore.can('system:role:list-users') && authStore.can('system:user:list'))
 const canManageFunctionPermissions = computed(() => authStore.can('system:role:update-permission'))
+const isSuperAdminRole = computed(
+  () => selectedAuthorityId.value === SUPER_ADMIN_AUTHORITY_ID
+)
+const isPermissionEditingDisabled = computed(
+  () => !canManageFunctionPermissions.value || isSuperAdminRole.value
+)
 const filteredAuthorityOptions = computed(() => {
   const keyword = roleSearch.value.trim().toLowerCase()
   if (!keyword) return authorityOptions.value
@@ -519,7 +526,7 @@ function setMenuAccess(menuId: number, authorityId: number, enabled: boolean) {
 }
 
 function onPageAccessChange(menu: FlatMenu, event: Event) {
-  if (!selectedAuthorityId.value || !canManageFunctionPermissions.value) return
+  if (!selectedAuthorityId.value || isPermissionEditingDisabled.value) return
 
   const enabled = (event.target as HTMLInputElement).checked
   setMenuAccess(menu.ID, selectedAuthorityId.value, enabled)
@@ -529,7 +536,7 @@ function onPageAccessChange(menu: FlatMenu, event: Event) {
 }
 
 function onActionAccessChange(menu: FlatMenu, action: MenuRecord, event: Event) {
-  if (!selectedAuthorityId.value || !canManageFunctionPermissions.value) return
+  if (!selectedAuthorityId.value || isPermissionEditingDisabled.value) return
 
   const enabled = (event.target as HTMLInputElement).checked
   setMenuAccess(action.ID, selectedAuthorityId.value, enabled)
@@ -547,7 +554,7 @@ function isMenuRoleChecked(menuId: number, authorityId: number) {
 }
 
 function toggleMenuRole(menuId: number, authorityId: number) {
-  if (!canManageFunctionPermissions.value) return
+  if (isPermissionEditingDisabled.value) return
 
   const current = new Set(menuRoleMatrix.value[menuId] || [])
   if (current.has(authorityId)) {
@@ -563,7 +570,7 @@ function toggleMenuRole(menuId: number, authorityId: number) {
 }
 
 async function saveMenuPermissions(): Promise<boolean> {
-  if (!selectedAuthorityId.value || !canManageFunctionPermissions.value) return false
+  if (!selectedAuthorityId.value || isPermissionEditingDisabled.value) return false
 
   if (!permissionsDirty.value) {
     ElMessage.success(t('Role permissions updated'))

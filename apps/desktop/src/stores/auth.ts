@@ -16,6 +16,8 @@ export interface AuthUserInfo {
   permissions?: string[];
 }
 
+import { SUPER_ADMIN_AUTHORITY_ID } from '@/constants/auth';
+
 export const useAuthStore = defineStore('auth', () => {
   const persisted = readAuthSession();
   const token = ref(persisted.token);
@@ -49,7 +51,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function can(permission: string) {
-    if (userInfo.value?.authority?.authorityId === 888) return true;
+    if (userInfo.value?.authority?.authorityId === SUPER_ADMIN_AUTHORITY_ID) return true;
     return permissionSet.value.has(permission);
   }
 

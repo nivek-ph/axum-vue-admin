@@ -140,6 +140,14 @@ pub fn default_menus() -> Vec<MenuView> {
                     api_path: "/api/users/{id}/password/reset",
                     sort: 50,
                 },
+                DefaultAction {
+                    name: "users:assign-roles",
+                    title: "Assign roles",
+                    permission: "system:user:assign-roles",
+                    method: "PUT",
+                    api_path: "/api/users/{id}/authorities",
+                    sort: 60,
+                },
             ],
         ),
         (
@@ -262,6 +270,30 @@ pub fn default_menus() -> Vec<MenuView> {
                     api_path: "/api/menus/{id}",
                     sort: 40,
                 },
+                DefaultAction {
+                    name: "menus:tree",
+                    title: "Tree",
+                    permission: "system:menu:tree",
+                    method: "GET",
+                    api_path: "/api/menus/tree",
+                    sort: 50,
+                },
+                DefaultAction {
+                    name: "menus:get-authority",
+                    title: "View role menus",
+                    permission: "system:menu:get-authority",
+                    method: "GET",
+                    api_path: "/api/menus/authority",
+                    sort: 60,
+                },
+                DefaultAction {
+                    name: "menus:set-authority",
+                    title: "Assign role menus",
+                    permission: "system:menu:set-authority",
+                    method: "PUT",
+                    api_path: "/api/menus/authority",
+                    sort: 70,
+                },
             ],
         ),
         (
@@ -319,6 +351,30 @@ pub fn default_menus() -> Vec<MenuView> {
                     api_path: "/api/routes/roles",
                     sort: 60,
                 },
+                DefaultAction {
+                    name: "apis:batch-delete",
+                    title: "Batch delete",
+                    permission: "system:api:batch-delete",
+                    method: "DELETE",
+                    api_path: "/api/routes/batch",
+                    sort: 70,
+                },
+                DefaultAction {
+                    name: "apis:list-all",
+                    title: "List all",
+                    permission: "system:api:list-all",
+                    method: "GET",
+                    api_path: "/api/routes/all",
+                    sort: 80,
+                },
+                DefaultAction {
+                    name: "apis:groups",
+                    title: "Groups",
+                    permission: "system:api:groups",
+                    method: "GET",
+                    api_path: "/api/routes/groups",
+                    sort: 90,
+                },
             ],
         ),
         (
@@ -327,14 +383,64 @@ pub fn default_menus() -> Vec<MenuView> {
             "Params",
             "view/params/index.vue",
             "sliders",
-            vec![DefaultAction {
-                name: "params:list",
-                title: "List",
-                permission: "system:param:list",
-                method: "GET",
-                api_path: "/api/params",
-                sort: 10,
-            }],
+            vec![
+                DefaultAction {
+                    name: "params:list",
+                    title: "List",
+                    permission: "system:param:list",
+                    method: "GET",
+                    api_path: "/api/params",
+                    sort: 10,
+                },
+                DefaultAction {
+                    name: "params:create",
+                    title: "Create",
+                    permission: "system:param:create",
+                    method: "POST",
+                    api_path: "/api/params",
+                    sort: 20,
+                },
+                DefaultAction {
+                    name: "params:get-by-key",
+                    title: "Get by key",
+                    permission: "system:param:get-by-key",
+                    method: "GET",
+                    api_path: "/api/params/by-key",
+                    sort: 30,
+                },
+                DefaultAction {
+                    name: "params:batch-delete",
+                    title: "Batch delete",
+                    permission: "system:param:batch-delete",
+                    method: "DELETE",
+                    api_path: "/api/params/batch",
+                    sort: 40,
+                },
+                DefaultAction {
+                    name: "params:get",
+                    title: "Get",
+                    permission: "system:param:get",
+                    method: "GET",
+                    api_path: "/api/params/{id}",
+                    sort: 50,
+                },
+                DefaultAction {
+                    name: "params:update",
+                    title: "Update",
+                    permission: "system:param:update",
+                    method: "PUT",
+                    api_path: "/api/params/{id}",
+                    sort: 60,
+                },
+                DefaultAction {
+                    name: "params:delete",
+                    title: "Delete",
+                    permission: "system:param:delete",
+                    method: "DELETE",
+                    api_path: "/api/params/{id}",
+                    sort: 70,
+                },
+            ],
         ),
         (
             7,
@@ -342,14 +448,128 @@ pub fn default_menus() -> Vec<MenuView> {
             "Dictionaries",
             "view/dictionaries/index.vue",
             "book",
-            vec![DefaultAction {
-                name: "dictionaries:list",
-                title: "List",
-                permission: "system:dictionary:list",
-                method: "GET",
-                api_path: "/api/dictionaries",
-                sort: 10,
-            }],
+            vec![
+                DefaultAction {
+                    name: "dictionaries:list",
+                    title: "List",
+                    permission: "system:dictionary:list",
+                    method: "GET",
+                    api_path: "/api/dictionaries",
+                    sort: 10,
+                },
+                DefaultAction {
+                    name: "dictionaries:create",
+                    title: "Create",
+                    permission: "system:dictionary:create",
+                    method: "POST",
+                    api_path: "/api/dictionaries",
+                    sort: 20,
+                },
+                DefaultAction {
+                    name: "dictionaries:import",
+                    title: "Import",
+                    permission: "system:dictionary:import",
+                    method: "POST",
+                    api_path: "/api/dictionaries/import",
+                    sort: 30,
+                },
+                DefaultAction {
+                    name: "dictionaries:get",
+                    title: "Get",
+                    permission: "system:dictionary:get",
+                    method: "GET",
+                    api_path: "/api/dictionaries/{id}",
+                    sort: 40,
+                },
+                DefaultAction {
+                    name: "dictionaries:update",
+                    title: "Update",
+                    permission: "system:dictionary:update",
+                    method: "PUT",
+                    api_path: "/api/dictionaries/{id}",
+                    sort: 50,
+                },
+                DefaultAction {
+                    name: "dictionaries:delete",
+                    title: "Delete",
+                    permission: "system:dictionary:delete",
+                    method: "DELETE",
+                    api_path: "/api/dictionaries/{id}",
+                    sort: 60,
+                },
+                DefaultAction {
+                    name: "dictionaries:export",
+                    title: "Export",
+                    permission: "system:dictionary:export",
+                    method: "GET",
+                    api_path: "/api/dictionaries/{id}/export",
+                    sort: 70,
+                },
+                DefaultAction {
+                    name: "dictionaries:details-tree",
+                    title: "Details tree",
+                    permission: "system:dictionary:details-tree",
+                    method: "GET",
+                    api_path: "/api/dictionaries/{id}/details/tree",
+                    sort: 80,
+                },
+                DefaultAction {
+                    name: "dictionary-details:create",
+                    title: "Create detail",
+                    permission: "system:dictionary-detail:create",
+                    method: "POST",
+                    api_path: "/api/dictionary-details",
+                    sort: 90,
+                },
+                DefaultAction {
+                    name: "dictionary-details:tree-by-type",
+                    title: "Tree by type",
+                    permission: "system:dictionary-detail:tree-by-type",
+                    method: "GET",
+                    api_path: "/api/dictionary-details/tree-by-type",
+                    sort: 100,
+                },
+                DefaultAction {
+                    name: "dictionary-details:by-parent",
+                    title: "List by parent",
+                    permission: "system:dictionary-detail:by-parent",
+                    method: "GET",
+                    api_path: "/api/dictionary-details/by-parent",
+                    sort: 110,
+                },
+                DefaultAction {
+                    name: "dictionary-details:get",
+                    title: "Get detail",
+                    permission: "system:dictionary-detail:get",
+                    method: "GET",
+                    api_path: "/api/dictionary-details/{id}",
+                    sort: 120,
+                },
+                DefaultAction {
+                    name: "dictionary-details:update",
+                    title: "Update detail",
+                    permission: "system:dictionary-detail:update",
+                    method: "PUT",
+                    api_path: "/api/dictionary-details/{id}",
+                    sort: 130,
+                },
+                DefaultAction {
+                    name: "dictionary-details:delete",
+                    title: "Delete detail",
+                    permission: "system:dictionary-detail:delete",
+                    method: "DELETE",
+                    api_path: "/api/dictionary-details/{id}",
+                    sort: 140,
+                },
+                DefaultAction {
+                    name: "dictionary-details:path",
+                    title: "Detail path",
+                    permission: "system:dictionary-detail:path",
+                    method: "GET",
+                    api_path: "/api/dictionary-details/{id}/path",
+                    sort: 150,
+                },
+            ],
         ),
         (
             8,
@@ -357,14 +577,72 @@ pub fn default_menus() -> Vec<MenuView> {
             "Files",
             "view/files/index.vue",
             "file",
-            vec![DefaultAction {
-                name: "files:list",
-                title: "List",
-                permission: "system:file:list",
-                method: "GET",
-                api_path: "/api/files",
-                sort: 10,
-            }],
+            vec![
+                DefaultAction {
+                    name: "files:list",
+                    title: "List",
+                    permission: "system:file:list",
+                    method: "GET",
+                    api_path: "/api/files",
+                    sort: 10,
+                },
+                DefaultAction {
+                    name: "files:import-url",
+                    title: "Import URL",
+                    permission: "system:file:import-url",
+                    method: "POST",
+                    api_path: "/api/files/import-url",
+                    sort: 20,
+                },
+                DefaultAction {
+                    name: "files:upload",
+                    title: "Upload",
+                    permission: "system:file:upload",
+                    method: "POST",
+                    api_path: "/api/files/upload",
+                    sort: 30,
+                },
+                DefaultAction {
+                    name: "files:delete",
+                    title: "Delete",
+                    permission: "system:file:delete",
+                    method: "DELETE",
+                    api_path: "/api/files/{id}",
+                    sort: 40,
+                },
+                DefaultAction {
+                    name: "files:rename",
+                    title: "Rename",
+                    permission: "system:file:rename",
+                    method: "PATCH",
+                    api_path: "/api/files/{id}/name",
+                    sort: 50,
+                },
+                DefaultAction {
+                    name: "files:categories-list",
+                    title: "List categories",
+                    permission: "system:file:categories-list",
+                    method: "GET",
+                    api_path: "/api/attachment-categories",
+                    sort: 60,
+                },
+                DefaultAction {
+                    name: "files:categories-create",
+                    title: "Create category",
+                    permission: "system:file:categories-create",
+                    method: "POST",
+                    api_path: "/api/attachment-categories",
+                    sort: 70,
+                },
+                DefaultAction {
+                    name: "files:categories-delete",
+                    title: "Delete category",
+                    permission: "system:file:categories-delete",
+                    method: "DELETE",
+                    api_path: "/api/attachment-categories/{id}",
+                    sort: 80,
+                },
+            ],
         ),
         (
             9,
@@ -372,14 +650,40 @@ pub fn default_menus() -> Vec<MenuView> {
             "Login logs",
             "view/login-logs/index.vue",
             "history",
-            vec![DefaultAction {
-                name: "login-logs:list",
-                title: "List",
-                permission: "system:login-log:list",
-                method: "GET",
-                api_path: "/api/login-logs",
-                sort: 10,
-            }],
+            vec![
+                DefaultAction {
+                    name: "login-logs:list",
+                    title: "List",
+                    permission: "system:login-log:list",
+                    method: "GET",
+                    api_path: "/api/login-logs",
+                    sort: 10,
+                },
+                DefaultAction {
+                    name: "login-logs:batch-delete",
+                    title: "Batch delete",
+                    permission: "system:login-log:batch-delete",
+                    method: "DELETE",
+                    api_path: "/api/login-logs",
+                    sort: 20,
+                },
+                DefaultAction {
+                    name: "login-logs:get",
+                    title: "Get",
+                    permission: "system:login-log:get",
+                    method: "GET",
+                    api_path: "/api/login-logs/{id}",
+                    sort: 30,
+                },
+                DefaultAction {
+                    name: "login-logs:delete",
+                    title: "Delete",
+                    permission: "system:login-log:delete",
+                    method: "DELETE",
+                    api_path: "/api/login-logs/{id}",
+                    sort: 40,
+                },
+            ],
         ),
         (
             10,
@@ -387,14 +691,32 @@ pub fn default_menus() -> Vec<MenuView> {
             "Operation logs",
             "view/operation-logs/index.vue",
             "list",
-            vec![DefaultAction {
-                name: "operation-logs:list",
-                title: "List",
-                permission: "system:operation-log:list",
-                method: "GET",
-                api_path: "/api/operation-logs",
-                sort: 10,
-            }],
+            vec![
+                DefaultAction {
+                    name: "operation-logs:list",
+                    title: "List",
+                    permission: "system:operation-log:list",
+                    method: "GET",
+                    api_path: "/api/operation-logs",
+                    sort: 10,
+                },
+                DefaultAction {
+                    name: "operation-logs:batch-delete",
+                    title: "Batch delete",
+                    permission: "system:operation-log:batch-delete",
+                    method: "DELETE",
+                    api_path: "/api/operation-logs",
+                    sort: 20,
+                },
+                DefaultAction {
+                    name: "operation-logs:delete",
+                    title: "Delete",
+                    permission: "system:operation-log:delete",
+                    method: "DELETE",
+                    api_path: "/api/operation-logs/{id}",
+                    sort: 30,
+                },
+            ],
         ),
         (
             11,
@@ -593,6 +915,8 @@ pub enum MenuError {
     Database(#[from] sqlx::Error),
     #[error("invalid menu payload")]
     InvalidPayload,
+    #[error("default role permissions cannot be changed")]
+    RootAuthorityImmutable,
 }
 
 impl From<MenuError> for AppError {
@@ -603,6 +927,7 @@ impl From<MenuError> for AppError {
                 errors::menu::MENU_DB_FAILED.into_error().with_source(error)
             }
             MenuError::InvalidPayload => errors::menu::MENU_INVALID_PAYLOAD.into(),
+            MenuError::RootAuthorityImmutable => errors::menu::ROOT_AUTHORITY_IMMUTABLE.into(),
         }
     }
 }
@@ -1187,6 +1512,30 @@ pub fn route_pattern_matches(pattern: &str, path: &str) -> bool {
         )
 }
 
+pub fn is_dynamic_path_pattern(pattern: &str) -> bool {
+    pattern.trim_matches('/').split('/').any(is_dynamic_segment)
+}
+
+fn matching_permission_ids(candidates: &[RegisteredPermissionPath], path: &str) -> Vec<i64> {
+    let exact_ids = candidates
+        .iter()
+        .filter(|permission| permission.api_path == path)
+        .map(|permission| permission.id)
+        .collect::<Vec<_>>();
+    if !exact_ids.is_empty() {
+        return exact_ids;
+    }
+
+    candidates
+        .iter()
+        .filter(|permission| {
+            is_dynamic_path_pattern(&permission.api_path)
+                && route_pattern_matches(&permission.api_path, path)
+        })
+        .map(|permission| permission.id)
+        .collect()
+}
+
 fn is_dynamic_segment(segment: &str) -> bool {
     (segment.starts_with('{') && segment.ends_with('}')) || segment.starts_with(':')
 }
@@ -1216,20 +1565,7 @@ pub async fn check_permission_access(
     .fetch_all(pool)
     .await?;
 
-    let exact_ids = candidates
-        .iter()
-        .filter(|permission| permission.api_path == path)
-        .map(|permission| permission.id)
-        .collect::<Vec<_>>();
-    let matched_menu_ids = if exact_ids.is_empty() {
-        candidates
-            .iter()
-            .filter(|permission| route_pattern_matches(&permission.api_path, path))
-            .map(|permission| permission.id)
-            .collect::<Vec<_>>()
-    } else {
-        exact_ids
-    };
+    let matched_menu_ids = matching_permission_ids(&candidates, path);
 
     if matched_menu_ids.is_empty() {
         return Ok(PermissionAccessDecision::Unregistered);
@@ -1372,5 +1708,34 @@ mod tests {
             "/api/users/{id}",
             "/api/users/2/password/reset",
         ));
+    }
+
+    #[test]
+    fn static_paths_do_not_match_dynamic_patterns_without_dynamic_segments() {
+        assert!(!is_dynamic_path_pattern("/api/routes/batch"));
+        assert!(is_dynamic_path_pattern("/api/routes/{id}"));
+    }
+
+    #[test]
+    fn matching_permission_ids_prefers_exact_paths_over_dynamic_patterns() {
+        let candidates = vec![
+            RegisteredPermissionPath {
+                id: 1,
+                api_path: "/api/routes/{id}".to_string(),
+            },
+            RegisteredPermissionPath {
+                id: 2,
+                api_path: "/api/routes/batch".to_string(),
+            },
+        ];
+
+        assert_eq!(
+            matching_permission_ids(&candidates, "/api/routes/batch"),
+            vec![2]
+        );
+        assert_eq!(
+            matching_permission_ids(&candidates, "/api/routes/9"),
+            vec![1]
+        );
     }
 }

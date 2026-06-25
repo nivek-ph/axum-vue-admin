@@ -118,12 +118,15 @@ fn is_self_service_endpoint(method: &str, path: &str) -> bool {
 }
 
 fn permission_registry_path(path: &str) -> String {
-    if path == "/api" || path.starts_with("/api/") {
-        path.to_string()
-    } else if path.starts_with('/') {
-        format!("/api{path}")
+    let trimmed = path.trim_end_matches('/');
+    let normalized = if trimmed.is_empty() { "/api" } else { trimmed };
+
+    if normalized == "/api" || normalized.starts_with("/api/") {
+        normalized.to_string()
+    } else if normalized.starts_with('/') {
+        format!("/api{normalized}")
     } else {
-        format!("/api/{path}")
+        format!("/api/{normalized}")
     }
 }
 
@@ -179,5 +182,14 @@ mod tests {
             permission_registry_path("/api/menus/current"),
             "/api/menus/current"
         );
+    }
+
+    #[test]
+    fn permission_registry_path_trims_trailing_slashes() {
+        assert_eq!(permission_registry_path("/api/users/me/"), "/api/users/me");
+        assert!(is_self_service_endpoint(
+            "GET",
+            &permission_registry_path("/api/menus/current/")
+        ));
     }
 }

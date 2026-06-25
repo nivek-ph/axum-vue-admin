@@ -68,8 +68,10 @@ export function buildCoreMenuItems(remoteMenus?: RemoteMenuItem[]) {
   return coreMenuItems.filter((item) => remoteMap.has(item.key)).map((item) => remoteMap.get(item.key) || item)
 }
 
+import { SUPER_ADMIN_AUTHORITY_ID } from '@/constants/auth'
+
 export function isSuperAdminAuthority(authorityId?: number) {
-  return authorityId === 888
+  return authorityId === SUPER_ADMIN_AUTHORITY_ID
 }
 
 export const useMenuStore = defineStore('menu', () => {

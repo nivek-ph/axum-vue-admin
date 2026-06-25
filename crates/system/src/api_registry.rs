@@ -374,22 +374,37 @@ pub async fn get_api_role_matrix(pool: &sqlx::PgPool) -> Result<Vec<ApiRoleMatri
     .fetch_all(pool)
     .await?;
 
-    let mut grouped = BTreeMap::<(String, String), Vec<i64>>::new();
+    let mut items = Vec::new();
+    let mut current_key: Option<(String, String)> = None;
+    let mut current_ids = Vec::new();
+
     for row in rows {
-        let authority_ids = grouped.entry((row.path, row.method)).or_default();
+        let key = (row.path.clone(), row.method.clone());
+        if current_key.as_ref() != Some(&key) {
+            if let Some((path, method)) = current_key.take() {
+                items.push(ApiRoleMatrixItem {
+                    path,
+                    method,
+                    authority_ids: current_ids,
+                });
+                current_ids = Vec::new();
+            }
+            current_key = Some(key);
+        }
         if let Some(authority_id) = row.authority_id {
-            authority_ids.push(authority_id);
+            current_ids.push(authority_id);
         }
     }
 
-    Ok(grouped
-        .into_iter()
-        .map(|((path, method), authority_ids)| ApiRoleMatrixItem {
+    if let Some((path, method)) = current_key {
+        items.push(ApiRoleMatrixItem {
             path,
             method,
-            authority_ids,
-        })
-        .collect())
+            authority_ids: current_ids,
+        });
+    }
+
+    Ok(items)
 }
 
 pub async fn set_api_roles(
@@ -497,6 +512,27 @@ fn is_dynamic_segment(segment: &str) -> bool {
     (segment.starts_with('{') && segment.ends_with('}')) || segment.starts_with(':')
 }
 
+fn is_dynamic_path_pattern(pattern: &str) -> bool {
+    pattern.trim_matches('/').split('/').any(is_dynamic_segment)
+}
+
+fn matching_api_ids(candidates: &[RegisteredApiPath], path: &str) -> Vec<i64> {
+    let exact_ids = candidates
+        .iter()
+        .filter(|api| api.path == path)
+        .map(|api| api.id)
+        .collect::<Vec<_>>();
+    if !exact_ids.is_empty() {
+        return exact_ids;
+    }
+
+    candidates
+        .iter()
+        .filter(|api| is_dynamic_path_pattern(&api.path) && route_pattern_matches(&api.path, path))
+        .map(|api| api.id)
+        .collect()
+}
+
 pub async fn check_api_access(
     pool: &sqlx::PgPool,
     authority_id: i64,
@@ -520,20 +556,7 @@ pub async fn check_api_access(
     .fetch_all(pool)
     .await?;
 
-    let exact_ids = candidates
-        .iter()
-        .filter(|api| api.path == path)
-        .map(|api| api.id)
-        .collect::<Vec<_>>();
-    let matched_api_ids = if exact_ids.is_empty() {
-        candidates
-            .iter()
-            .filter(|api| route_pattern_matches(&api.path, path))
-            .map(|api| api.id)
-            .collect::<Vec<_>>()
-    } else {
-        exact_ids
-    };
+    let matched_api_ids = matching_api_ids(&candidates, path);
 
     if matched_api_ids.is_empty() {
         return Ok(ApiAccessDecision::Unregistered);

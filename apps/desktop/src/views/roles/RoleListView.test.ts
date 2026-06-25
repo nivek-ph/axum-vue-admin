@@ -202,28 +202,37 @@ describe('RoleListView', () => {
     const wrapper = mountWithAuthority();
 
     await flushWorkbench();
-    await wrapper.find('[data-test="role-list"] button:last-child').trigger('click');
+    await wrapper.find('[data-test="role-list"] button:first-child').trigger('click');
     await flushWorkbench();
 
-    const superAdminMenuCheckbox = wrapper.find('[data-test="menu-permission-2-888"]');
-    expect((superAdminMenuCheckbox.element as HTMLInputElement).checked).toBe(false);
-    await superAdminMenuCheckbox.setValue(true);
-
-    const superAdminActionCheckbox = wrapper.find('[data-test="action-permission-system:user:list-888"]');
-    expect((superAdminActionCheckbox.element as HTMLInputElement).checked).toBe(true);
+    const developerMenuCheckbox = wrapper.find('[data-test="menu-permission-2-1"]');
+    expect((developerMenuCheckbox.element as HTMLInputElement).checked).toBe(true);
+    await developerMenuCheckbox.setValue(false);
 
     await wrapper.find('[data-test="save-function-permissions"]').trigger('click');
     await flushWorkbench();
 
-    expect(mocks.setAuthorityMenus).toHaveBeenCalledWith(888, [2, 20, 21]);
+    expect(mocks.setAuthorityMenus).toHaveBeenCalled();
+    const [authorityId, menuIds] = mocks.setAuthorityMenus.mock.calls.at(-1)!;
+    expect(authorityId).toBe(1);
+    expect(menuIds).not.toContain(2);
+    expect(menuIds).not.toContain(20);
+  });
 
-    await wrapper.find('[data-test="role-users-tab"]').trigger('click');
+  it('disables permission editing for the super admin role', async () => {
+    const wrapper = mountWithAuthority();
+
+    await flushWorkbench();
+    await wrapper.find('[data-test="role-list"] button:last-child').trigger('click');
     await flushWorkbench();
 
-    expect(wrapper.text()).toContain('Selected members');
-    expect(wrapper.text()).toContain('1 / 2');
-    expect(wrapper.text()).toContain('admin');
-    expect(wrapper.text()).toContain('nick');
+    expect(wrapper.find('[data-test="save-function-permissions"]').exists()).toBe(false);
+
+    const superAdminMenuCheckbox = wrapper.find('[data-test="menu-permission-2-888"]');
+    expect((superAdminMenuCheckbox.element as HTMLInputElement).disabled).toBe(true);
+
+    const superAdminActionCheckbox = wrapper.find('[data-test="action-permission-system:user:list-888"]');
+    expect((superAdminActionCheckbox.element as HTMLInputElement).disabled).toBe(true);
   });
 
   it('hides permission save controls without role permission', async () => {
