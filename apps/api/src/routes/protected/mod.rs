@@ -1,6 +1,7 @@
 pub mod api;
 pub mod attachment_category;
 pub mod authority;
+pub mod dept;
 pub mod dictionary;
 pub mod dictionary_detail;
 pub mod file;
@@ -76,6 +77,13 @@ pub fn router() -> Router<crate::state::AppState> {
             get(params::find_sys_params_by_id)
                 .put(params::update_sys_params_by_id)
                 .delete(params::delete_sys_params_by_id),
+        )
+        .route("/depts", get(dept::get_dept_tree).post(dept::create_dept))
+        .route(
+            "/depts/{id}",
+            get(dept::find_dept_by_id)
+                .put(dept::update_dept_by_id)
+                .delete(dept::delete_dept_by_id),
         )
         .route(
             "/dictionaries",

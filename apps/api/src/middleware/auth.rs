@@ -66,20 +66,26 @@ pub async fn require_auth(
         })?;
     let user_id = user.id;
 
-    if !is_self_service_endpoint(&method, &permission_path) {
-        match system::menu::check_permission_access(
+    let is_super_admin = user.authority_id == 888;
+
+    if !is_super_admin && !is_self_service_endpoint(&method, &permission_path) {
+        let required_permission = system::permission_apis::resolve_required_permission(
             &state.pool,
-            user.authority_id,
-            &permission_path,
             &method,
+            &permission_path,
         )
-        .await?
-        {
-            system::menu::PermissionAccessDecision::Allowed => {}
-            system::menu::PermissionAccessDecision::Denied
-            | system::menu::PermissionAccessDecision::Unregistered => {
-                return Err(PERMISSION_DENIED.into());
-            }
+        .await?;
+
+        let Some(permission_code) = required_permission else {
+            return Err(PERMISSION_DENIED.into());
+        };
+
+        let allowed =
+            system::permissions::user_has_permission(&state.pool, user.id, &permission_code)
+                .await?;
+
+        if !allowed {
+            return Err(PERMISSION_DENIED.into());
         }
     }
 
@@ -165,10 +171,12 @@ mod tests {
     }
 
     #[test]
-    fn self_service_endpoints_exclude_role_switching() {
+    fn self_service_endpoints_remain_explicitly_whitelisted() {
         assert!(is_self_service_endpoint("GET", "/api/users/me"));
+        assert!(is_self_service_endpoint("PUT", "/api/users/me"));
         assert!(is_self_service_endpoint("GET", "/api/menus/current"));
         assert!(is_self_service_endpoint("POST", "/api/auth/logout"));
+        assert!(!is_self_service_endpoint("GET", "/api/users"));
         assert!(!is_self_service_endpoint("PUT", "/api/users/me/authority",));
     }
 

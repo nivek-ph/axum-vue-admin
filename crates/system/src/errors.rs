@@ -59,3 +59,12 @@ pub mod params {
     pub const PARAM_JSON_ENCODE_FAILED: ErrorSpec =
         ErrorSpec::internal("PARAM_JSON_ENCODE_FAILED", "failed to serialize params");
 }
+
+pub mod depts {
+    use super::*;
+
+    pub const DEPT_INVALID_PARENT: ErrorSpec =
+        ErrorSpec::validation("DEPT_INVALID_PARENT", "invalid department parent");
+    pub const DEPT_DB_FAILED: ErrorSpec =
+        ErrorSpec::internal("DEPT_DB_FAILED", "department operation failed");
+}

@@ -1,10 +1,14 @@
 pub mod api_registry;
 pub mod authority;
+pub mod data_scope;
+pub mod depts;
 pub mod dictionary;
 pub mod errors;
 pub mod logs;
 pub mod menu;
 pub mod params;
+pub mod permission_apis;
+pub mod permissions;
 pub mod users;
 
 #[cfg(test)]
