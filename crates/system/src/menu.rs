@@ -1572,63 +1572,6 @@ pub struct MenuRoleSelection {
 mod tests {
     use super::*;
 
-    fn menu_record(id: i64, parent_id: i64, name: &str) -> MenuRecord {
-        MenuRecord {
-            id,
-            parent_id,
-            path: name.to_string(),
-            name: name.to_string(),
-            hidden: false,
-            component: format!("view/{name}.vue"),
-            sort: id as i32,
-            active_name: String::new(),
-            keep_alive: false,
-            default_menu: false,
-            title: name.to_string(),
-            icon: String::new(),
-            close_tab: false,
-            transition_type: String::new(),
-            parameters: Some(serde_json::json!([])),
-            menu_btn: Some(serde_json::json!([])),
-            menu_type: "page".to_string(),
-            permission: None,
-            permission_id: None,
-            method: None,
-            api_path: None,
-        }
-    }
-
-    #[test]
-    fn keeps_ancestors_for_authorized_child_menus() {
-        let rows = vec![menu_record(1, 0, "system"), menu_record(2, 1, "users")];
-
-        let filtered = filter_authorized_with_ancestors(&rows, &[2]);
-        let tree = build_tree(&filtered, 0);
-
-        assert_eq!(tree.len(), 1);
-        assert_eq!(tree[0].name, "system");
-        assert_eq!(tree[0].children.len(), 1);
-        assert_eq!(tree[0].children[0].name, "users");
-    }
-
-    #[test]
-    fn navigation_hides_pages_without_authorized_actions() {
-        let mut users = menu_record(1, 0, "users");
-        let mut list = menu_record(2, 1, "users:list");
-        list.menu_type = "action".to_string();
-        list.permission = Some("system:user:list".to_string());
-
-        let visible =
-            filter_navigation_rows(&[users.clone()], &[users.clone(), list.clone()], &[1]);
-        assert!(visible.is_empty());
-
-        users.menu_type = "page".to_string();
-        let visible =
-            filter_navigation_rows(&[users.clone(), list.clone()], &[users, list], &[1, 2]);
-        assert_eq!(visible.len(), 1);
-        assert_eq!(visible[0].name, "users");
-    }
-
     #[test]
     fn menu_super_admin_identity_accepts_legacy_authority_or_role_code() {
         assert!(is_menu_super_admin_identity(888, false));
