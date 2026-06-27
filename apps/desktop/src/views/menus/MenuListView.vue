@@ -113,6 +113,9 @@
         <UiFormItem label="Transition">
           <UiInput v-model="form.meta.transitionType" placeholder="fade" />
         </UiFormItem>
+        <UiFormItem label="Permission ID">
+          <UiInputNumber v-model="form.permissionId" :min="0" :precision="0" class="w-full" />
+        </UiFormItem>
         <UiFormItem label="Display settings">
           <div class="switch-group">
             <UiSwitch v-model="form.hidden" active-text="Hidden" inactive-text="Visible" />
@@ -137,14 +140,6 @@
     </UiDialog>
 
     <UiDialog v-model="roleDialogVisible" title="Assign roles" width="520px">
-      <UiAlert
-        v-if="defaultRouterAuthorityIds.length"
-        type="warning"
-        :closable="false"
-        class="dialog-alert"
-      >
-        {{ $t('Roles using this menu as default route: ') }}{{ defaultRouterAuthorityIds.join(', ') }}
-      </UiAlert>
       <UiSelect
         v-model="selectedAuthorityIds"
         multiple
@@ -199,7 +194,6 @@ const roleDialogVisible = ref(false)
 const roleSubmitting = ref(false)
 const selectedMenu = ref<MenuRecord | null>(null)
 const selectedAuthorityIds = ref<number[]>([])
-const defaultRouterAuthorityIds = ref<number[]>([])
 const form = reactive(createEmptyMenu())
 
 const navigationMenus = computed(() => filterNavigationMenus(menus.value))
@@ -229,6 +223,7 @@ function createEmptyMenu(): MenuRecord {
     },
     parameters: [],
     menuBtn: [],
+    permissionId: null,
     children: []
   }
 }
@@ -245,6 +240,11 @@ function cloneMenu(menu: MenuRecord): MenuRecord {
     meta: { ...menu.meta },
     parameters: menu.parameters.map((item) => ({ ...item })),
     menuBtn: menu.menuBtn.map((item) => ({ ...item })),
+    permission: menu.permission,
+    permissionId: menu.permissionId,
+    method: menu.method,
+    apiPath: menu.apiPath,
+    menuType: menu.menuType,
     children: []
   }
 }
@@ -331,8 +331,7 @@ async function openRoleDialog(menu: MenuRecord) {
   roleDialogVisible.value = true
   try {
     const selection = await fetchMenuRoles(menu.ID)
-    selectedAuthorityIds.value = selection.authorityIds
-    defaultRouterAuthorityIds.value = selection.defaultRouterAuthorityIds
+    selectedAuthorityIds.value = selection.roleIds
   } catch {
     ElMessage.error(t('Failed to load menu roles'))
   }

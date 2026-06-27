@@ -38,25 +38,14 @@ export interface MenuRecord {
   menuBtn: MenuButton[]
   menuType?: 'directory' | 'page' | 'action' | string
   permission?: string | null
+  permissionId?: number | null
   method?: string | null
   apiPath?: string | null
   children: MenuRecord[]
 }
 
 export interface MenuRoleSelection {
-  authorityIds: number[]
-  defaultRouterAuthorityIds: number[]
-}
-
-export interface MenuRoleMatrixItem {
-  menuId: number
-  authorityIds: number[]
-}
-
-export interface AssignedMenuRecord {
-  menuId?: number
-  ID?: number
-  parentId?: number
+  roleIds: number[]
 }
 
 export function normalizeMenuListResponse(payload: ApiResponse<MenuRecord[]>) {
@@ -71,33 +60,12 @@ export function normalizeMenuListResponse(payload: ApiResponse<MenuRecord[]>) {
 
 export function normalizeMenuRoleSelection(payload: ApiResponse<MenuRoleSelection>) {
   return {
-    authorityIds: payload?.data?.authorityIds || [],
-    defaultRouterAuthorityIds: payload?.data?.defaultRouterAuthorityIds || []
+    roleIds: payload?.data?.roleIds || []
   }
-}
-
-export function normalizeAuthorityMenuSelection(payload: ApiResponse<{ menus?: AssignedMenuRecord[] }>) {
-  const menus = Array.isArray(payload?.data?.menus) ? payload.data.menus : []
-  return menus
-    .map((item) => item.menuId ?? item.ID)
-    .filter((id): id is number => typeof id === 'number')
-}
-
-export function normalizeMenuRoleMatrixResponse(payload: ApiResponse<{ items?: MenuRoleMatrixItem[] }>) {
-  const items = Array.isArray(payload?.data?.items) ? payload.data.items : []
-  return items.reduce<Record<number, number[]>>((acc, item) => {
-    acc[item.menuId] = item.authorityIds || []
-    return acc
-  }, {})
 }
 
 export async function fetchMenuList() {
   const response = await http.get('/menus', withAuthHeaders())
-  return normalizeMenuListResponse(response)
-}
-
-export async function fetchPermissionMenuList() {
-  const response = await http.get('/roles/permissions/tree', withAuthHeaders())
   return normalizeMenuListResponse(response)
 }
 
@@ -118,28 +86,6 @@ export async function fetchMenuRoles(menuId: number) {
   return normalizeMenuRoleSelection(response)
 }
 
-export async function setMenuRoles(menuId: number, authorityIds: number[]) {
-  return http.put(`/menus/${menuId}/roles`, { menuId, authorityIds }, withAuthHeaders())
-}
-
-export async function fetchMenuRoleMatrix() {
-  const response = await http.get('/menus/role-matrix', withAuthHeaders())
-  return normalizeMenuRoleMatrixResponse(response)
-}
-
-export async function fetchPermissionMenuRoleMatrix() {
-  const response = await http.get('/roles/permissions/role-matrix', withAuthHeaders())
-  return normalizeMenuRoleMatrixResponse(response)
-}
-
-export async function fetchAuthorityMenus(authorityId: number) {
-  const response = await http.get('/menus/authority', {
-    ...withAuthHeaders(),
-    params: { authorityId }
-  })
-  return normalizeAuthorityMenuSelection(response)
-}
-
-export async function setAuthorityMenus(authorityId: number, menuIds: number[]) {
-  return http.put('/menus/authority', { authorityId, menuIds }, withAuthHeaders())
+export async function setMenuRoles(menuId: number, roleIds: number[]) {
+  return http.put(`/menus/${menuId}/roles`, { menuId, roleIds }, withAuthHeaders())
 }

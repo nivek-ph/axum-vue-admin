@@ -59,3 +59,33 @@ pub mod params {
     pub const PARAM_JSON_ENCODE_FAILED: ErrorSpec =
         ErrorSpec::internal("PARAM_JSON_ENCODE_FAILED", "failed to serialize params");
 }
+
+pub mod depts {
+    use super::*;
+
+    pub const DEPT_INVALID_PARENT: ErrorSpec =
+        ErrorSpec::validation("DEPT_INVALID_PARENT", "invalid department parent");
+    pub const DEPT_DB_FAILED: ErrorSpec =
+        ErrorSpec::internal("DEPT_DB_FAILED", "department operation failed");
+}
+
+pub mod roles {
+    use super::*;
+
+    pub const ROLE_NOT_FOUND: ErrorSpec = ErrorSpec::not_found("ROLE_NOT_FOUND", "role not found");
+    pub const ROLE_IMMUTABLE: ErrorSpec =
+        ErrorSpec::failed_precondition("ROLE_IMMUTABLE", "system role cannot be deleted");
+    pub const ROLE_DB_FAILED: ErrorSpec =
+        ErrorSpec::internal("ROLE_DB_FAILED", "role operation failed");
+}
+
+pub mod permissions {
+    use super::*;
+
+    pub const PERMISSION_NOT_FOUND: ErrorSpec =
+        ErrorSpec::not_found("PERMISSION_NOT_FOUND", "permission not found");
+    pub const PERMISSION_INVALID_CODE: ErrorSpec =
+        ErrorSpec::validation("PERMISSION_INVALID_CODE", "invalid permission code");
+    pub const PERMISSION_DB_FAILED: ErrorSpec =
+        ErrorSpec::internal("PERMISSION_DB_FAILED", "permission operation failed");
+}

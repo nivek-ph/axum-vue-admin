@@ -8,6 +8,15 @@ export interface UserRecord {
   phone: string
   email: string
   enable: number
+  deptId?: number
+  deptName?: string
+  roles?: Array<{
+    id: number
+    code: string
+    name: string
+  }>
+  roleIds?: number[]
+  permissions?: string[]
   authority?: {
     authorityId: number
     authorityName: string
@@ -28,7 +37,8 @@ export interface CreateUserForm {
   phone?: string
   email?: string
   enable: number
-  authorityId?: number
+  roleIds?: number[]
+  deptId?: number
 }
 
 export interface CreateUserPayload {
@@ -38,12 +48,12 @@ export interface CreateUserPayload {
   phone?: string
   email?: string
   enable: number
-  authorityId?: number
+  roleIds?: number[]
+  deptId?: number
 }
 
-export interface UpdateUserAuthoritiesPayload {
-  ID: number
-  authorityIds: number[]
+export interface AssignUserRolesPayload {
+  roleIds: number[]
 }
 
 export function normalizeUserListResponse(payload: any): UserListResult {
@@ -63,14 +73,8 @@ export function buildCreateUserPayload(form: CreateUserForm): CreateUserPayload 
     phone: form.phone?.trim() || undefined,
     email: form.email?.trim() || undefined,
     enable: form.enable,
-    authorityId: form.authorityId
-  }
-}
-
-export function buildUpdateUserAuthoritiesPayload(id: number, authorityId: number): UpdateUserAuthoritiesPayload {
-  return {
-    ID: id,
-    authorityIds: [authorityId]
+    roleIds: form.roleIds,
+    deptId: form.deptId
   }
 }
 
@@ -86,8 +90,8 @@ export async function createUser(form: CreateUserForm) {
   return http.post('/users', buildCreateUserPayload(form), withAuthHeaders())
 }
 
-export async function updateUserAuthorities(id: number, authorityId: number) {
-  return http.put(`/users/${id}/authorities`, buildUpdateUserAuthoritiesPayload(id, authorityId), withAuthHeaders())
+export async function assignUserRoles(id: number, payload: AssignUserRolesPayload) {
+  return http.put(`/users/${id}/roles`, payload, withAuthHeaders())
 }
 
 export async function deleteUser(id: number) {

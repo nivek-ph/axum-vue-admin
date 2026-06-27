@@ -46,4 +46,38 @@ describe('auth store', () => {
     expect(store.isAuthenticated).toBe(false)
     expect(readAuthSession().token).toBe('')
   })
+
+  it('checks permission codes through one helper', () => {
+    setActivePinia(createPinia())
+    const store = useAuthStore()
+
+    store.setSession('token-123', {
+      ID: 2,
+      userName: 'operator',
+      nickName: 'Operator',
+      roles: [{ id: 2, code: 'operator', name: 'Operator' }],
+      roleIds: [2],
+      permissions: ['system:user:list']
+    })
+
+    expect(store.can('system:user:list')).toBe(true)
+    expect(store.can('system:user:delete')).toBe(false)
+  })
+
+  it('allows super admin by role code for compatibility with the new RBAC model', () => {
+    setActivePinia(createPinia())
+    const store = useAuthStore()
+
+    store.setSession('token-123', {
+      ID: 1,
+      userName: 'admin',
+      nickName: 'Admin',
+      roles: [{ id: 1, code: 'super_admin', name: 'Super Admin' }],
+      roleIds: [1],
+      permissions: []
+    })
+
+    expect(store.isSuperAdmin).toBe(true)
+    expect(store.can('system:anything:anything')).toBe(true)
+  })
 })

@@ -11,6 +11,9 @@ const coreMenuItems: CoreMenuItem[] = [
   { key: 'dashboard', label: 'Dashboard', path: '/dashboard' },
   { key: 'users', label: 'Users', path: '/users' },
   { key: 'roles', label: 'Roles', path: '/roles' },
+  { key: 'departments', label: 'Departments', path: '/departments' },
+  { key: 'permissions', label: 'Permissions', path: '/permissions' },
+  { key: 'api-permissions', label: 'API permission bindings', path: '/api-permissions' },
   { key: 'menus', label: 'Menus', path: '/menus' },
   { key: 'apis', label: 'API directory', path: '/apis' },
   { key: 'params', label: 'Params', path: '/params' },
@@ -66,12 +69,6 @@ export function buildCoreMenuItems(remoteMenus?: RemoteMenuItem[]) {
   )
 
   return coreMenuItems.filter((item) => remoteMap.has(item.key)).map((item) => remoteMap.get(item.key) || item)
-}
-
-import { SUPER_ADMIN_AUTHORITY_ID } from '@/constants/auth'
-
-export function isSuperAdminAuthority(authorityId?: number) {
-  return authorityId === SUPER_ADMIN_AUTHORITY_ID
 }
 
 export const useMenuStore = defineStore('menu', () => {

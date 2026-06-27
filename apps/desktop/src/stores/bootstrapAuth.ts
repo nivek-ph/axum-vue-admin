@@ -1,7 +1,7 @@
 import { getMenu, getUserInfo } from '@/api/auth';
 
 import { useAuthStore } from './auth';
-import { isSuperAdminAuthority, useMenuStore } from './menu';
+import { useMenuStore } from './menu';
 
 export async function bootstrapAuthSession() {
   const authStore = useAuthStore();
@@ -30,10 +30,7 @@ export async function bootstrapAuthSession() {
     }
 
     authStore.setSession(authStore.token, userInfo);
-    menuStore.setAuthorizedMenus(
-      menuResponse.data?.menus || [],
-      isSuperAdminAuthority(userInfo.authority?.authorityId)
-    );
+    menuStore.setAuthorizedMenus(menuResponse.data?.menus || [], authStore.isSuperAdmin);
   } catch {
     authStore.clearToken();
     menuStore.resetAccess();

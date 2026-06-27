@@ -21,7 +21,8 @@ pub async fn get_menu(
     State(state): State<AppState>,
     CurrentUser(user): CurrentUser,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    let menus = system::menu::get_menu_tree_for_authority(&state.pool, user.authority_id).await?;
+    let menus =
+        system::menu::get_menu_tree_for_user(&state.pool, user.id, user.authority_id).await?;
 
     Ok(Json(ApiResponse::ok(serde_json::json!({
         "menus": menus,
@@ -113,35 +114,6 @@ pub async fn get_base_menu_by_path_id(
     }))))
 }
 
-pub async fn get_menu_authority(
-    State(state): State<AppState>,
-    Query(payload): Query<system::menu::MenuAuthorityRequest>,
-) -> AppResult<Json<ApiResponse<Value>>> {
-    let menus = system::menu::get_menu_authority(&state.pool, payload.authority_id).await?;
-
-    Ok(Json(ApiResponse::ok(serde_json::json!({
-        "menus": menus,
-    }))))
-}
-
-pub async fn add_menu_authority(
-    State(state): State<AppState>,
-    Json(payload): Json<system::menu::AddMenuAuthorityRequest>,
-) -> AppResult<Json<ApiResponse<Value>>> {
-    system::menu::add_menu_authority(&state.pool, payload).await?;
-
-    Ok(Json(ApiResponse::ok_message("created")))
-}
-
-pub async fn set_menu_authority(
-    State(state): State<AppState>,
-    Json(payload): Json<system::menu::SetAuthorityMenusRequest>,
-) -> AppResult<Json<ApiResponse<Value>>> {
-    system::menu::set_authority_menus(&state.pool, payload).await?;
-
-    Ok(Json(ApiResponse::ok_message("assigned")))
-}
-
 pub async fn get_menu_roles(
     State(state): State<AppState>,
     Query(payload): Query<system::menu::MenuIdRequest>,
@@ -158,16 +130,6 @@ pub async fn get_menu_roles_by_id(
     let data = system::menu::get_menu_roles(&state.pool, id).await?;
 
     Ok(Json(ApiResponse::ok(serde_json::json!(data))))
-}
-
-pub async fn get_menu_role_matrix(
-    State(state): State<AppState>,
-) -> AppResult<Json<ApiResponse<Value>>> {
-    let items = system::menu::get_menu_role_matrix(&state.pool).await?;
-
-    Ok(Json(ApiResponse::ok(serde_json::json!({
-        "items": items,
-    }))))
 }
 
 pub async fn set_menu_roles(

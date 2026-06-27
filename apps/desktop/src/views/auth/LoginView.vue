@@ -47,7 +47,7 @@ import { getMenu, getUserInfo, login } from '@/api/auth'
 import { getApiErrorMessage } from '@/api/http'
 import { t } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
-import { isSuperAdminAuthority, useMenuStore } from '@/stores/menu'
+import { useMenuStore } from '@/stores/menu'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -92,7 +92,7 @@ async function handleLogin() {
 
     const currentUser = userInfoRes.code === 'OK' ? userInfoRes.data?.userInfo || loginUser : loginUser
     authStore.setSession(loginToken, currentUser)
-    menuStore.setAuthorizedMenus(menuRes.data?.menus || [], isSuperAdminAuthority(currentUser.authority?.authorityId))
+    menuStore.setAuthorizedMenus(menuRes.data?.menus || [], authStore.isSuperAdmin)
     await router.push(menuStore.firstAuthorizedPath())
   } catch (err) {
     ElMessage.error(getApiErrorMessage(err, t('Sign in failed')))
