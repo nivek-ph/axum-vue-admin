@@ -67,7 +67,7 @@
             <UiButton
               v-if="canDeleteRole"
               type="danger"
-              :disabled="selectedAuthority.authorityId === SUPER_ADMIN_AUTHORITY_ID"
+              :disabled="isSystemRole(selectedAuthority)"
               @click="handleDelete(selectedAuthority)"
             >
               {{ $t('Delete') }}
@@ -77,12 +77,36 @@
 
         <div v-if="authorityOptions.length > 0" class="permission-tabs">
           <button
-            data-test="function-permissions-tab"
+            data-test="basic-info-tab"
+            :class="['permission-tab', activeTab === 'basic' && 'is-active']"
+            type="button"
+            @click="switchTab('basic')"
+          >
+            {{ $t('Basic Info') }}
+          </button>
+          <button
+            data-test="menu-authorization-tab"
             :class="['permission-tab', activeTab === 'menus' && 'is-active']"
             type="button"
             @click="switchTab('menus')"
           >
-            {{ $t('Function permissions') }}
+            {{ $t('Menu Authorization') }}
+          </button>
+          <button
+            data-test="permission-authorization-tab"
+            :class="['permission-tab', activeTab === 'permissions' && 'is-active']"
+            type="button"
+            @click="switchTab('permissions')"
+          >
+            {{ $t('Permission Authorization') }}
+          </button>
+          <button
+            data-test="data-scope-tab"
+            :class="['permission-tab', activeTab === 'scope' && 'is-active']"
+            type="button"
+            @click="switchTab('scope')"
+          >
+            {{ $t('Data Scope') }}
           </button>
           <button
             v-if="canViewRoleUsers"
@@ -91,16 +115,37 @@
             type="button"
             @click="switchTab('users')"
           >
-            {{ $t('Role users') }}
+            {{ $t('Assigned Users') }}
           </button>
         </div>
 
         <div v-if="authorityOptions.length === 0" class="empty-state large">{{ $t('No role data') }}</div>
 
+        <div v-else-if="activeTab === 'basic' && selectedAuthority" class="permission-content">
+          <div class="role-detail-grid">
+            <div class="role-detail-item">
+              <span>{{ $t('Role code') }}</span>
+              <strong>{{ selectedAuthority.code || `role_${selectedAuthority.authorityId}` }}</strong>
+            </div>
+            <div class="role-detail-item">
+              <span>{{ $t('Status') }}</span>
+              <strong>{{ selectedAuthority.status || 'enabled' }}</strong>
+            </div>
+            <div class="role-detail-item">
+              <span>{{ $t('Data Scope') }}</span>
+              <strong>{{ dataScopeLabel(selectedAuthority.dataScope || 'all') }}</strong>
+            </div>
+            <div class="role-detail-item">
+              <span>{{ $t('Sort') }}</span>
+              <strong>{{ selectedAuthority.sort ?? selectedAuthority.authorityId }}</strong>
+            </div>
+          </div>
+        </div>
+
         <div v-else-if="activeTab === 'menus' && selectedAuthority" class="permission-content">
           <div class="content-toolbar">
             <div>
-              <h4 class="content-title">{{ $t('Function permissions') }}</h4>
+              <h4 class="content-title">{{ $t('Menu Authorization') }}</h4>
               <p class="content-subtitle">{{ $t('Select page access to include button permissions under that page and avoid visible pages with 403 APIs.') }}</p>
             </div>
             <UiButton
@@ -176,7 +221,111 @@
           </div>
         </div>
 
-        <div v-else-if="selectedAuthority" class="permission-content">
+        <div v-else-if="activeTab === 'permissions' && selectedAuthority" class="permission-content">
+          <div class="content-toolbar">
+            <div>
+              <h4 class="content-title">{{ $t('Permission Authorization') }}</h4>
+              <p class="content-subtitle">{{ $t('Grant backend permission resources directly to this role.') }}</p>
+            </div>
+            <UiButton
+              data-test="save-role-permissions"
+              type="primary"
+              :loading="rolePermissionSubmitting"
+              @click="saveRolePermissions"
+            >
+              {{ $t('Save permissions') }}
+            </UiButton>
+          </div>
+
+          <div class="permission-resource-list">
+            <label
+              v-for="permission in permissionResources"
+              :key="permission.id"
+              class="permission-resource-row"
+            >
+              <input
+                :data-test="`permission-resource-${permission.id}`"
+                type="checkbox"
+                :checked="selectedPermissionIdSet.has(permission.id)"
+                @change="togglePermissionResource(permission.id)"
+              />
+              <span class="permission-resource-main">
+                <strong>{{ permission.name }}</strong>
+                <span>{{ permission.code }}</span>
+              </span>
+              <span class="permission-resource-meta">{{ permission.module_key }} / {{ permission.resource }} / {{ permission.action }}</span>
+            </label>
+
+            <div v-if="permissionResources.length === 0" class="empty-state">{{ $t('No permission resources') }}</div>
+          </div>
+        </div>
+
+        <div v-else-if="activeTab === 'scope' && selectedAuthority" class="permission-content">
+          <div class="content-toolbar">
+            <div>
+              <h4 class="content-title">{{ $t('Data Scope') }}</h4>
+              <p class="content-subtitle">{{ $t('Limit what records this role can read or operate on.') }}</p>
+            </div>
+            <UiButton
+              data-test="save-data-scope"
+              type="primary"
+              :loading="dataScopeSubmitting"
+              @click="saveDataScope"
+            >
+              {{ $t('Save data scope') }}
+            </UiButton>
+          </div>
+
+          <div class="data-scope-layout">
+            <div class="data-scope-options">
+              <label
+                v-for="option in dataScopeOptions"
+                :key="option.value"
+                class="data-scope-option"
+                :class="selectedDataScope === option.value && 'is-selected'"
+              >
+                <input
+                  :data-test="`data-scope-${option.value}`"
+                  type="radio"
+                  name="data-scope"
+                  :value="option.value"
+                  :checked="selectedDataScope === option.value"
+                  @change="selectedDataScope = option.value"
+                />
+                <span>
+                  <strong>{{ $t(option.label) }}</strong>
+                  <small>{{ $t(option.description) }}</small>
+                </span>
+              </label>
+            </div>
+
+            <div class="dept-scope-panel">
+              <h5>{{ $t('Custom departments') }}</h5>
+              <div class="dept-scope-list">
+                <label
+                  v-for="dept in flatDeptOptions"
+                  :key="dept.id"
+                  class="dept-scope-row"
+                  :style="{ '--indent': `${dept.level * 18}px` }"
+                >
+                  <input
+                    :data-test="`role-dept-${dept.id}`"
+                    type="checkbox"
+                    :disabled="selectedDataScope !== 'custom_depts'"
+                    :checked="selectedDeptIdSet.has(dept.id)"
+                    @change="toggleDeptScope(dept.id)"
+                  />
+                  <span>{{ dept.name }}</span>
+                  <small>{{ dept.code }}</small>
+                </label>
+
+                <div v-if="flatDeptOptions.length === 0" class="empty-state">{{ $t('No department data') }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-else-if="activeTab === 'users' && selectedAuthority" class="permission-content">
           <div class="content-toolbar">
             <div>
               <h4 class="content-title">{{ $t('Role users') }}</h4>
@@ -250,6 +399,9 @@
         <UiFormItem label="Role name">
           <UiInput v-model="form.authorityName" placeholder="Example: operator admin" />
         </UiFormItem>
+        <UiFormItem label="Role code">
+          <UiInput v-model="form.code" placeholder="operator_admin" />
+        </UiFormItem>
         <UiFormItem label="Parent role">
           <UiSelect v-model="form.parentId" class="w-full">
             <UiOption :value="0" label="Top-level role" />
@@ -288,23 +440,32 @@ import {
   type AuthorityRecord
 } from '@/api/authorities'
 import {
-  fetchPermissionMenuRoleMatrix,
-  fetchPermissionMenuList,
-  setAuthorityMenus,
+  fetchMenuList,
   type MenuRecord
 } from '@/api/menus'
 import { useAuthStore } from '@/stores/auth'
 import { fetchUsers, type UserRecord } from '@/api/users'
+import {
+  getRoleDeptIds,
+  getRolePermissionIds,
+  setRoleDeptIds,
+  setRolePermissionIds,
+  updateRole
+} from '@/api/system/roles'
+import { listPermissions, type PermissionResource } from '@/api/system/permissions'
+import { listDepts, type DeptRecord } from '@/api/system/depts'
 import { t } from '@/i18n'
 import { SUPER_ADMIN_AUTHORITY_ID } from '@/constants/auth'
 
 type DialogMode = 'create' | 'edit'
-type PermissionTab = 'menus' | 'users'
+type PermissionTab = 'basic' | 'menus' | 'permissions' | 'scope' | 'users'
 type FlatMenu = MenuRecord & { level: number }
+type FlatDept = DeptRecord & { level: number }
+type RoleDataScope = 'all' | 'dept' | 'dept_and_children' | 'self' | 'custom_depts'
 
 const authorities = ref<AuthorityRecord[]>([])
 const menus = ref<MenuRecord[]>([])
-const menuRoleMatrix = ref<Record<number, number[]>>({})
+const selectedMenuIds = ref<number[]>([])
 const loading = ref(false)
 const accessLoading = ref(false)
 const dialogVisible = ref(false)
@@ -319,10 +480,18 @@ const roleSearch = ref('')
 const memberSearch = ref('')
 const userOptions = ref<UserRecord[]>([])
 const selectedUserIds = ref<number[]>([])
+const permissionResources = ref<PermissionResource[]>([])
+const selectedPermissionIds = ref<number[]>([])
+const deptTree = ref<DeptRecord[]>([])
+const selectedDeptIds = ref<number[]>([])
+const selectedDataScope = ref<RoleDataScope>('all')
 const permissionsDirty = ref(false)
+const rolePermissionSubmitting = ref(false)
+const dataScopeSubmitting = ref(false)
 const form = reactive({
   authorityId: 0,
   authorityName: '',
+  code: '',
   parentId: 0,
   defaultRouter: 'dashboard'
 })
@@ -333,7 +502,11 @@ const selectedAuthority = computed(
   () => authorityOptions.value.find((item) => item.authorityId === selectedAuthorityId.value) || null
 )
 const selectedUserIdSet = computed(() => new Set(selectedUserIds.value))
+const selectedPermissionIdSet = computed(() => new Set(selectedPermissionIds.value))
+const selectedDeptIdSet = computed(() => new Set(selectedDeptIds.value))
+const selectedMenuIdSet = computed(() => new Set(selectedMenuIds.value))
 const flatMenus = computed(() => flattenMenus(menus.value))
+const flatDeptOptions = computed(() => flattenDepts(deptTree.value))
 const canCreateRole = computed(() => authStore.can('system:role:create'))
 const canUpdateRole = computed(() => authStore.can('system:role:update'))
 const canDeleteRole = computed(() => authStore.can('system:role:delete'))
@@ -341,11 +514,18 @@ const canAssignRoleUsers = computed(() => authStore.can('system:role:assign-user
 const canViewRoleUsers = computed(() => authStore.can('system:role:list-users') && authStore.can('system:user:list'))
 const canManageFunctionPermissions = computed(() => authStore.can('system:role:update-permission'))
 const isSuperAdminRole = computed(
-  () => selectedAuthorityId.value === SUPER_ADMIN_AUTHORITY_ID
+  () => selectedAuthority.value ? isSystemRole(selectedAuthority.value) : false
 )
 const isPermissionEditingDisabled = computed(
   () => !canManageFunctionPermissions.value || isSuperAdminRole.value
 )
+const dataScopeOptions: Array<{ value: RoleDataScope; label: string; description: string }> = [
+  { value: 'all', label: 'All data', description: 'Can access all records.' },
+  { value: 'dept', label: 'Own department', description: 'Can access records in the user department.' },
+  { value: 'dept_and_children', label: 'Department and children', description: 'Can access records in the user department tree.' },
+  { value: 'self', label: 'Self only', description: 'Can access records owned by the current user.' },
+  { value: 'custom_depts', label: 'Custom departments', description: 'Can access records in selected departments.' }
+]
 const filteredAuthorityOptions = computed(() => {
   const keyword = roleSearch.value.trim().toLowerCase()
   if (!keyword) return authorityOptions.value
@@ -369,6 +549,14 @@ function flattenAuthorities(list: AuthorityRecord[]): AuthorityRecord[] {
   return list.flatMap((item) => [item, ...flattenAuthorities(item.children || [])])
 }
 
+function isSystemRole(authority: AuthorityRecord) {
+  return Boolean(
+    authority.isSystem ||
+      authority.code === 'super_admin' ||
+      authority.authorityId === SUPER_ADMIN_AUTHORITY_ID
+  )
+}
+
 function flattenMenus(list: MenuRecord[], level = 0): FlatMenu[] {
   return list
     .filter((item) => item.menuType !== 'action')
@@ -378,9 +566,61 @@ function flattenMenus(list: MenuRecord[], level = 0): FlatMenu[] {
     ])
 }
 
+function flattenAllMenus(list: MenuRecord[]): MenuRecord[] {
+  return list.flatMap((item) => [item, ...flattenAllMenus(item.children || [])])
+}
+
+function menuPermissionIdsFor(menuIds: number[]) {
+  const selectedMenuIds = new Set(menuIds)
+  return flattenAllMenus(menus.value)
+    .filter((menu) => selectedMenuIds.has(menu.ID))
+    .map((menu) => menu.permissionId)
+    .filter((id): id is number => typeof id === 'number')
+}
+
+function menuIdsForPermissionIds(permissionIds: number[]) {
+  const permissionIdSet = new Set(permissionIds)
+  const nextMenuIds = new Set<number>()
+
+  function visit(items: MenuRecord[], ancestors: number[]): boolean {
+    let hasSelectedMenu = false
+
+    for (const item of items) {
+      const currentAncestors = [...ancestors, item.ID]
+      const permissionSelected =
+        typeof item.permissionId === 'number' && permissionIdSet.has(item.permissionId)
+      const childSelected = visit(item.children || [], currentAncestors)
+
+      if (permissionSelected || childSelected) {
+        currentAncestors.forEach((id) => nextMenuIds.add(id))
+        hasSelectedMenu = true
+      }
+    }
+
+    return hasSelectedMenu
+  }
+
+  visit(menus.value, [])
+  return [...nextMenuIds].sort((left, right) => left - right)
+}
+
+function allMenuPermissionIds() {
+  return flattenAllMenus(menus.value)
+    .map((menu) => menu.permissionId)
+    .filter((id): id is number => typeof id === 'number')
+}
+
+function flattenDepts(list: DeptRecord[], level = 0): FlatDept[] {
+  return list.flatMap((item) => [
+    { ...item, level },
+    ...flattenDepts(item.children || [], level + 1)
+  ])
+}
+
 function resetForm() {
   form.authorityId = 0
   form.authorityName = ''
+  form.code = ''
   form.parentId = 0
   form.defaultRouter = 'dashboard'
 }
@@ -388,14 +628,12 @@ function resetForm() {
 async function loadWorkbench() {
   loading.value = true
   try {
-    const [authorityList, menuTree, menuMatrix] = await Promise.all([
+    const [authorityList, menuTree] = await Promise.all([
       fetchAuthorities(),
-      fetchPermissionMenuList(),
-      fetchPermissionMenuRoleMatrix()
+      fetchMenuList()
     ])
     authorities.value = authorityList
     menus.value = menuTree
-    menuRoleMatrix.value = menuMatrix
     permissionsDirty.value = false
 
     const stillExists = authorityOptions.value.some((item) => item.authorityId === selectedAuthorityId.value)
@@ -405,9 +643,7 @@ async function loadWorkbench() {
       selectedAuthorityId.value = authorityOptions.value[0]?.authorityId || null
     }
 
-    if (selectedAuthorityId.value && activeTab.value === 'users' && canViewRoleUsers.value) {
-      await loadRoleAccess()
-    }
+    await loadActiveRoleTab()
   } catch {
     ElMessage.error(t('Failed to load roles'))
   } finally {
@@ -433,20 +669,83 @@ async function loadRoleAccess() {
   }
 }
 
+async function loadRolePermissions() {
+  if (!selectedAuthorityId.value) return
+
+  accessLoading.value = true
+  try {
+    const [permissions, permissionIds] = await Promise.all([
+      listPermissions(),
+      getRolePermissionIds(selectedAuthorityId.value)
+    ])
+    permissionResources.value = permissions
+    selectedPermissionIds.value = permissionIds
+  } catch {
+    ElMessage.error(t('Failed to load role permissions'))
+  } finally {
+    accessLoading.value = false
+  }
+}
+
+async function loadRoleMenuPermissions() {
+  if (!selectedAuthorityId.value) return
+
+  accessLoading.value = true
+  try {
+    const permissionIds = await getRolePermissionIds(selectedAuthorityId.value)
+    selectedPermissionIds.value = permissionIds
+    selectedMenuIds.value = menuIdsForPermissionIds(permissionIds)
+    permissionsDirty.value = false
+  } catch {
+    ElMessage.error(t('Failed to load role permissions'))
+  } finally {
+    accessLoading.value = false
+  }
+}
+
+async function loadRoleDataScope() {
+  if (!selectedAuthorityId.value) return
+
+  accessLoading.value = true
+  try {
+    const [depts, deptIds] = await Promise.all([
+      listDepts(),
+      getRoleDeptIds(selectedAuthorityId.value)
+    ])
+    deptTree.value = depts
+    selectedDeptIds.value = deptIds
+    selectedDataScope.value = normalizeDataScope(selectedAuthority.value?.dataScope)
+  } catch {
+    ElMessage.error(t('Failed to load data scope'))
+  } finally {
+    accessLoading.value = false
+  }
+}
+
+async function loadActiveRoleTab() {
+  if (!selectedAuthorityId.value) return
+
+  if (activeTab.value === 'users' && canViewRoleUsers.value) {
+    await loadRoleAccess()
+  } else if (activeTab.value === 'menus') {
+    await loadRoleMenuPermissions()
+  } else if (activeTab.value === 'permissions') {
+    await loadRolePermissions()
+  } else if (activeTab.value === 'scope') {
+    await loadRoleDataScope()
+  }
+}
+
 function selectAuthority(authority: AuthorityRecord) {
   if (selectedAuthorityId.value === authority.authorityId) return
   selectedAuthorityId.value = authority.authorityId
   memberSearch.value = ''
-  if (activeTab.value === 'users' && canViewRoleUsers.value) {
-    loadRoleAccess()
-  }
+  loadActiveRoleTab()
 }
 
 function switchTab(tab: PermissionTab) {
   activeTab.value = tab
-  if (tab === 'users' && canViewRoleUsers.value) {
-    loadRoleAccess()
-  }
+  loadActiveRoleTab()
 }
 
 function openCreateDialog() {
@@ -459,6 +758,7 @@ function openEditDialog(authority: AuthorityRecord) {
   dialogMode.value = 'edit'
   form.authorityId = authority.authorityId
   form.authorityName = authority.authorityName
+  form.code = authority.code || `role_${authority.authorityId}`
   form.parentId = authority.parentId
   form.defaultRouter = authority.defaultRouter || 'dashboard'
   dialogVisible.value = true
@@ -477,11 +777,13 @@ async function submitAuthority() {
         ? await createAuthority({
             authorityId: form.authorityId,
             authorityName: form.authorityName.trim(),
+            code: form.code.trim() || `role_${form.authorityId}`,
             parentId: form.parentId
           })
         : await updateAuthority({
             authorityId: form.authorityId,
             authorityName: form.authorityName.trim(),
+            code: form.code.trim() || `role_${form.authorityId}`,
             parentId: form.parentId,
             defaultRouter: form.defaultRouter.trim() || 'dashboard'
           })
@@ -509,29 +811,31 @@ function actionsForMenu(menu: MenuRecord) {
 }
 
 function pageAccessChecked(menu: FlatMenu) {
-  if (!selectedAuthorityId.value) return false
-  return isMenuRoleChecked(menu.ID, selectedAuthorityId.value)
+  return selectedMenuIdSet.value.has(menu.ID)
 }
 
 function actionAccessChecked(action: MenuRecord) {
-  if (!selectedAuthorityId.value) return false
-  return isMenuRoleChecked(action.ID, selectedAuthorityId.value)
+  return selectedMenuIdSet.value.has(action.ID)
 }
 
-function setMenuAccess(menuId: number, authorityId: number, enabled: boolean) {
-  const current = isMenuRoleChecked(menuId, authorityId)
-  if (current !== enabled) {
-    toggleMenuRole(menuId, authorityId)
+function setMenuAccess(menuId: number, enabled: boolean) {
+  const current = new Set(selectedMenuIds.value)
+  if (enabled) {
+    current.add(menuId)
+  } else {
+    current.delete(menuId)
   }
+  selectedMenuIds.value = [...current].sort((left, right) => left - right)
+  permissionsDirty.value = true
 }
 
 function onPageAccessChange(menu: FlatMenu, event: Event) {
   if (!selectedAuthorityId.value || isPermissionEditingDisabled.value) return
 
   const enabled = (event.target as HTMLInputElement).checked
-  setMenuAccess(menu.ID, selectedAuthorityId.value, enabled)
+  setMenuAccess(menu.ID, enabled)
   for (const action of actionsForMenu(menu)) {
-    setMenuAccess(action.ID, selectedAuthorityId.value, enabled)
+    setMenuAccess(action.ID, enabled)
   }
 }
 
@@ -539,34 +843,14 @@ function onActionAccessChange(menu: FlatMenu, action: MenuRecord, event: Event) 
   if (!selectedAuthorityId.value || isPermissionEditingDisabled.value) return
 
   const enabled = (event.target as HTMLInputElement).checked
-  setMenuAccess(action.ID, selectedAuthorityId.value, enabled)
+  setMenuAccess(action.ID, enabled)
   if (enabled) {
-    setMenuAccess(menu.ID, selectedAuthorityId.value, true)
+    setMenuAccess(menu.ID, true)
   }
 }
 
 async function saveFunctionPermissions() {
   await saveMenuPermissions()
-}
-
-function isMenuRoleChecked(menuId: number, authorityId: number) {
-  return (menuRoleMatrix.value[menuId] || []).includes(authorityId)
-}
-
-function toggleMenuRole(menuId: number, authorityId: number) {
-  if (isPermissionEditingDisabled.value) return
-
-  const current = new Set(menuRoleMatrix.value[menuId] || [])
-  if (current.has(authorityId)) {
-    current.delete(authorityId)
-  } else {
-    current.add(authorityId)
-  }
-  menuRoleMatrix.value = {
-    ...menuRoleMatrix.value,
-    [menuId]: [...current].sort((a, b) => a - b)
-  }
-  permissionsDirty.value = true
 }
 
 async function saveMenuPermissions(): Promise<boolean> {
@@ -579,14 +863,17 @@ async function saveMenuPermissions(): Promise<boolean> {
 
   menuSubmitting.value = true
   try {
-    const roleMenuIds = Object.entries(menuRoleMatrix.value)
-      .filter(([, authorityIds]) => authorityIds.includes(selectedAuthorityId.value as number))
-      .map(([menuId]) => Number(menuId))
-      .filter((menuId) => Number.isFinite(menuId))
-      .sort((left, right) => left - right)
+    const currentPermissionIds = selectedPermissionIds.value
+    const menuPermissionIdSet = new Set(allMenuPermissionIds())
+    const selectedMenuPermissionIds = menuPermissionIdsFor(selectedMenuIds.value)
+    const nextPermissionIds = [
+      ...currentPermissionIds.filter((permissionId) => !menuPermissionIdSet.has(permissionId)),
+      ...selectedMenuPermissionIds
+    ].sort((left, right) => left - right)
 
-    await setAuthorityMenus(selectedAuthorityId.value, roleMenuIds)
-    menuRoleMatrix.value = await fetchPermissionMenuRoleMatrix()
+    await setRolePermissionIds(selectedAuthorityId.value, nextPermissionIds)
+    selectedPermissionIds.value = nextPermissionIds
+    selectedMenuIds.value = menuIdsForPermissionIds(nextPermissionIds)
     permissionsDirty.value = false
     ElMessage.success(t('Role permissions updated'))
     return true
@@ -619,6 +906,77 @@ function actionTitle(action: MenuRecord) {
 function actionTip(action: MenuRecord) {
   const route = [action.method, action.apiPath].filter(Boolean).join(' ')
   return action.permission ? `${action.permission}${route ? ` · ${route}` : ''}` : route
+}
+
+function normalizeDataScope(value?: string): RoleDataScope {
+  if (
+    value === 'all' ||
+    value === 'dept' ||
+    value === 'dept_and_children' ||
+    value === 'self' ||
+    value === 'custom_depts'
+  ) {
+    return value
+  }
+  return 'all'
+}
+
+function dataScopeLabel(value: string) {
+  return t(dataScopeOptions.find((option) => option.value === value)?.label || 'All data')
+}
+
+function togglePermissionResource(permissionId: number) {
+  selectedPermissionIds.value = selectedPermissionIds.value.includes(permissionId)
+    ? selectedPermissionIds.value.filter((id) => id !== permissionId)
+    : [...selectedPermissionIds.value, permissionId].sort((a, b) => a - b)
+}
+
+function toggleDeptScope(deptId: number) {
+  if (selectedDataScope.value !== 'custom_depts') return
+
+  selectedDeptIds.value = selectedDeptIds.value.includes(deptId)
+    ? selectedDeptIds.value.filter((id) => id !== deptId)
+    : [...selectedDeptIds.value, deptId].sort((a, b) => a - b)
+}
+
+async function saveRolePermissions() {
+  if (!selectedAuthorityId.value) return
+
+  rolePermissionSubmitting.value = true
+  try {
+    await setRolePermissionIds(selectedAuthorityId.value, [...selectedPermissionIds.value].sort((a, b) => a - b))
+    ElMessage.success(t('Role permissions updated'))
+    await loadRolePermissions()
+  } catch {
+    ElMessage.error(t('Failed to save permissions'))
+  } finally {
+    rolePermissionSubmitting.value = false
+  }
+}
+
+async function saveDataScope() {
+  if (!selectedAuthority.value) return
+
+  dataScopeSubmitting.value = true
+  try {
+    await updateRole(selectedAuthority.value.authorityId, {
+      code: selectedAuthority.value.code || `role_${selectedAuthority.value.authorityId}`,
+      name: selectedAuthority.value.authorityName,
+      status: selectedAuthority.value.status || 'enabled',
+      sort: selectedAuthority.value.sort ?? selectedAuthority.value.authorityId,
+      data_scope: selectedDataScope.value
+    })
+    await setRoleDeptIds(
+      selectedAuthority.value.authorityId,
+      selectedDataScope.value === 'custom_depts' ? [...selectedDeptIds.value].sort((a, b) => a - b) : []
+    )
+    ElMessage.success(t('Data scope updated'))
+    await loadWorkbench()
+  } catch {
+    ElMessage.error(t('Failed to save data scope'))
+  } finally {
+    dataScopeSubmitting.value = false
+  }
 }
 
 async function submitRoleUsers() {
@@ -1198,6 +1556,120 @@ onMounted(() => {
   font-size: 12px;
 }
 
+.role-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.role-detail-item {
+  display: grid;
+  gap: 6px;
+  border: 1px solid #e7e5e4;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 14px;
+}
+
+.role-detail-item span {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.role-detail-item strong {
+  color: #18181b;
+  font-size: 14px;
+  font-weight: 760;
+}
+
+.permission-resource-list,
+.data-scope-options,
+.dept-scope-list {
+  display: grid;
+  gap: 8px;
+}
+
+.permission-resource-list,
+.dept-scope-panel {
+  border: 1px solid #e7e5e4;
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 12px;
+}
+
+.permission-resource-row,
+.data-scope-option,
+.dept-scope-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.permission-resource-row:hover,
+.data-scope-option:hover,
+.data-scope-option.is-selected,
+.dept-scope-row:hover {
+  border-color: #e7e5e4;
+  background: #fafaf9;
+}
+
+.permission-resource-main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.permission-resource-main strong {
+  color: #18181b;
+  font-size: 14px;
+}
+
+.permission-resource-main span,
+.permission-resource-meta,
+.data-scope-option small,
+.dept-scope-row small {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.permission-resource-meta {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.data-scope-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
+  gap: 14px;
+}
+
+.data-scope-option {
+  align-items: flex-start;
+  background: #ffffff;
+}
+
+.data-scope-option span {
+  display: grid;
+  gap: 3px;
+}
+
+.dept-scope-panel h5 {
+  margin: 0 0 10px;
+  color: #18181b;
+  font-size: 14px;
+}
+
+.dept-scope-row {
+  padding-left: calc(10px + var(--indent, 0px));
+}
+
+.dept-scope-row small {
+  margin-left: auto;
+}
+
 .empty-state {
   border: 1px dashed #d6d3d1;
   border-radius: 12px;
@@ -1237,9 +1709,15 @@ onMounted(() => {
 
   .role-actions,
   .content-toolbar,
-  .member-tools {
+  .member-tools,
+  .data-scope-layout {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .data-scope-layout {
+    display: grid;
+    grid-template-columns: 1fr;
   }
 }
 

@@ -30,6 +30,7 @@ const mocks = vi.hoisted(() => ({
           menuBtn: [],
           menuType: 'action',
           permission: 'system:user:list',
+          permissionId: 1,
           method: 'GET',
           apiPath: '/api/users',
           children: [],

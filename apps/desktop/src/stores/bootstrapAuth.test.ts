@@ -58,6 +58,47 @@ describe('bootstrapAuthSession', () => {
     expect(menuStore.canAccessRouteName('roles')).toBe(false)
   })
 
+  it('treats super_admin role code as full menu access during bootstrap', async () => {
+    setActivePinia(createPinia())
+    vi.mocked(getUserInfo).mockResolvedValue({
+      code: 'OK',
+      message: 'ok',
+      data: {
+        userInfo: {
+          ID: 1,
+          userName: 'admin',
+          nickName: 'Admin',
+          authority: {
+            authorityId: 1,
+            authorityName: 'Legacy compatible',
+            defaultRouter: 'dashboard'
+          },
+          roles: [{ id: 1, code: 'super_admin', name: 'Super Admin' }]
+        }
+      }
+    })
+    vi.mocked(getMenu).mockResolvedValue({
+      code: 'OK',
+      message: 'ok',
+      data: {
+        menus: [{ name: 'dashboard', path: 'dashboard', meta: { title: 'Dashboard' } }]
+      }
+    })
+    writeAuthSession({
+      token: 'token-123',
+      userInfo: {
+        ID: 1,
+        userName: 'admin',
+        nickName: 'Admin'
+      }
+    })
+
+    await bootstrapAuthSession()
+
+    const menuStore = useMenuStore()
+    expect(menuStore.canAccessRouteName('roles')).toBe(true)
+  })
+
   it('clears the session when current user details are missing', async () => {
     setActivePinia(createPinia())
     vi.mocked(getUserInfo).mockResolvedValue({

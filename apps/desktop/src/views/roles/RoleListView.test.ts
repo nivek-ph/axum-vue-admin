@@ -6,7 +6,10 @@ import { useAuthStore } from '@/stores/auth';
 import { setLocale } from '@/i18n';
 
 const mocks = vi.hoisted(() => ({
-  setAuthorityMenus: vi.fn().mockResolvedValue({ code: 'OK' }),
+  getRolePermissionIds: vi.fn().mockResolvedValue([1]),
+  setRolePermissionIds: vi.fn().mockResolvedValue({ code: 'OK' }),
+  setRoleDeptIds: vi.fn().mockResolvedValue({ code: 'OK' }),
+  updateRole: vi.fn().mockResolvedValue({ code: 'OK' }),
 }));
 
 vi.mock('@/api/authorities', () => ({
@@ -22,6 +25,17 @@ vi.mock('@/api/authorities', () => ({
     {
       authorityId: 888,
       authorityName: 'Super Admin',
+      code: 'legacy_super_admin',
+      parentId: 0,
+      defaultRouter: 'dashboard',
+      children: [],
+      dataAuthorityId: [],
+    },
+    {
+      authorityId: 3,
+      authorityName: 'System Owner',
+      code: 'super_admin',
+      isSystem: true,
       parentId: 0,
       defaultRouter: 'dashboard',
       children: [],
@@ -36,7 +50,7 @@ vi.mock('@/api/authorities', () => ({
 }));
 
 vi.mock('@/api/menus', () => ({
-  fetchPermissionMenuList: vi.fn().mockResolvedValue([
+  fetchMenuList: vi.fn().mockResolvedValue([
     {
       ID: 1,
       parentId: 0,
@@ -75,6 +89,7 @@ vi.mock('@/api/menus', () => ({
               menuBtn: [],
               menuType: 'action',
               permission: 'system:user:list',
+              permissionId: 1,
               method: 'GET',
               apiPath: '/api/users',
               children: [],
@@ -92,6 +107,7 @@ vi.mock('@/api/menus', () => ({
               menuBtn: [],
               menuType: 'action',
               permission: 'system:user:create',
+              permissionId: 3,
               method: 'POST',
               apiPath: '/api/users',
               children: [],
@@ -101,13 +117,6 @@ vi.mock('@/api/menus', () => ({
       ],
     },
   ]),
-  fetchAuthorityMenus: vi.fn().mockResolvedValue([1, 2]),
-  fetchPermissionMenuRoleMatrix: vi.fn().mockResolvedValue({
-    1: [1],
-    2: [1],
-    20: [1],
-  }),
-  setAuthorityMenus: mocks.setAuthorityMenus,
 }));
 
 vi.mock('@/api/users', () => ({
@@ -122,6 +131,63 @@ vi.mock('@/api/users', () => ({
   }),
 }));
 
+vi.mock('@/api/system/roles', () => ({
+  getRolePermissionIds: mocks.getRolePermissionIds,
+  setRolePermissionIds: mocks.setRolePermissionIds,
+  getRoleDeptIds: vi.fn().mockResolvedValue([1]),
+  setRoleDeptIds: mocks.setRoleDeptIds,
+  updateRole: mocks.updateRole,
+}));
+
+vi.mock('@/api/system/permissions', () => ({
+  listPermissions: vi.fn().mockResolvedValue([
+    {
+      id: 1,
+      module_key: 'system',
+      resource: 'user',
+      action: 'list',
+      code: 'system:user:list',
+      name: 'List Users',
+      type: 'action',
+      status: 'enabled',
+    },
+    {
+      id: 2,
+      module_key: 'system',
+      resource: 'role',
+      action: 'update',
+      code: 'system:role:update',
+      name: 'Update Roles',
+      type: 'action',
+      status: 'enabled',
+    },
+  ]),
+}));
+
+vi.mock('@/api/system/depts', () => ({
+  listDepts: vi.fn().mockResolvedValue([
+    {
+      id: 1,
+      parent_id: null,
+      name: 'Head Office',
+      code: 'head_office',
+      sort: 0,
+      status: 'enabled',
+      children: [
+        {
+          id: 2,
+          parent_id: 1,
+          name: 'Product',
+          code: 'product',
+          sort: 1,
+          status: 'enabled',
+          children: [],
+        },
+      ],
+    },
+  ]),
+}));
+
 import RoleListView from './RoleListView.vue';
 
 async function flushWorkbench() {
@@ -131,7 +197,7 @@ async function flushWorkbench() {
   await Promise.resolve();
 }
 
-function mountWithAuthority(authorityId = 888) {
+function mountWithAuthority(authorityId = 888, permissions?: string[]) {
   const pinia = createPinia();
   setActivePinia(pinia);
   const authStore = useAuthStore();
@@ -145,9 +211,10 @@ function mountWithAuthority(authorityId = 888) {
       defaultRouter: 'dashboard',
     },
     permissions:
-      authorityId === 888
+      permissions ??
+      (authorityId === 888
         ? []
-        : ['system:role:list', 'system:role:permission-tree', 'system:role:permission-matrix'],
+        : ['system:role:list', 'system:role:update-permission']),
   });
 
   return mount(RoleListView, {
@@ -173,13 +240,14 @@ describe('RoleListView', () => {
     expect(wrapper.text()).toContain('New');
     expect(header.text()).not.toContain('Total 2 roles');
     expect(wrapper.text()).toContain('Function permissions');
-    expect(wrapper.text()).toContain('Role users');
+    expect(wrapper.text()).toContain('Basic Info');
+    expect(wrapper.text()).toContain('Menu Authorization');
+    expect(wrapper.text()).toContain('Permission Authorization');
+    expect(wrapper.text()).toContain('Data Scope');
+    expect(wrapper.text()).toContain('Assigned Users');
     expect(wrapper.text()).toContain('Developer');
     expect(wrapper.text()).toContain('Super Admin');
     expect(wrapper.text()).toContain('Users');
-    expect(wrapper.text()).toContain('Page access');
-    expect(wrapper.text()).toContain('List');
-    expect(wrapper.text()).toContain('Create');
   });
 
   it('translates role workbench chrome and backend menu labels to Chinese', async () => {
@@ -189,7 +257,11 @@ describe('RoleListView', () => {
     await flushWorkbench();
 
     expect(wrapper.text()).toContain('功能权限');
-    expect(wrapper.text()).toContain('角色用户');
+    expect(wrapper.text()).toContain('基础信息');
+    expect(wrapper.text()).toContain('菜单授权');
+    expect(wrapper.text()).toContain('权限授权');
+    expect(wrapper.text()).toContain('数据范围');
+    expect(wrapper.text()).toContain('分配用户');
     expect(wrapper.text()).toContain('用户管理');
     expect(wrapper.text()).toContain('页面访问');
     expect(wrapper.text()).toContain('列表');
@@ -212,18 +284,70 @@ describe('RoleListView', () => {
     await wrapper.find('[data-test="save-function-permissions"]').trigger('click');
     await flushWorkbench();
 
-    expect(mocks.setAuthorityMenus).toHaveBeenCalled();
-    const [authorityId, menuIds] = mocks.setAuthorityMenus.mock.calls.at(-1)!;
-    expect(authorityId).toBe(1);
-    expect(menuIds).not.toContain(2);
-    expect(menuIds).not.toContain(20);
+    expect(mocks.setRolePermissionIds).toHaveBeenCalledWith(1, []);
+  });
+
+  it('preserves non-menu permission resources when menu authorization changes', async () => {
+    mocks.getRolePermissionIds.mockResolvedValueOnce([1, 2]);
+    const wrapper = mountWithAuthority();
+
+    await flushWorkbench();
+    await wrapper.find('[data-test="role-list"] button:first-child').trigger('click');
+    await flushWorkbench();
+
+    await wrapper.find('[data-test="menu-permission-2-1"]').setValue(false);
+    await wrapper.find('[data-test="save-function-permissions"]').trigger('click');
+    await flushWorkbench();
+
+    expect(mocks.setRolePermissionIds).toHaveBeenCalledWith(1, [2]);
+  });
+
+  it('edits unified permission resources for the selected role', async () => {
+    const wrapper = mountWithAuthority();
+
+    await flushWorkbench();
+    await wrapper.find('[data-test="role-list"] button:first-child').trigger('click');
+    await wrapper.find('[data-test="permission-authorization-tab"]').trigger('click');
+    await flushWorkbench();
+
+    expect(wrapper.text()).toContain('List Users');
+    expect(wrapper.text()).toContain('system:user:list');
+
+    await wrapper.find('[data-test="permission-resource-2"]').setValue(true);
+    await wrapper.find('[data-test="save-role-permissions"]').trigger('click');
+    await flushWorkbench();
+
+    expect(mocks.setRolePermissionIds).toHaveBeenCalledWith(1, [1, 2]);
+  });
+
+  it('edits data scope and custom departments for the selected role', async () => {
+    const wrapper = mountWithAuthority();
+
+    await flushWorkbench();
+    await wrapper.find('[data-test="role-list"] button:first-child').trigger('click');
+    await wrapper.find('[data-test="data-scope-tab"]').trigger('click');
+    await flushWorkbench();
+
+    expect(wrapper.text()).toContain('Head Office');
+    expect(wrapper.text()).toContain('Product');
+
+    await wrapper.find('[data-test="data-scope-custom_depts"]').setValue(true);
+    await wrapper.find('[data-test="role-dept-2"]').setValue(true);
+    await wrapper.find('[data-test="save-data-scope"]').trigger('click');
+    await flushWorkbench();
+
+    expect(mocks.updateRole).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ data_scope: 'custom_depts' })
+    );
+    expect(mocks.setRoleDeptIds).toHaveBeenCalledWith(1, [1, 2]);
   });
 
   it('disables permission editing for the super admin role', async () => {
     const wrapper = mountWithAuthority();
 
     await flushWorkbench();
-    await wrapper.find('[data-test="role-list"] button:last-child').trigger('click');
+    await wrapper.findAll('[data-test="role-list"] button')[1].trigger('click');
     await flushWorkbench();
 
     expect(wrapper.find('[data-test="save-function-permissions"]').exists()).toBe(false);
@@ -235,8 +359,21 @@ describe('RoleListView', () => {
     expect((superAdminActionCheckbox.element as HTMLInputElement).disabled).toBe(true);
   });
 
+  it('disables permission editing for system roles that do not use the legacy authority id', async () => {
+    const wrapper = mountWithAuthority();
+
+    await flushWorkbench();
+    await wrapper.findAll('[data-test="role-list"] button')[2].trigger('click');
+    await flushWorkbench();
+
+    expect(wrapper.find('[data-test="save-function-permissions"]').exists()).toBe(false);
+
+    const systemRoleMenuCheckbox = wrapper.find('[data-test="menu-permission-2-3"]');
+    expect((systemRoleMenuCheckbox.element as HTMLInputElement).disabled).toBe(true);
+  });
+
   it('hides permission save controls without role permission', async () => {
-    const wrapper = mountWithAuthority(1);
+    const wrapper = mountWithAuthority(1, ['system:role:list']);
 
     await flushWorkbench();
 

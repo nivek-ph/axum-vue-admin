@@ -8,6 +8,14 @@ export interface AuthUserInfo {
   userName: string;
   nickName: string;
   headerImg?: string;
+  deptId?: number | null;
+  deptName?: string;
+  roles?: Array<{
+    id: number;
+    code: string;
+    name: string;
+  }>;
+  roleIds?: number[];
   authority?: {
     authorityId: number;
     authorityName: string;
@@ -25,6 +33,13 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isAuthenticated = computed(() => token.value.length > 0);
   const permissionSet = computed(() => new Set(userInfo.value?.permissions || []));
+  const roles = computed(() => userInfo.value?.roles || []);
+  const permissions = computed(() => userInfo.value?.permissions || []);
+  const isSuperAdmin = computed(
+    () =>
+      userInfo.value?.authority?.authorityId === SUPER_ADMIN_AUTHORITY_ID ||
+      roles.value.some((role) => role.code === 'super_admin')
+  );
 
   function persistSession() {
     writeAuthSession({
@@ -51,7 +66,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function can(permission: string) {
-    if (userInfo.value?.authority?.authorityId === SUPER_ADMIN_AUTHORITY_ID) return true;
+    if (isSuperAdmin.value) return true;
     return permissionSet.value.has(permission);
   }
 
@@ -59,7 +74,10 @@ export const useAuthStore = defineStore('auth', () => {
     token,
     userInfo,
     isAuthenticated,
+    roles,
+    permissions,
     permissionSet,
+    isSuperAdmin,
     can,
     setToken,
     setSession,

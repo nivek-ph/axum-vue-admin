@@ -1,11 +1,11 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 
 use admin_httpz::AppError;
 
-use crate::{authority::SUPER_ADMIN_AUTHORITY_ID, errors};
+use crate::errors;
 
 #[derive(Debug, Clone, FromRow, Serialize)]
 pub struct ApiRecord {
@@ -23,12 +23,6 @@ struct ApiRoleMatrixRow {
     pub path: String,
     pub method: String,
     pub authority_id: Option<i64>,
-}
-
-#[derive(Debug, Clone, FromRow)]
-struct RegisteredApiPath {
-    pub id: i64,
-    pub path: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -88,45 +82,18 @@ pub struct SetApiRolesRequest {
     pub authority_ids: Vec<i64>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
-pub struct CasbinInfo {
-    pub path: String,
-    pub method: String,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct UpdateCasbinRequest {
-    #[serde(rename = "authorityId")]
-    pub authority_id: i64,
-    #[serde(rename = "casbinInfos")]
-    pub casbin_infos: Vec<CasbinInfo>,
-}
-
-#[derive(Debug, Clone, FromRow, Serialize)]
-pub struct PolicyPath {
-    pub path: String,
-    pub method: String,
-}
-
 #[derive(Debug, Clone, Serialize)]
 pub struct ApiRoleSelection {
     #[serde(rename = "authorityIds")]
     pub authority_ids: Vec<i64>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct ApiRoleMatrixItem {
     pub path: String,
     pub method: String,
     #[serde(rename = "authorityIds")]
     pub authority_ids: Vec<i64>,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ApiAccessDecision {
-    Allowed,
-    Denied,
-    Unregistered,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -259,10 +226,6 @@ pub async fn update_api(pool: &sqlx::PgPool, payload: ApiPayload) -> Result<(), 
 }
 
 pub async fn delete_api(pool: &sqlx::PgPool, api_id: i64) -> Result<(), ApiError> {
-    sqlx::query("delete from sys_role_apis where api_id = $1")
-        .bind(api_id)
-        .execute(pool)
-        .await?;
     sqlx::query("delete from sys_apis where id = $1")
         .bind(api_id)
         .execute(pool)
@@ -277,10 +240,6 @@ pub async fn delete_apis_by_ids(
     if payload.ids.is_empty() {
         return Ok(());
     }
-    sqlx::query("delete from sys_role_apis where api_id = any($1)")
-        .bind(&payload.ids)
-        .execute(pool)
-        .await?;
     sqlx::query("delete from sys_apis where id = any($1)")
         .bind(&payload.ids)
         .execute(pool)
@@ -329,15 +288,18 @@ pub async fn get_api_roles(
 ) -> Result<ApiRoleSelection, ApiError> {
     let authority_ids = sqlx::query_scalar(
         r#"
-        select ra.authority_id
-        from sys_role_apis ra
-        inner join sys_apis a on a.id = ra.api_id
-        where a.path = $1 and a.method = $2
-        order by ra.authority_id
+        select rp.role_id
+        from sys_permission_apis pa
+        join sys_role_permissions rp on rp.permission_id = pa.permission_id
+        join sys_roles r on r.id = rp.role_id
+        where pa.path_pattern = $1
+          and pa.method = $2
+          and r.status = 'enabled'
+        order by rp.role_id
         "#,
     )
-    .bind(query.path)
-    .bind(query.method)
+    .bind(&query.path)
+    .bind(&query.method)
     .fetch_all(pool)
     .await?;
 
@@ -350,10 +312,12 @@ pub async fn get_apis_by_authority_id(
 ) -> Result<Vec<ApiRecord>, ApiError> {
     Ok(sqlx::query_as::<_, ApiRecord>(
         r#"
-        select a.id, a.path, a.description, a.api_group, a.method
-        from sys_role_apis ra
-        inner join sys_apis a on a.id = ra.api_id
-        where ra.authority_id = $1
+        select distinct a.id, a.path, a.description, a.api_group, a.method
+        from sys_apis a
+        join sys_permission_apis pa on pa.path_pattern = a.path and pa.method = a.method
+        join sys_role_permissions rp on rp.permission_id = pa.permission_id and rp.role_id = $1
+        join sys_roles r on r.id = rp.role_id
+        where r.status = 'enabled'
         order by a.api_group, a.path, a.method
         "#,
     )
@@ -365,18 +329,35 @@ pub async fn get_apis_by_authority_id(
 pub async fn get_api_role_matrix(pool: &sqlx::PgPool) -> Result<Vec<ApiRoleMatrixItem>, ApiError> {
     let rows = sqlx::query_as::<_, ApiRoleMatrixRow>(
         r#"
-        select a.path, a.method, ra.authority_id
+        select
+            a.path,
+            a.method,
+            case when r.id is not null then rp.role_id end as authority_id
         from sys_apis a
-        left join sys_role_apis ra on a.id = ra.api_id
-        order by a.api_group, a.path, a.method, ra.authority_id
+        left join sys_permission_apis pa on pa.path_pattern = a.path and pa.method = a.method
+        left join sys_role_permissions rp on rp.permission_id = pa.permission_id
+        left join sys_roles r on r.id = rp.role_id and r.status = 'enabled'
+        order by a.api_group, a.path, a.method, rp.role_id
         "#,
     )
     .fetch_all(pool)
     .await?;
 
-    let mut items = Vec::new();
+    Ok(merge_api_role_matrix(&rows))
+}
+
+fn merge_api_role_matrix(rows: &[ApiRoleMatrixRow]) -> Vec<ApiRoleMatrixItem> {
     let mut current_key: Option<(String, String)> = None;
-    let mut current_ids = Vec::new();
+    let mut current_ids = BTreeSet::new();
+    let mut rows = rows.iter().collect::<Vec<_>>();
+    rows.sort_by(|left, right| {
+        (left.path.as_str(), left.method.as_str(), left.authority_id).cmp(&(
+            right.path.as_str(),
+            right.method.as_str(),
+            right.authority_id,
+        ))
+    });
+    let mut items = Vec::new();
 
     for row in rows {
         let key = (row.path.clone(), row.method.clone());
@@ -385,14 +366,14 @@ pub async fn get_api_role_matrix(pool: &sqlx::PgPool) -> Result<Vec<ApiRoleMatri
                 items.push(ApiRoleMatrixItem {
                     path,
                     method,
-                    authority_ids: current_ids,
+                    authority_ids: current_ids.iter().copied().collect(),
                 });
-                current_ids = Vec::new();
+                current_ids.clear();
             }
             current_key = Some(key);
         }
         if let Some(authority_id) = row.authority_id {
-            current_ids.push(authority_id);
+            current_ids.insert(authority_id);
         }
     }
 
@@ -400,186 +381,99 @@ pub async fn get_api_role_matrix(pool: &sqlx::PgPool) -> Result<Vec<ApiRoleMatri
         items.push(ApiRoleMatrixItem {
             path,
             method,
-            authority_ids: current_ids,
+            authority_ids: current_ids.iter().copied().collect(),
         });
     }
 
-    Ok(items)
+    items
+}
+
+fn normalize_api_role_ids(role_ids: Vec<i64>) -> Vec<i64> {
+    role_ids
+        .into_iter()
+        .filter(|role_id| *role_id > 0)
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect()
 }
 
 pub async fn set_api_roles(
     pool: &sqlx::PgPool,
     payload: SetApiRolesRequest,
 ) -> Result<(), ApiError> {
-    let api_id: i64 = sqlx::query_scalar("select id from sys_apis where path = $1 and method = $2")
-        .bind(&payload.path)
-        .bind(&payload.method)
-        .fetch_optional(pool)
-        .await?
-        .ok_or(ApiError::NotFound)?;
-
-    sqlx::query("delete from sys_role_apis where api_id = $1")
-        .bind(api_id)
-        .execute(pool)
-        .await?;
-
-    for authority_id in payload.authority_ids {
-        sqlx::query(
-            r#"
-            insert into sys_role_apis (authority_id, api_id)
-            values ($1, $2)
-            on conflict do nothing
-            "#,
-        )
-        .bind(authority_id)
-        .bind(api_id)
-        .execute(pool)
-        .await?;
+    let authority_ids = normalize_api_role_ids(payload.authority_ids);
+    let api_exists: bool =
+        sqlx::query_scalar("select exists(select 1 from sys_apis where path = $1 and method = $2)")
+            .bind(&payload.path)
+            .bind(&payload.method)
+            .fetch_one(pool)
+            .await?;
+    if !api_exists {
+        return Err(ApiError::NotFound);
     }
+    sync_api_permission_roles(pool, &payload.path, &payload.method, &authority_ids).await?;
 
     Ok(())
 }
 
-pub async fn update_casbin(
+async fn sync_api_permission_roles(
     pool: &sqlx::PgPool,
-    payload: UpdateCasbinRequest,
+    path: &str,
+    method: &str,
+    role_ids: &[i64],
 ) -> Result<(), ApiError> {
-    sqlx::query("delete from sys_role_apis where authority_id = $1")
-        .bind(payload.authority_id)
-        .execute(pool)
-        .await?;
+    let permission_ids: Vec<i64> = sqlx::query_scalar(
+        r#"
+        select permission_id
+        from sys_permission_apis
+        where path_pattern = $1
+          and method = $2
+        order by permission_id
+        "#,
+    )
+    .bind(path)
+    .bind(method)
+    .fetch_all(pool)
+    .await?;
+    if permission_ids.is_empty() {
+        return Ok(());
+    }
 
-    for item in payload.casbin_infos {
-        if let Some(api_id) =
-            sqlx::query_scalar::<_, i64>("select id from sys_apis where path = $1 and method = $2")
-                .bind(item.path)
-                .bind(item.method)
-                .fetch_optional(pool)
-                .await?
-        {
+    let existing_role_ids: Vec<i64> = sqlx::query_scalar(
+        r#"
+        select id
+        from sys_roles
+        where id = any($1)
+        order by id
+        "#,
+    )
+    .bind(role_ids)
+    .fetch_all(pool)
+    .await?;
+
+    let mut tx = pool.begin().await?;
+    sqlx::query("delete from sys_role_permissions where permission_id = any($1)")
+        .bind(&permission_ids)
+        .execute(&mut *tx)
+        .await?;
+    for role_id in existing_role_ids {
+        for permission_id in &permission_ids {
             sqlx::query(
                 r#"
-                insert into sys_role_apis (authority_id, api_id)
+                insert into sys_role_permissions (role_id, permission_id)
                 values ($1, $2)
                 on conflict do nothing
                 "#,
             )
-            .bind(payload.authority_id)
-            .bind(api_id)
-            .execute(pool)
+            .bind(role_id)
+            .bind(*permission_id)
+            .execute(&mut *tx)
             .await?;
         }
     }
+    tx.commit().await?;
 
     Ok(())
-}
-
-pub async fn get_policy_path_by_authority_id(
-    pool: &sqlx::PgPool,
-    authority_id: i64,
-) -> Result<Vec<PolicyPath>, ApiError> {
-    Ok(sqlx::query_as::<_, PolicyPath>(
-        r#"
-        select a.path, a.method
-        from sys_role_apis ra
-        inner join sys_apis a on a.id = ra.api_id
-        where ra.authority_id = $1
-        order by a.api_group, a.path, a.method
-        "#,
-    )
-    .bind(authority_id)
-    .fetch_all(pool)
-    .await?)
-}
-
-pub fn route_pattern_matches(pattern: &str, path: &str) -> bool {
-    let pattern_segments = pattern.trim_matches('/').split('/').collect::<Vec<_>>();
-    let path_segments = path.trim_matches('/').split('/').collect::<Vec<_>>();
-
-    if pattern_segments.len() != path_segments.len() {
-        return false;
-    }
-
-    pattern_segments
-        .iter()
-        .zip(path_segments.iter())
-        .all(|(pattern_segment, path_segment)| {
-            is_dynamic_segment(pattern_segment) || pattern_segment == path_segment
-        })
-}
-
-fn is_dynamic_segment(segment: &str) -> bool {
-    (segment.starts_with('{') && segment.ends_with('}')) || segment.starts_with(':')
-}
-
-fn is_dynamic_path_pattern(pattern: &str) -> bool {
-    pattern.trim_matches('/').split('/').any(is_dynamic_segment)
-}
-
-fn matching_api_ids(candidates: &[RegisteredApiPath], path: &str) -> Vec<i64> {
-    let exact_ids = candidates
-        .iter()
-        .filter(|api| api.path == path)
-        .map(|api| api.id)
-        .collect::<Vec<_>>();
-    if !exact_ids.is_empty() {
-        return exact_ids;
-    }
-
-    candidates
-        .iter()
-        .filter(|api| is_dynamic_path_pattern(&api.path) && route_pattern_matches(&api.path, path))
-        .map(|api| api.id)
-        .collect()
-}
-
-pub async fn check_api_access(
-    pool: &sqlx::PgPool,
-    authority_id: i64,
-    path: &str,
-    method: &str,
-) -> Result<ApiAccessDecision, ApiError> {
-    if authority_id == SUPER_ADMIN_AUTHORITY_ID {
-        return Ok(ApiAccessDecision::Allowed);
-    }
-
-    let method = method.to_ascii_uppercase();
-    let candidates = sqlx::query_as::<_, RegisteredApiPath>(
-        r#"
-        select id, path
-        from sys_apis
-        where method = $1
-        order by path
-        "#,
-    )
-    .bind(method)
-    .fetch_all(pool)
-    .await?;
-
-    let matched_api_ids = matching_api_ids(&candidates, path);
-
-    if matched_api_ids.is_empty() {
-        return Ok(ApiAccessDecision::Unregistered);
-    }
-
-    let allowed: Option<i64> = sqlx::query_scalar(
-        r#"
-        select api_id
-        from sys_role_apis
-        where authority_id = $1 and api_id = any($2)
-        limit 1
-        "#,
-    )
-    .bind(authority_id)
-    .bind(&matched_api_ids)
-    .fetch_optional(pool)
-    .await?;
-
-    Ok(if allowed.is_some() {
-        ApiAccessDecision::Allowed
-    } else {
-        ApiAccessDecision::Denied
-    })
 }
 
 #[cfg(test)]
@@ -587,19 +481,39 @@ mod tests {
     use super::*;
 
     #[test]
-    fn route_pattern_matches_dynamic_segments() {
-        assert!(route_pattern_matches(
-            "/api/menus/{id}/roles",
-            "/api/menus/1/roles",
-        ));
-        assert!(route_pattern_matches("/api/routes/{id}", "/api/routes/42",));
-        assert!(!route_pattern_matches(
-            "/api/menus/{id}/roles",
-            "/api/menus/1",
-        ));
-        assert!(!route_pattern_matches(
-            "/api/menus/{id}/roles",
-            "/api/routes/1/roles",
-        ));
+    fn normalize_api_role_ids_deduplicates_and_filters_invalid_ids() {
+        assert_eq!(normalize_api_role_ids(vec![4, 0, 4, -1, 2]), vec![2, 4]);
+    }
+
+    #[test]
+    fn merge_api_role_matrix_groups_permission_backed_roles() {
+        let rows = vec![
+            ApiRoleMatrixRow {
+                path: "/api/users".to_string(),
+                method: "GET".to_string(),
+                authority_id: Some(3),
+            },
+            ApiRoleMatrixRow {
+                path: "/api/roles".to_string(),
+                method: "GET".to_string(),
+                authority_id: None,
+            },
+        ];
+
+        assert_eq!(
+            merge_api_role_matrix(&rows),
+            vec![
+                ApiRoleMatrixItem {
+                    path: "/api/roles".to_string(),
+                    method: "GET".to_string(),
+                    authority_ids: vec![],
+                },
+                ApiRoleMatrixItem {
+                    path: "/api/users".to_string(),
+                    method: "GET".to_string(),
+                    authority_ids: vec![3],
+                },
+            ]
+        );
     }
 }

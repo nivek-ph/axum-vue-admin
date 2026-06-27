@@ -8,6 +8,8 @@ pub mod file;
 pub mod logs;
 pub mod menu;
 pub mod params;
+pub mod permission;
+pub mod role;
 pub mod session;
 pub mod system;
 pub mod user;
@@ -20,24 +22,8 @@ use axum::{
 
 pub fn router() -> Router<crate::state::AppState> {
     Router::new()
-        .route(
-            "/roles",
-            get(authority::get_authority_list).post(authority::create_authority),
-        )
-        .route(
-            "/roles/{authority_id}",
-            put(authority::update_authority).delete(authority::delete_authority_by_id),
-        )
-        .route(
-            "/roles/{authority_id}/users",
-            get(authority::get_users_by_authority_id).put(authority::set_role_users_by_id),
-        )
-        .route("/roles/permissions/tree", get(menu::get_base_menu_tree))
-        .route(
-            "/roles/permissions/role-matrix",
-            get(menu::get_menu_role_matrix),
-        )
-        .route("/roles/data-authority", put(authority::set_data_authority))
+        .nest("/roles", role::routes())
+        .nest("/permissions", permission::routes())
         .route(
             "/routes",
             get(api::get_api_list_by_query).post(api::create_api),
@@ -174,10 +160,10 @@ pub fn router() -> Router<crate::state::AppState> {
             "/users/{id}/authorities",
             put(user::set_user_authorities_by_id),
         )
+        .route("/users/{id}/roles", put(user::set_user_roles_by_id))
         .route("/menus/current", get(menu::get_menu))
         .route("/menus", get(menu::get_menu_list).post(menu::add_base_menu))
         .route("/menus/tree", get(menu::get_base_menu_tree))
-        .route("/menus/role-matrix", get(menu::get_menu_role_matrix))
         .route(
             "/menus/{id}",
             get(menu::get_base_menu_by_path_id)
@@ -188,12 +174,6 @@ pub fn router() -> Router<crate::state::AppState> {
             "/menus/{id}/roles",
             get(menu::get_menu_roles_by_id).put(menu::set_menu_roles_by_id),
         )
-        .route(
-            "/menus/authority",
-            get(menu::get_menu_authority)
-                .post(menu::add_menu_authority)
-                .put(menu::set_menu_authority),
-        )
         .route("/files", get(file::get_file_list_by_query))
         .route("/files/import-url", post(file::import_url))
         .route(
@@ -203,4 +183,72 @@ pub fn router() -> Router<crate::state::AppState> {
         .route("/files/{id}", delete(file::delete_file_by_id))
         .route("/files/{id}/name", patch(file::edit_file_name_by_id))
         .route("/auth/logout", post(session::logout))
+}
+
+#[cfg(test)]
+mod tests {
+    use axum::{
+        Router,
+        body::{Body, to_bytes},
+        http::{Request, StatusCode},
+        response::IntoResponse,
+        routing::{get, put},
+    };
+    use tower::ServiceExt;
+
+    async fn ok_marker(marker: &'static str) -> impl IntoResponse {
+        marker
+    }
+
+    fn role_shape_router() -> Router {
+        let role_routes = Router::new()
+            .route("/", get(|| ok_marker("roles:list")))
+            .route("/{id}", put(|| ok_marker("roles:update")))
+            .route("/{id}/permissions", get(|| ok_marker("roles:permissions")))
+            .route("/{id}/users", get(|| ok_marker("roles:users")));
+
+        Router::new().nest("/roles", role_routes)
+    }
+
+    #[tokio::test]
+    async fn role_permission_assignment_route_stays_reachable() {
+        let response = role_shape_router()
+            .oneshot(
+                Request::builder()
+                    .uri("/roles/7/permissions")
+                    .body(Body::empty())
+                    .expect("request should build"),
+            )
+            .await
+            .expect("router should respond");
+        let status = response.status();
+        let bytes = to_bytes(response.into_body(), usize::MAX)
+            .await
+            .expect("body should be readable");
+        let body = String::from_utf8(bytes.to_vec()).expect("body should be utf8");
+
+        assert_eq!(status, StatusCode::OK);
+        assert_eq!(body, "roles:permissions");
+    }
+
+    #[tokio::test]
+    async fn role_user_assignment_route_uses_mature_role_endpoint() {
+        let response = role_shape_router()
+            .oneshot(
+                Request::builder()
+                    .uri("/roles/7/users")
+                    .body(Body::empty())
+                    .expect("request should build"),
+            )
+            .await
+            .expect("router should respond");
+        let status = response.status();
+        let bytes = to_bytes(response.into_body(), usize::MAX)
+            .await
+            .expect("body should be readable");
+        let body = String::from_utf8(bytes.to_vec()).expect("body should be utf8");
+
+        assert_eq!(status, StatusCode::OK);
+        assert_eq!(body, "roles:users");
+    }
 }

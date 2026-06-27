@@ -255,10 +255,6 @@ pub async fn delete_authority(
         return Err(AuthorityError::CannotDeleteRoot);
     }
 
-    sqlx::query("delete from sys_role_menus where authority_id = $1")
-        .bind(payload.authority_id)
-        .execute(pool)
-        .await?;
     sqlx::query("delete from sys_authorities where authority_id = $1")
         .bind(payload.authority_id)
         .execute(pool)
@@ -271,29 +267,7 @@ pub async fn copy_authority(
     pool: &sqlx::PgPool,
     payload: CopyAuthorityRequest,
 ) -> Result<AuthorityView, AuthorityError> {
-    let new_authority = create_authority(pool, payload.authority.clone()).await?;
-    let menu_ids: Vec<i64> = sqlx::query_scalar(
-        "select menu_id from sys_role_menus where authority_id = $1 order by menu_id",
-    )
-    .bind(payload.old_authority_id)
-    .fetch_all(pool)
-    .await?;
-
-    for menu_id in menu_ids {
-        sqlx::query(
-            r#"
-            insert into sys_role_menus (authority_id, menu_id)
-            values ($1, $2)
-            on conflict do nothing
-            "#,
-        )
-        .bind(new_authority.authority_id)
-        .bind(menu_id)
-        .execute(pool)
-        .await?;
-    }
-
-    Ok(new_authority)
+    create_authority(pool, payload.authority).await
 }
 
 pub async fn get_user_ids_by_authority_id(

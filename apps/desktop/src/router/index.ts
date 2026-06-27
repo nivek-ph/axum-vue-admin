@@ -18,6 +18,9 @@ const OperationLogView = () => import('@/views/logs/OperationLogView.vue')
 const ProfileView = () => import('@/views/profile/ProfileView.vue')
 const SystemConfigView = () => import('@/views/system/SystemConfigView.vue')
 const SystemStateView = () => import('@/views/system/SystemStateView.vue')
+const DeptTreeView = () => import('@/views/system/depts/DeptTreeView.vue')
+const PermissionListView = () => import('@/views/system/permissions/PermissionListView.vue')
+const ApiPermissionListView = () => import('@/views/system/permissions/ApiPermissionListView.vue')
 
 const routes: RouteRecordRaw[] = [
   { path: '/login', name: 'login', component: LoginView },
@@ -38,7 +41,10 @@ const routes: RouteRecordRaw[] = [
       { path: 'operation-logs', name: 'operation-logs', component: OperationLogView },
       { path: 'profile', name: 'profile', component: ProfileView },
       { path: 'system-config', name: 'system-config', component: SystemConfigView },
-      { path: 'system-state', name: 'system-state', component: SystemStateView }
+      { path: 'system-state', name: 'system-state', component: SystemStateView },
+      { path: 'departments', name: 'departments', component: DeptTreeView },
+      { path: 'permissions', name: 'permissions', component: PermissionListView },
+      { path: 'api-permissions', name: 'api-permissions', component: ApiPermissionListView }
     ]
   }
 ]

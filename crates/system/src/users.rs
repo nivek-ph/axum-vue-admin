@@ -9,7 +9,9 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 use crate::authority;
+use crate::data_scope::DataScopeFilter;
 use crate::errors;
+use crate::roles::RoleSummary;
 
 #[derive(Debug, Clone, FromRow)]
 pub struct UserRecord {
@@ -26,6 +28,8 @@ pub struct UserRecord {
     pub phone: Option<String>,
     pub email: Option<String>,
     pub origin_setting: Option<serde_json::Value>,
+    pub dept_id: Option<i64>,
+    pub dept_name: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, ToSchema)]
@@ -48,6 +52,10 @@ pub struct RegisterRequest {
     pub authority_id: Option<i64>,
     #[serde(rename = "authorityIds")]
     pub authority_ids: Option<Vec<i64>>,
+    #[serde(rename = "roleIds")]
+    pub role_ids: Option<Vec<i64>>,
+    #[serde(rename = "deptId", alias = "dept_id")]
+    pub dept_id: Option<i64>,
     pub enable: Option<i32>,
     pub phone: Option<String>,
     pub email: Option<String>,
@@ -64,6 +72,8 @@ pub struct UpdateUserRequest {
     pub enable: i32,
     pub phone: Option<String>,
     pub email: Option<String>,
+    #[serde(rename = "deptId", alias = "dept_id")]
+    pub dept_id: Option<i64>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -110,6 +120,12 @@ pub struct SetUserAuthoritiesRequest {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+pub struct SetUserRolesRequest {
+    #[serde(rename = "roleIds", alias = "role_ids")]
+    pub role_ids: Vec<i64>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
 pub struct GetUserListRequest {
     pub page: i64,
     #[serde(rename = "pageSize")]
@@ -142,6 +158,13 @@ pub struct UserInfoView {
     pub email: String,
     #[serde(rename = "originSetting")]
     pub origin_setting: Option<serde_json::Value>,
+    #[serde(rename = "deptId")]
+    pub dept_id: Option<i64>,
+    #[serde(rename = "deptName")]
+    pub dept_name: String,
+    pub roles: Vec<RoleSummary>,
+    #[serde(rename = "roleIds")]
+    pub role_ids: Vec<i64>,
     pub permissions: Vec<String>,
 }
 
@@ -228,8 +251,9 @@ pub async fn ensure_admin_user(
             enable,
             phone,
             email,
-            origin_setting
-        ) values ($1, $2, $3, $4, $5, $6, $7, $8, true, null, null, null)
+            origin_setting,
+            dept_id
+        ) values ($1, $2, $3, $4, $5, $6, $7, $8, true, null, null, null, 1)
         "#,
     )
     .bind(Uuid::new_v4().to_string())
@@ -256,9 +280,14 @@ pub async fn register_user(
     }
     let authority =
         resolve_authority(pool, payload.authority_id, payload.authority_ids.as_ref()).await?;
+    let role_ids = normalize_role_ids(
+        payload.role_ids.as_ref(),
+        payload.authority_ids.as_ref(),
+        payload.authority_id,
+    );
     let password_hash = password_service.hash_password(&payload.password)?;
 
-    sqlx::query(
+    let user_id: i64 = sqlx::query_scalar(
         r#"
         insert into sys_users (
             uuid,
@@ -272,8 +301,10 @@ pub async fn register_user(
             enable,
             phone,
             email,
-            origin_setting
-        ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, null)
+            origin_setting,
+            dept_id
+        ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, null, $12)
+        returning id
         "#,
     )
     .bind(Uuid::new_v4().to_string())
@@ -291,8 +322,11 @@ pub async fn register_user(
     .bind(payload.enable.unwrap_or(1) == 1)
     .bind(payload.phone)
     .bind(payload.email)
-    .execute(pool)
+    .bind(payload.dept_id.or(Some(1)))
+    .fetch_one(pool)
     .await?;
+
+    replace_user_roles(pool, user_id, role_ids).await?;
 
     Ok(())
 }
@@ -318,8 +352,11 @@ pub async fn login(
 
     let token = jwt_service.issue_token(record.id, &record.username, record.authority_id)?;
 
+    let roles = get_roles_by_user_id(pool, record.id).await?;
+    let permissions = get_permission_codes_by_user_id(pool, record.id).await?;
+
     Ok(LoginResult {
-        user: build_user_info(&record, Vec::new()),
+        user: build_user_info(&record, roles, permissions),
         token,
     })
 }
@@ -332,33 +369,30 @@ pub async fn load_authenticated_user(
         .await?
         .ok_or(LoginError::UserNotFound)?;
 
-    let permissions = crate::menu::get_permissions_by_authority_id(pool, record.authority_id)
-        .await
-        .map_err(|error| match error {
-            crate::menu::MenuError::Database(error) => LoginError::Database(error),
-            other => LoginError::Database(sqlx::Error::Protocol(other.to_string())),
-        })?;
+    let roles = get_roles_by_user_id(pool, record.id).await?;
+    let permissions = get_permission_codes_by_user_id(pool, record.id).await?;
 
     Ok(AuthenticatedUser {
         id: record.id,
         authority_id: record.authority_id,
-        user: build_user_info(&record, permissions),
+        user: build_user_info(&record, roles, permissions),
     })
 }
 
 pub async fn get_user_list(
     pool: &sqlx::PgPool,
     query: GetUserListRequest,
+    actor_user_id: Option<i64>,
 ) -> Result<(Vec<UserInfoView>, i64), LoginError> {
     let page = query.page.max(1);
     let page_size = query.page_size.max(1);
     let offset = (page - 1) * page_size;
     let order_key = match query.order_key.as_deref() {
-        Some("username") => "username",
-        Some("nick_name") => "nick_name",
-        Some("phone") => "phone",
-        Some("email") => "email",
-        _ => "id",
+        Some("username") => "u.username",
+        Some("nick_name") => "u.nick_name",
+        Some("phone") => "u.phone",
+        Some("email") => "u.email",
+        _ => "u.id",
     };
     let order_dir = if query.desc.unwrap_or(true) {
         "desc"
@@ -366,65 +400,145 @@ pub async fn get_user_list(
         "asc"
     };
     let order_clause = format!("{order_key} {order_dir}");
+    let scope_filter = match actor_user_id {
+        Some(user_id) => crate::data_scope::resolve_user_data_scope(pool, user_id, "users").await?,
+        None => DataScopeFilter::All,
+    };
+    if matches!(&scope_filter, DataScopeFilter::DeptIds(dept_ids) if dept_ids.is_empty()) {
+        return Ok((Vec::new(), 0));
+    }
+    let scope_clause = scope_sql_clause(&scope_filter);
 
-    let total: i64 = sqlx::query_scalar(
+    let total_sql = format!(
         r#"
-        select count(*) from sys_users
-        where ($1::text is null or username ilike '%' || $1 || '%')
-          and ($2::text is null or nick_name ilike '%' || $2 || '%')
-          and ($3::text is null or coalesce(phone, '') ilike '%' || $3 || '%')
-          and ($4::text is null or coalesce(email, '') ilike '%' || $4 || '%')
-        "#,
-    )
-    .bind(query.username.as_deref())
-    .bind(query.nick_name.as_deref())
-    .bind(query.phone.as_deref())
-    .bind(query.email.as_deref())
-    .fetch_one(pool)
-    .await?;
+        select count(*) from sys_users u
+        where ($1::text is null or u.username ilike '%' || $1 || '%')
+          and ($2::text is null or u.nick_name ilike '%' || $2 || '%')
+          and ($3::text is null or coalesce(u.phone, '') ilike '%' || $3 || '%')
+          and ($4::text is null or coalesce(u.email, '') ilike '%' || $4 || '%')
+          {scope_clause}
+        "#
+    );
+    let mut total_query = sqlx::query_scalar::<_, i64>(sqlx::AssertSqlSafe(total_sql))
+        .bind(query.username.as_deref())
+        .bind(query.nick_name.as_deref())
+        .bind(query.phone.as_deref())
+        .bind(query.email.as_deref());
+    total_query = match &scope_filter {
+        DataScopeFilter::All => total_query,
+        DataScopeFilter::DeptIds(dept_ids) => total_query.bind(dept_ids),
+        DataScopeFilter::Owner(owner_id) => total_query.bind(owner_id),
+    };
+    let total = total_query.fetch_one(pool).await?;
 
     let sql = format!(
         r#"
         select
-            id,
-            uuid,
-            username,
-            password_hash,
-            nick_name,
-            header_img,
-            authority_id,
-            authority_name,
-            default_router,
-            enable,
-            phone,
-            email,
-            origin_setting
-        from sys_users
-        where ($1::text is null or username ilike '%' || $1 || '%')
-          and ($2::text is null or nick_name ilike '%' || $2 || '%')
-          and ($3::text is null or coalesce(phone, '') ilike '%' || $3 || '%')
-          and ($4::text is null or coalesce(email, '') ilike '%' || $4 || '%')
+            u.id,
+            u.uuid,
+            u.username,
+            u.password_hash,
+            u.nick_name,
+            u.header_img,
+            u.authority_id,
+            u.authority_name,
+            u.default_router,
+            u.enable,
+            u.phone,
+            u.email,
+            u.origin_setting,
+            u.dept_id,
+            d.name as dept_name
+        from sys_users u
+        left join sys_depts d on d.id = u.dept_id
+        where ($1::text is null or u.username ilike '%' || $1 || '%')
+          and ($2::text is null or u.nick_name ilike '%' || $2 || '%')
+          and ($3::text is null or coalesce(u.phone, '') ilike '%' || $3 || '%')
+          and ($4::text is null or coalesce(u.email, '') ilike '%' || $4 || '%')
+          {scope_clause}
         order by {order_clause}
-        limit $5 offset $6
-        "#
+        limit ${limit_placeholder} offset ${offset_placeholder}
+        "#,
+        limit_placeholder = if matches!(&scope_filter, DataScopeFilter::All) {
+            5
+        } else {
+            6
+        },
+        offset_placeholder = if matches!(&scope_filter, DataScopeFilter::All) {
+            6
+        } else {
+            7
+        }
     );
 
-    let rows = sqlx::query_as::<_, UserRecord>(sqlx::AssertSqlSafe(sql))
+    let mut rows_query = sqlx::query_as::<_, UserRecord>(sqlx::AssertSqlSafe(sql))
         .bind(query.username.as_deref())
         .bind(query.nick_name.as_deref())
         .bind(query.phone.as_deref())
-        .bind(query.email.as_deref())
+        .bind(query.email.as_deref());
+    rows_query = match &scope_filter {
+        DataScopeFilter::All => rows_query,
+        DataScopeFilter::DeptIds(dept_ids) => rows_query.bind(dept_ids),
+        DataScopeFilter::Owner(owner_id) => rows_query.bind(owner_id),
+    };
+    let rows = rows_query
         .bind(page_size)
         .bind(offset)
         .fetch_all(pool)
         .await?;
 
-    Ok((
-        rows.iter()
-            .map(|record| build_user_info(record, Vec::new()))
-            .collect(),
-        total,
-    ))
+    let mut list = Vec::with_capacity(rows.len());
+    for record in rows {
+        let roles = get_roles_by_user_id(pool, record.id).await?;
+        let permissions = get_permission_codes_by_user_id(pool, record.id).await?;
+        list.push(build_user_info(&record, roles, permissions));
+    }
+
+    Ok((list, total))
+}
+
+fn scope_sql_clause(filter: &DataScopeFilter) -> &'static str {
+    match filter {
+        DataScopeFilter::All => "",
+        DataScopeFilter::DeptIds(_) => "and u.dept_id = any($5)",
+        DataScopeFilter::Owner(_) => "and u.id = $5",
+    }
+}
+
+pub async fn ensure_user_in_scope(
+    pool: &sqlx::PgPool,
+    actor_user_id: i64,
+    target_user_id: i64,
+) -> Result<(), LoginError> {
+    let filter = crate::data_scope::resolve_user_data_scope(pool, actor_user_id, "users").await?;
+    let visible = match filter {
+        DataScopeFilter::All => true,
+        DataScopeFilter::Owner(owner_id) => owner_id == target_user_id,
+        DataScopeFilter::DeptIds(dept_ids) => {
+            if dept_ids.is_empty() {
+                false
+            } else {
+                sqlx::query_scalar::<_, bool>(
+                    r#"
+                    select exists(
+                        select 1 from sys_users
+                        where id = $1 and dept_id = any($2)
+                    )
+                    "#,
+                )
+                .bind(target_user_id)
+                .bind(&dept_ids)
+                .fetch_one(pool)
+                .await?
+            }
+        }
+    };
+
+    if visible {
+        Ok(())
+    } else {
+        Err(LoginError::UserNotFound)
+    }
 }
 
 pub async fn update_user(
@@ -439,8 +553,9 @@ pub async fn update_user(
             enable = $3,
             phone = $4,
             email = $5,
+            dept_id = coalesce($6, dept_id),
             updated_at = now()
-        where id = $6
+        where id = $7
         "#,
     )
     .bind(payload.nick_name)
@@ -448,6 +563,7 @@ pub async fn update_user(
     .bind(payload.enable == 1)
     .bind(payload.phone)
     .bind(payload.email)
+    .bind(payload.dept_id)
     .bind(payload.id)
     .execute(pool)
     .await?;
@@ -492,6 +608,7 @@ pub async fn set_user_authorities(
     payload: SetUserAuthoritiesRequest,
 ) -> Result<(), LoginError> {
     let authority = resolve_authority(pool, None, Some(&payload.authority_ids)).await?;
+    let role_ids = normalize_role_ids(None, Some(&payload.authority_ids), None);
     sqlx::query(
         r#"
         update sys_users
@@ -508,6 +625,34 @@ pub async fn set_user_authorities(
     .bind(payload.id)
     .execute(pool)
     .await?;
+    replace_user_roles(pool, payload.id, role_ids).await?;
+    Ok(())
+}
+
+pub async fn set_user_roles(
+    pool: &sqlx::PgPool,
+    user_id: i64,
+    payload: SetUserRolesRequest,
+) -> Result<(), LoginError> {
+    replace_user_roles(pool, user_id, payload.role_ids).await?;
+    if let Some(authority) = legacy_authority_for_user_roles(pool, user_id).await? {
+        sqlx::query(
+            r#"
+            update sys_users
+            set authority_id = $1,
+                authority_name = $2,
+                default_router = $3,
+                updated_at = now()
+            where id = $4
+            "#,
+        )
+        .bind(authority.authority_id)
+        .bind(authority.authority_name)
+        .bind(authority.default_router)
+        .bind(user_id)
+        .execute(pool)
+        .await?;
+    }
     Ok(())
 }
 
@@ -622,21 +767,24 @@ async fn find_by_username(
     sqlx::query_as::<_, UserRecord>(
         r#"
         select
-            id,
-            uuid,
-            username,
-            password_hash,
-            nick_name,
-            header_img,
-            authority_id,
-            authority_name,
-            default_router,
-            enable,
-            phone,
-            email,
-            origin_setting
-        from sys_users
-        where username = $1
+            u.id,
+            u.uuid,
+            u.username,
+            u.password_hash,
+            u.nick_name,
+            u.header_img,
+            u.authority_id,
+            u.authority_name,
+            u.default_router,
+            u.enable,
+            u.phone,
+            u.email,
+            u.origin_setting,
+            u.dept_id,
+            d.name as dept_name
+        from sys_users u
+        left join sys_depts d on d.id = u.dept_id
+        where u.username = $1
         "#,
     )
     .bind(username)
@@ -648,21 +796,24 @@ async fn find_by_id(pool: &sqlx::PgPool, user_id: i64) -> Result<Option<UserReco
     sqlx::query_as::<_, UserRecord>(
         r#"
         select
-            id,
-            uuid,
-            username,
-            password_hash,
-            nick_name,
-            header_img,
-            authority_id,
-            authority_name,
-            default_router,
-            enable,
-            phone,
-            email,
-            origin_setting
-        from sys_users
-        where id = $1
+            u.id,
+            u.uuid,
+            u.username,
+            u.password_hash,
+            u.nick_name,
+            u.header_img,
+            u.authority_id,
+            u.authority_name,
+            u.default_router,
+            u.enable,
+            u.phone,
+            u.email,
+            u.origin_setting,
+            u.dept_id,
+            d.name as dept_name
+        from sys_users u
+        left join sys_depts d on d.id = u.dept_id
+        where u.id = $1
         "#,
     )
     .bind(user_id)
@@ -670,7 +821,11 @@ async fn find_by_id(pool: &sqlx::PgPool, user_id: i64) -> Result<Option<UserReco
     .await
 }
 
-fn build_user_info(record: &UserRecord, permissions: Vec<String>) -> UserInfoView {
+fn build_user_info(
+    record: &UserRecord,
+    roles: Vec<RoleSummary>,
+    permissions: Vec<String>,
+) -> UserInfoView {
     let authority = authority::AuthorityView {
         authority_id: record.authority_id,
         authority_name: record.authority_name.clone(),
@@ -692,7 +847,157 @@ fn build_user_info(record: &UserRecord, permissions: Vec<String>) -> UserInfoVie
         phone: record.phone.clone().unwrap_or_default(),
         email: record.email.clone().unwrap_or_default(),
         origin_setting: record.origin_setting.clone(),
+        dept_id: record.dept_id,
+        dept_name: record.dept_name.clone().unwrap_or_default(),
+        role_ids: roles.iter().map(|role| role.id).collect(),
+        roles,
         permissions,
+    }
+}
+
+async fn get_roles_by_user_id(
+    pool: &sqlx::PgPool,
+    user_id: i64,
+) -> Result<Vec<RoleSummary>, sqlx::Error> {
+    sqlx::query_as::<_, RoleSummary>(
+        r#"
+        select r.id, r.code, r.name, r.status, r.sort, r.data_scope, r.is_system
+        from sys_user_roles ur
+        join sys_roles r on r.id = ur.role_id
+        where ur.user_id = $1
+        order by r.sort, r.id
+        "#,
+    )
+    .bind(user_id)
+    .fetch_all(pool)
+    .await
+}
+
+async fn get_permission_codes_by_user_id(
+    pool: &sqlx::PgPool,
+    user_id: i64,
+) -> Result<Vec<String>, sqlx::Error> {
+    sqlx::query_scalar(
+        r#"
+        select distinct p.code
+        from sys_user_roles ur
+        join sys_roles r on r.id = ur.role_id
+        join sys_role_permissions rp on rp.role_id = r.id
+        join sys_permissions p on p.id = rp.permission_id
+        where ur.user_id = $1
+          and r.status = 'enabled'
+          and p.status = 'enabled'
+        order by p.code
+        "#,
+    )
+    .bind(user_id)
+    .fetch_all(pool)
+    .await
+}
+
+async fn replace_user_roles(
+    pool: &sqlx::PgPool,
+    user_id: i64,
+    role_ids: Vec<i64>,
+) -> Result<(), LoginError> {
+    let normalized = if role_ids.is_empty() {
+        vec![1]
+    } else {
+        role_ids
+            .into_iter()
+            .map(|role_id| if role_id == 888 { 1 } else { role_id })
+            .collect()
+    };
+
+    let mut tx = pool.begin().await?;
+    sqlx::query("delete from sys_user_roles where user_id = $1")
+        .bind(user_id)
+        .execute(&mut *tx)
+        .await?;
+
+    for role_id in normalized {
+        sqlx::query(
+            r#"
+            insert into sys_user_roles (user_id, role_id)
+            values ($1, $2)
+            on conflict do nothing
+            "#,
+        )
+        .bind(user_id)
+        .bind(role_id)
+        .execute(&mut *tx)
+        .await?;
+    }
+
+    tx.commit().await?;
+    Ok(())
+}
+
+async fn legacy_authority_for_user_roles(
+    pool: &sqlx::PgPool,
+    user_id: i64,
+) -> Result<Option<authority::AuthorityView>, sqlx::Error> {
+    let role = get_roles_by_user_id(pool, user_id)
+        .await?
+        .into_iter()
+        .next();
+    Ok(role.map(|role| {
+        if role.code == "super_admin" {
+            authority::default_authorities()[0].clone()
+        } else {
+            authority::AuthorityView {
+                authority_id: role.id,
+                authority_name: role.name,
+                parent_id: 0,
+                default_router: "dashboard".to_string(),
+                children: Vec::new(),
+                data_authority_id: Vec::new(),
+            }
+        }
+    }))
+}
+
+fn normalize_role_ids(
+    role_ids: Option<&Vec<i64>>,
+    authority_ids: Option<&Vec<i64>>,
+    authority_id: Option<i64>,
+) -> Vec<i64> {
+    let ids = role_ids
+        .filter(|ids| !ids.is_empty())
+        .cloned()
+        .or_else(|| authority_ids.filter(|ids| !ids.is_empty()).cloned())
+        .or_else(|| authority_id.map(|id| vec![id]))
+        .unwrap_or_else(|| vec![1]);
+
+    ids.into_iter()
+        .map(|id| if id == 888 { 1 } else { id })
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn scope_sql_clause_matches_filter_shape() {
+        assert_eq!(scope_sql_clause(&DataScopeFilter::All), "");
+        assert_eq!(
+            scope_sql_clause(&DataScopeFilter::DeptIds(vec![1, 2])),
+            "and u.dept_id = any($5)"
+        );
+        assert_eq!(
+            scope_sql_clause(&DataScopeFilter::Owner(7)),
+            "and u.id = $5"
+        );
+    }
+
+    #[test]
+    fn normalize_role_ids_maps_legacy_super_admin_authority() {
+        assert_eq!(normalize_role_ids(None, None, Some(888)), vec![1]);
+        assert_eq!(
+            normalize_role_ids(Some(&vec![888, 2]), None, None),
+            vec![1, 2]
+        );
     }
 }
 

@@ -27,11 +27,12 @@ pub async fn get_user_info(CurrentUser(user): CurrentUser) -> Json<ApiResponse<V
 
 pub async fn get_user_list(
     State(state): State<AppState>,
+    CurrentUser(user): CurrentUser,
     Json(payload): Json<system::users::GetUserListRequest>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     let page = payload.page.max(1);
     let page_size = payload.page_size.max(1);
-    let (list, total) = system::users::get_user_list(&state.pool, payload).await?;
+    let (list, total) = system::users::get_user_list(&state.pool, payload, Some(user.id)).await?;
 
     Ok(Json(ApiResponse::ok(serde_json::json!({
         "list": list,
@@ -43,11 +44,12 @@ pub async fn get_user_list(
 
 pub async fn get_user_list_by_query(
     State(state): State<AppState>,
+    CurrentUser(user): CurrentUser,
     Query(payload): Query<system::users::GetUserListRequest>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     let page = payload.page.max(1);
     let page_size = payload.page_size.max(1);
-    let (list, total) = system::users::get_user_list(&state.pool, payload).await?;
+    let (list, total) = system::users::get_user_list(&state.pool, payload, Some(user.id)).await?;
 
     Ok(Json(ApiResponse::ok(serde_json::json!({
         "list": list,
@@ -78,8 +80,10 @@ pub async fn change_password(
 
 pub async fn set_user_info(
     State(state): State<AppState>,
+    CurrentUser(user): CurrentUser,
     Json(payload): Json<system::users::UpdateUserRequest>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
+    system::users::ensure_user_in_scope(&state.pool, user.id, payload.id).await?;
     system::users::update_user(&state.pool, payload).await?;
 
     Ok(Json(ApiResponse::ok_message("updated")))
@@ -87,10 +91,12 @@ pub async fn set_user_info(
 
 pub async fn set_user_info_by_id(
     State(state): State<AppState>,
+    CurrentUser(user): CurrentUser,
     Path(id): Path<i64>,
     Json(mut payload): Json<system::users::UpdateUserRequest>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     payload.id = id;
+    system::users::ensure_user_in_scope(&state.pool, user.id, id).await?;
     system::users::update_user(&state.pool, payload).await?;
 
     Ok(Json(ApiResponse::ok_message("updated")))
@@ -118,8 +124,10 @@ pub async fn set_self_setting(
 
 pub async fn delete_user(
     State(state): State<AppState>,
+    CurrentUser(user): CurrentUser,
     Json(payload): Json<system::users::DeleteUserRequest>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
+    system::users::ensure_user_in_scope(&state.pool, user.id, payload.id).await?;
     system::users::delete_user(&state.pool, payload).await?;
 
     Ok(Json(ApiResponse::ok_message("deleted")))
@@ -127,8 +135,10 @@ pub async fn delete_user(
 
 pub async fn delete_user_by_id(
     State(state): State<AppState>,
+    CurrentUser(user): CurrentUser,
     Path(id): Path<i64>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
+    system::users::ensure_user_in_scope(&state.pool, user.id, id).await?;
     system::users::delete_user(&state.pool, system::users::DeleteUserRequest { id }).await?;
 
     Ok(Json(ApiResponse::ok_message("deleted")))
@@ -136,8 +146,10 @@ pub async fn delete_user_by_id(
 
 pub async fn reset_password(
     State(state): State<AppState>,
+    CurrentUser(user): CurrentUser,
     Json(payload): Json<system::users::ResetPasswordRequest>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
+    system::users::ensure_user_in_scope(&state.pool, user.id, payload.id).await?;
     system::users::reset_password(&state.pool, &state.password_service, payload).await?;
 
     Ok(Json(ApiResponse::ok_message("password reset")))
@@ -145,10 +157,12 @@ pub async fn reset_password(
 
 pub async fn reset_password_by_id(
     State(state): State<AppState>,
+    CurrentUser(user): CurrentUser,
     Path(id): Path<i64>,
     Json(mut payload): Json<system::users::ResetPasswordRequest>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     payload.id = id;
+    system::users::ensure_user_in_scope(&state.pool, user.id, id).await?;
     system::users::reset_password(&state.pool, &state.password_service, payload).await?;
 
     Ok(Json(ApiResponse::ok_message("password reset")))
@@ -156,8 +170,10 @@ pub async fn reset_password_by_id(
 
 pub async fn set_user_authorities(
     State(state): State<AppState>,
+    CurrentUser(user): CurrentUser,
     Json(payload): Json<system::users::SetUserAuthoritiesRequest>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
+    system::users::ensure_user_in_scope(&state.pool, user.id, payload.id).await?;
     system::users::set_user_authorities(&state.pool, payload).await?;
 
     Ok(Json(ApiResponse::ok_message("role updated")))
@@ -165,13 +181,27 @@ pub async fn set_user_authorities(
 
 pub async fn set_user_authorities_by_id(
     State(state): State<AppState>,
+    CurrentUser(user): CurrentUser,
     Path(id): Path<i64>,
     Json(mut payload): Json<system::users::SetUserAuthoritiesRequest>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     payload.id = id;
+    system::users::ensure_user_in_scope(&state.pool, user.id, id).await?;
     system::users::set_user_authorities(&state.pool, payload).await?;
 
     Ok(Json(ApiResponse::ok_message("role updated")))
+}
+
+pub async fn set_user_roles_by_id(
+    State(state): State<AppState>,
+    CurrentUser(user): CurrentUser,
+    Path(id): Path<i64>,
+    Json(payload): Json<system::users::SetUserRolesRequest>,
+) -> AppResult<Json<ApiResponse<Value>>> {
+    system::users::ensure_user_in_scope(&state.pool, user.id, id).await?;
+    system::users::set_user_roles(&state.pool, id, payload).await?;
+
+    Ok(Json(ApiResponse::ok_message("roles updated")))
 }
 
 pub async fn set_user_authority(

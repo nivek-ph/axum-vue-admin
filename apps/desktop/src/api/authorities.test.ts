@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { normalizeAuthorityListResponse } from './authorities';
+import { buildRoleUsersPayload, normalizeAuthorityListResponse } from './authorities';
 
 describe('authority api adapter', () => {
   it('normalizes backend authority tree payload', () => {
@@ -16,5 +16,9 @@ describe('authority api adapter', () => {
 
     expect(result).toHaveLength(1);
     expect(result[0].children).toHaveLength(1);
+  });
+
+  it('builds mature role user assignment payload', () => {
+    expect(buildRoleUsersPayload([4, 2, 4])).toEqual({ userIds: [2, 4] });
   });
 });

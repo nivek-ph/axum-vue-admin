@@ -68,3 +68,24 @@ pub mod depts {
     pub const DEPT_DB_FAILED: ErrorSpec =
         ErrorSpec::internal("DEPT_DB_FAILED", "department operation failed");
 }
+
+pub mod roles {
+    use super::*;
+
+    pub const ROLE_NOT_FOUND: ErrorSpec = ErrorSpec::not_found("ROLE_NOT_FOUND", "role not found");
+    pub const ROLE_IMMUTABLE: ErrorSpec =
+        ErrorSpec::failed_precondition("ROLE_IMMUTABLE", "system role cannot be deleted");
+    pub const ROLE_DB_FAILED: ErrorSpec =
+        ErrorSpec::internal("ROLE_DB_FAILED", "role operation failed");
+}
+
+pub mod permissions {
+    use super::*;
+
+    pub const PERMISSION_NOT_FOUND: ErrorSpec =
+        ErrorSpec::not_found("PERMISSION_NOT_FOUND", "permission not found");
+    pub const PERMISSION_INVALID_CODE: ErrorSpec =
+        ErrorSpec::validation("PERMISSION_INVALID_CODE", "invalid permission code");
+    pub const PERMISSION_DB_FAILED: ErrorSpec =
+        ErrorSpec::internal("PERMISSION_DB_FAILED", "permission operation failed");
+}

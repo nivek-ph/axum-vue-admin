@@ -13,6 +13,9 @@ describe('router', () => {
     expect(routeNames).toContain('dashboard')
     expect(routeNames).toContain('users')
     expect(routeNames).toContain('roles')
+    expect(routeNames).toContain('departments')
+    expect(routeNames).toContain('permissions')
+    expect(routeNames).toContain('api-permissions')
     expect(routeNames).not.toContain('forbidden')
   })
 

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildCreateUserPayload, buildUpdateUserAuthoritiesPayload, normalizeUserListResponse } from './users';
+import {
+  buildCreateUserPayload,
+  buildUpdateUserAuthoritiesPayload,
+  normalizeUserListResponse,
+} from './users';
 
 describe('user api adapter', () => {
   it('normalizes backend list payload', () => {
@@ -27,6 +31,8 @@ describe('user api adapter', () => {
         email: 'alice@example.com',
         enable: 1,
         authorityId: 888,
+        roleIds: [1],
+        deptId: 1,
       })
     ).toEqual({
       userName: 'alice',
@@ -36,6 +42,8 @@ describe('user api adapter', () => {
       email: 'alice@example.com',
       enable: 1,
       authorityId: 888,
+      roleIds: [1],
+      deptId: 1,
     });
   });
 

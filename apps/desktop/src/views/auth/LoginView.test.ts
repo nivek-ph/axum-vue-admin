@@ -79,4 +79,71 @@ describe('LoginView', () => {
     expect(router.currentRoute.value.name).toBe('profile')
     expect(ElMessage.error).not.toHaveBeenCalled()
   })
+
+  it('grants full menu access when login user has the super_admin role code', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
+    const router = createRouter({
+      history: createMemoryHistory(),
+      routes: [
+        { path: '/login', name: 'login', component: LoginView },
+        { path: '/dashboard', name: 'dashboard', component: { template: '<div />' } }
+      ]
+    })
+    vi.mocked(login).mockResolvedValue({
+      code: 'OK',
+      message: 'ok',
+      data: {
+        token: 'token-123',
+        user: {
+          ID: 1,
+          userName: 'admin',
+          nickName: 'Admin',
+          authority: {
+            authorityId: 1,
+            authorityName: 'Legacy compatible',
+            defaultRouter: 'dashboard'
+          }
+        }
+      }
+    })
+    vi.mocked(getUserInfo).mockResolvedValue({
+      code: 'OK',
+      message: 'ok',
+      data: {
+        userInfo: {
+          ID: 1,
+          userName: 'admin',
+          nickName: 'Admin',
+          authority: {
+            authorityId: 1,
+            authorityName: 'Legacy compatible',
+            defaultRouter: 'dashboard'
+          },
+          roles: [{ id: 1, code: 'super_admin', name: 'Super Admin' }]
+        }
+      }
+    })
+    vi.mocked(getMenu).mockResolvedValue({
+      code: 'OK',
+      message: 'ok',
+      data: {
+        menus: [{ name: 'dashboard', path: 'dashboard', meta: { title: 'Dashboard' } }]
+      }
+    })
+    await router.push('/login')
+    await router.isReady()
+
+    const wrapper = mount(LoginView, {
+      global: {
+        plugins: [UiComponents, pinia, router]
+      }
+    })
+
+    await wrapper.find('button.w-full').trigger('click')
+    await flushPromises()
+
+    const menuStore = useMenuStore()
+    expect(menuStore.canAccessRouteName('roles')).toBe(true)
+  })
 })

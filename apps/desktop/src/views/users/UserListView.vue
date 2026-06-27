@@ -31,7 +31,7 @@
         </div>
         <div class="page-panel-actions">
           <UiButton @click="loadUsers" :loading="loading">{{ $t('Refresh') }}</UiButton>
-          <UiButton data-test="new-user-button" type="primary" @click="openCreateDialog">
+          <UiButton v-if="canCreateUser" data-test="new-user-button" type="primary" @click="openCreateDialog">
             {{ $t('New') }}
           </UiButton>
         </div>
@@ -44,9 +44,19 @@
           <UiTableColumn prop="nickName" label="Nickname" min-width="140" />
           <UiTableColumn prop="phone" label="Phone" min-width="140" />
           <UiTableColumn prop="email" label="Email" min-width="180" />
-          <UiTableColumn label="Role" min-width="140">
+          <UiTableColumn label="Department" min-width="140">
             <template #default="{ row }">
-              {{ row.authority?.authorityName || '-' }}
+              {{ row.deptName || '-' }}
+            </template>
+          </UiTableColumn>
+          <UiTableColumn label="Roles" min-width="180">
+            <template #default="{ row }">
+              <div class="user-role-tags">
+                <UiTag v-for="role in userRoles(row)" :key="role.id" type="info">
+                  {{ role.name }}
+                </UiTag>
+                <span v-if="userRoles(row).length === 0">-</span>
+              </div>
             </template>
           </UiTableColumn>
           <UiTableColumn label="Status" width="100">
@@ -58,9 +68,34 @@
           </UiTableColumn>
           <UiTableColumn label="Actions" width="280">
             <template #default="{ row }">
-              <UiButton link data-test="change-user-role-button" @click="openRoleDialog(row)">{{ $t('Change role') }}</UiButton>
-              <UiButton link @click="handleResetPassword(row.ID)">{{ $t('Reset password') }}</UiButton>
-              <UiButton link type="danger" @click="handleDelete(row.ID)">{{ $t('Delete') }}</UiButton>
+              <div class="user-row-actions">
+                <UiButton
+                  v-if="canAssignUserRoles"
+                  link
+                  data-test="change-user-role-button"
+                  @click="openRoleDialog(row)"
+                >
+                  {{ $t('Change role') }}
+                </UiButton>
+                <UiButton
+                  v-if="canResetUserPassword"
+                  link
+                  data-test="reset-user-password-button"
+                  @click="handleResetPassword(row.ID)"
+                >
+                  {{ $t('Reset password') }}
+                </UiButton>
+                <UiButton
+                  v-if="canDeleteUser"
+                  link
+                  type="danger"
+                  data-test="delete-user-button"
+                  @click="handleDelete(row.ID)"
+                >
+                  {{ $t('Delete') }}
+                </UiButton>
+                <span v-if="!hasUserRowActions" data-test="user-row-no-actions" class="empty-action">-</span>
+              </div>
             </template>
           </UiTableColumn>
         </UiTable>
@@ -79,7 +114,7 @@
           <UiInput v-model="createForm.password" type="password" placeholder="Password" showPassword />
         </UiFormItem>
         <UiFormItem label="Role">
-          <UiSelect v-model="createForm.authorityId" data-test="user-role-select" placeholder="Select role">
+          <UiSelect v-model="createForm.roleIds" multiple data-test="user-role-select" placeholder="Select role">
             <UiOption
               v-for="role in roleOptions"
               :key="role.authorityId"
@@ -115,7 +150,7 @@
           <UiInput :model-value="selectedUser?.userName || ''" disabled />
         </UiFormItem>
         <UiFormItem label="Role">
-          <UiSelect v-model="roleForm.authorityId" data-test="edit-user-role-select" placeholder="Select role">
+          <UiSelect v-model="roleForm.roleIds" multiple data-test="edit-user-role-select" placeholder="Select role">
             <UiOption
               v-for="role in roleOptions"
               :key="role.authorityId"
@@ -143,8 +178,10 @@ import type { UserRecord } from '@/api/users'
 import { usePageChrome } from '@/composables/usePageChrome'
 import { getApiErrorMessage } from '@/api/http'
 import { t } from '@/i18n'
+import { useAuthStore } from '@/stores/auth'
 import { useCreateUserMutation, useDeleteUserMutation, useResetUserPasswordMutation, useUpdateUserAuthoritiesMutation, useUserRolesQuery, useUsersQuery } from './userQueries'
 
+const authStore = useAuthStore()
 const usersQuery = useUsersQuery()
 const rolesQuery = useUserRolesQuery()
 const createUserMutation = useCreateUserMutation()
@@ -163,10 +200,10 @@ const createForm = reactive({
   phone: '',
   email: '',
   enable: 1,
-  authorityId: undefined as number | undefined
+  roleIds: [] as number[]
 })
 const roleForm = reactive({
-  authorityId: undefined as number | undefined
+  roleIds: [] as number[]
 })
 const { total } = usePageChrome(users, 'users')
 const enabledCount = computed(() => users.value.filter((item) => item.enable === 1).length)
@@ -174,10 +211,17 @@ const roleCount = computed(
   () => new Set(users.value.map((item) => item.authority?.authorityName).filter(Boolean)).size
 )
 const roleOptions = computed(() => rolesQuery.data.value || [])
+const canCreateUser = computed(() => authStore.can('system:user:create'))
+const canAssignUserRoles = computed(() => authStore.can('system:user:assign-roles'))
+const canResetUserPassword = computed(() => authStore.can('system:user:reset-password'))
+const canDeleteUser = computed(() => authStore.can('system:user:delete'))
+const hasUserRowActions = computed(
+  () => canAssignUserRoles.value || canResetUserPassword.value || canDeleteUser.value
+)
 
 watch(roleOptions, (roles) => {
-  if (createDialogVisible.value && !createForm.authorityId) {
-    createForm.authorityId = roles[0]?.authorityId
+  if (createDialogVisible.value && createForm.roleIds.length === 0) {
+    createForm.roleIds = roles[0] ? [roles[0].authorityId] : []
   }
 })
 
@@ -196,28 +240,35 @@ function resetCreateForm() {
   createForm.phone = ''
   createForm.email = ''
   createForm.enable = 1
-  createForm.authorityId = roleOptions.value[0]?.authorityId
+  createForm.roleIds = roleOptions.value[0] ? [roleOptions.value[0].authorityId] : []
 }
 
 function openCreateDialog() {
+  if (!canCreateUser.value) return
   resetCreateForm()
   createDialogVisible.value = true
 }
 
 function openRoleDialog(user: UserRecord) {
+  if (!canAssignUserRoles.value) return
   selectedUser.value = user
-  roleForm.authorityId = user.authority?.authorityId || roleOptions.value[0]?.authorityId
+  roleForm.roleIds = user.roleIds?.length
+    ? [...user.roleIds]
+    : user.authority?.authorityId
+      ? [user.authority.authorityId]
+      : []
   roleDialogVisible.value = true
 }
 
 async function handleCreateUser() {
-  if (!createForm.userName.trim() || !createForm.nickName.trim() || !createForm.password || !createForm.authorityId) {
+  if (!canCreateUser.value) return
+  if (!createForm.userName.trim() || !createForm.nickName.trim() || !createForm.password || createForm.roleIds.length === 0) {
     ElMessage.error(t('Username, nickname, password, and role are required'))
     return
   }
 
   try {
-    const res = await createUserMutation.mutateAsync({ ...createForm })
+    const res = await createUserMutation.mutateAsync({ ...createForm, authorityId: createForm.roleIds[0] })
     if (res.code === 'OK') {
       ElMessage.success(t('Created'))
       createDialogVisible.value = false
@@ -231,7 +282,8 @@ async function handleCreateUser() {
 }
 
 async function handleUpdateUserRole() {
-  if (!selectedUser.value || !roleForm.authorityId) {
+  if (!canAssignUserRoles.value) return
+  if (!selectedUser.value || roleForm.roleIds.length === 0) {
     ElMessage.error(t('Select role'))
     return
   }
@@ -239,7 +291,7 @@ async function handleUpdateUserRole() {
   try {
     const res = await updateUserAuthoritiesMutation.mutateAsync({
       id: selectedUser.value.ID,
-      authorityId: roleForm.authorityId
+      roleIds: roleForm.roleIds
     })
     if (res.code === 'OK') {
       ElMessage.success(t('User role updated'))
@@ -253,6 +305,7 @@ async function handleUpdateUserRole() {
 }
 
 async function handleDelete(id: number) {
+  if (!canDeleteUser.value) return
   try {
     await ElMessageBox.confirm(t('Delete this user?'), t('Notice'), {
       type: 'warning'
@@ -274,6 +327,7 @@ async function handleDelete(id: number) {
 }
 
 async function handleResetPassword(id: number) {
+  if (!canResetUserPassword.value) return
   try {
     const res = await resetUserPasswordMutation.mutateAsync({ id, password: '123456' })
     if (res.code === 'OK') {
@@ -285,11 +339,36 @@ async function handleResetPassword(id: number) {
     ElMessage.error(getApiErrorMessage(err, t('Reset failed')))
   }
 }
+
+function userRoles(user: UserRecord) {
+  if (user.roles?.length) return user.roles
+  if (user.authority) {
+    return [{ id: user.authority.authorityId, code: String(user.authority.authorityId), name: user.authority.authorityName }]
+  }
+  return []
+}
 </script>
 
 <style scoped>
 .user-form {
   display: grid;
   gap: 14px;
+}
+
+.user-role-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.user-row-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.empty-action {
+  color: var(--color-text-muted);
 }
 </style>

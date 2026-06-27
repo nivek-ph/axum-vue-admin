@@ -113,6 +113,9 @@
         <UiFormItem label="Transition">
           <UiInput v-model="form.meta.transitionType" placeholder="fade" />
         </UiFormItem>
+        <UiFormItem label="Permission ID">
+          <UiInputNumber v-model="form.permissionId" :min="0" :precision="0" class="w-full" />
+        </UiFormItem>
         <UiFormItem label="Display settings">
           <div class="switch-group">
             <UiSwitch v-model="form.hidden" active-text="Hidden" inactive-text="Visible" />
@@ -229,6 +232,7 @@ function createEmptyMenu(): MenuRecord {
     },
     parameters: [],
     menuBtn: [],
+    permissionId: null,
     children: []
   }
 }
@@ -245,6 +249,11 @@ function cloneMenu(menu: MenuRecord): MenuRecord {
     meta: { ...menu.meta },
     parameters: menu.parameters.map((item) => ({ ...item })),
     menuBtn: menu.menuBtn.map((item) => ({ ...item })),
+    permission: menu.permission,
+    permissionId: menu.permissionId,
+    method: menu.method,
+    apiPath: menu.apiPath,
+    menuType: menu.menuType,
     children: []
   }
 }

@@ -7,6 +7,12 @@ use serde_json::Value;
 
 use crate::state::AppState;
 
+#[derive(Debug, serde::Deserialize)]
+pub struct AuthorityQuery {
+    #[serde(rename = "authorityId")]
+    pub authority_id: i64,
+}
+
 pub async fn get_authority_list(
     State(state): State<AppState>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
@@ -72,7 +78,7 @@ pub async fn copy_authority(
 
 pub async fn get_users_by_authority(
     State(state): State<AppState>,
-    Query(payload): Query<system::menu::MenuAuthorityRequest>,
+    Query(payload): Query<AuthorityQuery>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     let user_ids =
         system::authority::get_user_ids_by_authority_id(&state.pool, payload.authority_id).await?;
@@ -108,8 +114,4 @@ pub async fn set_role_users_by_id(
     system::authority::set_role_users(&state.pool, payload).await?;
 
     Ok(Json(ApiResponse::ok_message("saved")))
-}
-
-pub async fn set_data_authority() -> Json<ApiResponse<Value>> {
-    Json(ApiResponse::ok_message("saved"))
 }
