@@ -50,6 +50,10 @@ impl AppConfig {
             jwt_secret: require_env("JWT_SECRET")?,
         })
     }
+
+    pub fn get_http_addr(&self) -> String {
+        format!("0.0.0.0:{}", self.http_port)
+    }
 }
 
 impl BootstrapConfig {

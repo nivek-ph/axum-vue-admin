@@ -43,7 +43,7 @@ async fn main() -> Result<()> {
     };
 
     let app = api::router::build_router(app_state);
-    let listener = tokio::net::TcpListener::bind(("0.0.0.0", config.http_port))
+    let listener = tokio::net::TcpListener::bind(config.get_http_addr())
         .await
         .expect("listener should bind");
     let listen_addr = listener
