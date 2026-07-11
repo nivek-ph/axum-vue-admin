@@ -14,9 +14,7 @@
           <div class="login-card-kicker">{{ $t('Account sign-in') }}</div>
           <LanguageSwitch />
         </div>
-        <h2 class="login-card-title">{{ $t('Sign in to console') }}</h2>
-        <p class="login-card-subtitle">{{ $t('Use the administrator account for this environment.') }}</p>
-
+        <h2 class="login-card-title">{{ $t('Sign in') }}</h2>
         <UiForm class="form" @submit.prevent="handleLogin">
           <UiFormItem>
             <UiInput v-model="form.username" placeholder="Username" />
@@ -25,25 +23,44 @@
             <UiInput v-model="form.password" type="password" placeholder="Password" showPassword />
           </UiFormItem>
           <UiFormItem>
+            <div class="captcha-row">
+              <UiInput
+                v-model="form.captcha"
+                class="captcha-input"
+                placeholder="Captcha"
+                autocomplete="off"
+              />
+              <button
+                class="captcha-image-button"
+                type="button"
+                :title="$t('Refresh captcha')"
+                :aria-label="$t('Refresh captcha')"
+                @click="loadCaptcha"
+              >
+                <img v-if="captchaImage" :src="captchaImage" :alt="$t('Captcha')" class="captcha-image" />
+                <span v-else>{{ $t('Refresh captcha') }}</span>
+                <span v-if="captchaImage" class="captcha-refresh-mark" aria-hidden="true">↻</span>
+              </button>
+            </div>
+          </UiFormItem>
+          <UiFormItem>
             <UiButton type="primary" class="w-full" @click="handleLogin" :loading="loading">
               {{ $t('Sign in') }}
             </UiButton>
           </UiFormItem>
         </UiForm>
-
-        <div class="login-note">{{ $t('Default admin: admin / 123456') }}</div>
       </UiCard>
     </section>
   </div>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from '@/ui/feedback'
 
 import LanguageSwitch from '@/components/LanguageSwitch.vue'
-import { getMenu, getUserInfo, login } from '@/api/auth'
+import { fetchCaptcha, getMenu, getUserInfo, login } from '@/api/auth'
 import { getApiErrorMessage } from '@/api/http'
 import { t } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
@@ -53,12 +70,32 @@ const router = useRouter()
 const authStore = useAuthStore()
 const menuStore = useMenuStore()
 const loading = ref(false)
+const captchaImage = ref('')
 const form = reactive({
-  username: 'admin',
-  password: '123456',
+  username: '',
+  password: '',
   captcha: '',
   captchaId: ''
 })
+
+async function loadCaptcha() {
+  form.captcha = ''
+  form.captchaId = ''
+  captchaImage.value = ''
+  try {
+    const res = await fetchCaptcha()
+    if (res.code === 'OK' && res.data) {
+      form.captchaId = res.data.captchaId
+      captchaImage.value = res.data.picPath
+      return
+    }
+    ElMessage.error(res.message || t('Failed to load captcha'))
+  } catch (err) {
+    ElMessage.error(getApiErrorMessage(err, t('Failed to load captcha')))
+  }
+}
+
+onMounted(loadCaptcha)
 
 async function handleLogin() {
   if (loading.value) return
@@ -96,6 +133,7 @@ async function handleLogin() {
     await router.push(menuStore.firstAuthorizedPath())
   } catch (err) {
     ElMessage.error(getApiErrorMessage(err, t('Sign in failed')))
+    await loadCaptcha()
   } finally {
     loading.value = false
   }
@@ -208,6 +246,61 @@ async function handleLogin() {
 
 .w-full {
   width: 100%;
+}
+
+.captcha-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 170px;
+  gap: 12px;
+  width: 100%;
+}
+
+.captcha-input {
+  min-height: 48px;
+}
+
+.captcha-input:focus-visible {
+  border-color: #a8a29e;
+  box-shadow: 0 0 0 3px rgba(24, 24, 27, 0.07);
+}
+
+.captcha-image-button {
+  position: relative;
+  height: 48px;
+  overflow: hidden;
+  padding: 2px 4px;
+  border: 1px solid #d6d3d1;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.captcha-image-button:hover {
+  border-color: #a8a29e;
+  box-shadow: 0 0 0 3px rgba(24, 24, 27, 0.05);
+}
+
+.captcha-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.captcha-refresh-mark {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #71717a;
+  font-size: 12px;
+  line-height: 1;
 }
 
 @media (max-width: 980px) {

@@ -16,14 +16,14 @@ pub async fn get_system_config(State(state): State<AppState>) -> Json<ApiRespons
         "config": {
             "system": {
                 "env": "public",
-                "addr": state.config.bind_addr,
+                "addr": format!("0.0.0.0:{}", state.config.http_port),
                 "db-type": "pgsql",
                 "use-multipoint": false,
                 "use-strict-auth": false
             },
             "captcha": {
-                "openCaptcha": 0,
-                "openCaptchaTimeOut": 0
+                "openCaptcha": 1,
+                "openCaptchaTimeOut": 300
             },
             "local": {
                 "storePath": "./uploads"

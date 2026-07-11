@@ -2,11 +2,29 @@ use axum::{
     body::Body,
     http::{Method, Request, header},
 };
+use std::sync::Arc;
 use tower::ServiceExt;
+
+fn test_state() -> api::state::AppState {
+    let database_url = "postgres://postgres:postgres@localhost/axum_vue_admin";
+    api::state::AppState {
+        config: Arc::new(api::state::AppConfig {
+            http_port: 3000,
+            database_url: database_url.to_string(),
+            redis_url: "redis://127.0.0.1:6379/".to_string(),
+            jwt_secret: "test-secret".to_string(),
+        }),
+        pool: db::DbPool::connect_lazy(database_url).expect("lazy pool should construct"),
+        auth_session_service: api::auth::session::AuthSessionService::without_revocation_store(
+            "test-secret",
+        ),
+        password_service: auth::password::PasswordService::new(),
+    }
+}
 
 #[tokio::test]
 async fn health_route_returns_ok_response_body() {
-    let app = api::router::build_router(api::state::AppState::default());
+    let app = api::router::build_router(test_state());
     let response = app
         .oneshot(
             Request::builder()
@@ -22,7 +40,7 @@ async fn health_route_returns_ok_response_body() {
 
 #[tokio::test]
 async fn swagger_ui_route_is_available() {
-    let app = api::router::build_router(api::state::AppState::default());
+    let app = api::router::build_router(test_state());
     let response = app
         .oneshot(
             Request::builder()
@@ -38,7 +56,7 @@ async fn swagger_ui_route_is_available() {
 
 #[tokio::test]
 async fn removed_non_core_routes_return_not_found() {
-    let app = api::router::build_router(api::state::AppState::default());
+    let app = api::router::build_router(test_state());
     let requests = [
         ("/api/autoCode/getDB", "GET"),
         ("/api/customer/customerList?page=1&pageSize=10", "GET"),
@@ -76,7 +94,7 @@ async fn removed_non_core_routes_return_not_found() {
 
 #[tokio::test]
 async fn cors_preflight_allows_desktop_dev_origin() {
-    let app = api::router::build_router(api::state::AppState::default());
+    let app = api::router::build_router(test_state());
     let response = app
         .oneshot(
             Request::builder()

@@ -4,10 +4,19 @@ use auth::{
     jwt::{Claims, JwtService},
     password::{AuthError, PasswordService},
 };
+use captcha_rs::CaptchaBuilder;
 use redis::{AsyncCommands, aio::MultiplexedConnection};
 use sha2::{Digest, Sha256};
+use uuid::Uuid;
 
 const REDIS_HASH_KEY: &str = "auth:revoked-tokens";
+const CAPTCHA_KEY_PREFIX: &str = "auth:captcha:";
+const CAPTCHA_TTL_SECONDS: u64 = 300;
+
+pub struct CaptchaChallenge {
+    pub id: String,
+    pub image: String,
+}
 
 #[derive(Debug, thiserror::Error)]
 pub enum AuthSessionError {
@@ -19,6 +28,8 @@ pub enum AuthSessionError {
     RevocationStoreUnavailable,
     #[error("{0}")]
     Redis(#[from] redis::RedisError),
+    #[error("captcha image rendering failed")]
+    CaptchaRenderFailed,
 }
 
 #[derive(Clone)]
@@ -49,6 +60,44 @@ impl AuthSessionService {
         payload: system::users::LoginRequest,
     ) -> Result<system::users::LoginResult, system::users::LoginError> {
         system::users::login(pool, password_service, &self.jwt_service, payload).await
+    }
+
+    pub async fn create_captcha(&self) -> Result<CaptchaChallenge, AuthSessionError> {
+        let id = Uuid::new_v4().to_string();
+
+        let captcha = CaptchaBuilder::new()
+            .length(4)
+            .width(220)
+            .height(64)
+            .dark_mode(false)
+            .complexity(2)
+            .compression(85)
+            .drop_shadow(true)
+            .interference_lines(1)
+            .interference_ellipses(0)
+            .distortion(2)
+            .build();
+        let image = captcha.to_base64();
+        let code = captcha.text;
+
+        if image == "data:image/jpeg;base64," {
+            return Err(AuthSessionError::CaptchaRenderFailed);
+        }
+
+        let key = format!("{CAPTCHA_KEY_PREFIX}{id}");
+        let mut redis = self.redis_connection()?;
+        let _: () = redis.set_ex(key, &code, CAPTCHA_TTL_SECONDS).await?;
+        Ok(CaptchaChallenge { id, image })
+    }
+
+    pub async fn verify_captcha(&self, id: &str, answer: &str) -> Result<bool, AuthSessionError> {
+        let key = format!("{CAPTCHA_KEY_PREFIX}{id}");
+        let mut redis = self.redis_connection()?;
+        let expected: Option<String> = redis::cmd("GETDEL")
+            .arg(key)
+            .query_async(&mut redis)
+            .await?;
+        Ok(expected.is_some_and(|value| value.eq_ignore_ascii_case(answer.trim())))
     }
 
     pub async fn decode_active_token(&self, token: &str) -> Result<Claims, AuthSessionError> {
@@ -119,6 +168,25 @@ fn redis_revoke_value(now_epoch: i64) -> String {
     now_epoch.to_string()
 }
 
+async fn set_revoked_token_field(
+    redis: &mut MultiplexedConnection,
+    field: &str,
+    value: String,
+    ttl: u64,
+) -> Result<(), redis::RedisError> {
+    let _: (usize, Vec<i64>) = redis::pipe()
+        .hset(REDIS_HASH_KEY, field, value)
+        .cmd("HEXPIRE")
+        .arg(REDIS_HASH_KEY)
+        .arg(ttl)
+        .arg("FIELDS")
+        .arg(1)
+        .arg(field)
+        .query_async(redis)
+        .await?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -144,23 +212,4 @@ mod tests {
     fn revocation_value_is_current_epoch_second() {
         assert_eq!(redis_revoke_value(12345), "12345");
     }
-}
-
-async fn set_revoked_token_field(
-    redis: &mut MultiplexedConnection,
-    field: &str,
-    value: String,
-    ttl: u64,
-) -> Result<(), redis::RedisError> {
-    let _: (usize, Vec<i64>) = redis::pipe()
-        .hset(REDIS_HASH_KEY, field, value)
-        .cmd("HEXPIRE")
-        .arg(REDIS_HASH_KEY)
-        .arg(ttl)
-        .arg("FIELDS")
-        .arg(1)
-        .arg(field)
-        .query_async(redis)
-        .await?;
-    Ok(())
 }

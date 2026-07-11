@@ -36,6 +36,9 @@ pub struct UserRecord {
 pub struct LoginRequest {
     pub username: String,
     pub password: String,
+    pub captcha: String,
+    #[serde(rename = "captchaId")]
+    pub captcha_id: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]

@@ -39,16 +39,19 @@ Copy `.env.example` to `.env` or export the variables in your shell.
 
 Required:
 
+- `HTTP_PORT`
 - `DATABASE_URL`
+- `REDIS_URL` (Redis 8 or newer required)
+- `JWT_SECRET`
 
 Optional:
 
-- `APP_BIND_ADDR`, default `127.0.0.1:3000`
-- `REDIS_URL`, default `redis://127.0.0.1:6379/` (Redis 8 or newer required)
-- `JWT_SECRET`, default `change-me-in-env`
 - `ADMIN_USERNAME`, default `admin`
-- `ADMIN_PASSWORD`, default `123456`
-- `ADMIN_NICKNAME`, default `admin` in `.env.example`
+- `ADMIN_NICKNAME`, default `Administrator`
+
+Required only by the bootstrap command:
+
+- `ADMIN_PASSWORD`
 
 Example:
 
@@ -59,7 +62,7 @@ cp .env.example .env
 Default local database URL from `.env.example`:
 
 ```text
-postgres://root:root@localhost/axum_vue_admin
+postgres://postgres:postgres@localhost/axum_vue_admin
 ```
 
 On API startup, the server runs migrations. Default authority, menu, route
@@ -111,11 +114,11 @@ Override it with:
 VITE_API_BASE_URL=http://127.0.0.1:3000/api npm run dev
 ```
 
-Default login:
+Login after running the bootstrap command:
 
 ```text
-username: admin
-password: 123456
+username: value of ADMIN_USERNAME (default: admin)
+password: value of ADMIN_PASSWORD
 ```
 
 Bootstrap default system data when setting up a database:
