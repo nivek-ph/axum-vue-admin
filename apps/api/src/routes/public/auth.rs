@@ -2,7 +2,9 @@ use admin_httpz::{ApiResponse, AppResult};
 use axum::{Json, extract::State, http::HeaderMap};
 use serde_json::Value;
 
-use crate::errors::auth::LOGIN_OPERATION_FAILED;
+use crate::errors::auth::{
+    CAPTCHA_INVALID, CAPTCHA_OPERATION_FAILED, CAPTCHA_REQUIRED, LOGIN_OPERATION_FAILED,
+};
 use crate::state::AppState;
 
 #[utoipa::path(
@@ -20,6 +22,17 @@ pub async fn login(
     headers: HeaderMap,
     Json(payload): Json<system::users::LoginRequest>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
+    if payload.captcha.trim().is_empty() || payload.captcha_id.trim().is_empty() {
+        return Err(CAPTCHA_REQUIRED.into());
+    }
+    let captcha_valid = state
+        .auth_session_service
+        .verify_captcha(&payload.captcha_id, &payload.captcha)
+        .await
+        .map_err(|error| CAPTCHA_OPERATION_FAILED.into_error().with_source(error))?;
+    if !captcha_valid {
+        return Err(CAPTCHA_INVALID.into());
+    }
     let username = payload.username.clone();
     let login_result = match state
         .auth_session_service

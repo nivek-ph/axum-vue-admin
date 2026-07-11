@@ -11,6 +11,8 @@ const zh: Record<string, string> = {
   'Use the administrator account for this environment.': '使用当前环境里的管理员账户进入核心后台。',
   Username: '用户名',
   Password: '密码',
+  'Refresh captcha': '刷新验证码',
+  'Failed to load captcha': '验证码加载失败',
   'Sign in': '登录并进入后台',
   'Default admin: admin / 123456': '默认管理员：admin / 123456',
   'Admin Console': '管理后台',

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use api::auth::session::AuthSessionService;
+use api::{auth::session::AuthSessionService, state::AppConfig};
 use auth::password::PasswordService;
 
 use anyhow::Result;
@@ -14,9 +14,7 @@ async fn main() -> Result<()> {
     let logger = Logger::from_env(Some("LOG"))?.with_ansi(true);
     let _guard = logger.init()?;
 
-    let config = api::state::AppConfig::from_env().expect("config should load from environment");
-    info!(bind_addr = %config.bind_addr, "starting api bootstrap");
-    info!("connecting to database");
+    let config = AppConfig::from_env().expect("config should load from env");
     let pool = db::connect(&config.database_url)
         .await
         .expect("database pool should connect");
@@ -45,11 +43,13 @@ async fn main() -> Result<()> {
     };
 
     let app = api::router::build_router(app_state);
-    info!(bind_addr = %config.bind_addr, "binding api listener");
-    let listener = tokio::net::TcpListener::bind(&config.bind_addr)
+    let listener = tokio::net::TcpListener::bind(("0.0.0.0", config.http_port))
         .await
         .expect("listener should bind");
-    info!(listen_addr = %listener.local_addr().expect("listener should expose local addr"), "api server listening");
+    let listen_addr = listener
+        .local_addr()
+        .expect("listener should expose local addr");
+    info!(%listen_addr, swagger_url = %format!("http://127.0.0.1:{}/swagger-ui/", config.http_port), "api server listening");
 
     axum::serve(listener, app).await?;
 

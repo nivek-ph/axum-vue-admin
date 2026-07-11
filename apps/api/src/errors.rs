@@ -21,6 +21,12 @@ pub mod auth {
         ErrorSpec::forbidden("PERMISSION_DENIED", "permission denied");
     pub const LOGIN_OPERATION_FAILED: ErrorSpec =
         ErrorSpec::internal("LOGIN_OPERATION_FAILED", "login failed");
+    pub const CAPTCHA_REQUIRED: ErrorSpec =
+        ErrorSpec::bad_request("CAPTCHA_REQUIRED", "captcha is required");
+    pub const CAPTCHA_INVALID: ErrorSpec =
+        ErrorSpec::bad_request("CAPTCHA_INVALID", "captcha is invalid or expired");
+    pub const CAPTCHA_OPERATION_FAILED: ErrorSpec =
+        ErrorSpec::internal("CAPTCHA_OPERATION_FAILED", "captcha operation failed");
 
     impl From<AuthSessionError> for AppError {
         fn from(error: AuthSessionError) -> Self {
@@ -28,6 +34,9 @@ pub mod auth {
                 AuthSessionError::Auth(error) => TOKEN_INVALID.into_error().with_source(error),
                 AuthSessionError::Revoked => TOKEN_REVOKED.into_error(),
                 AuthSessionError::RevocationStoreUnavailable | AuthSessionError::Redis(_) => {
+                    AUTH_RESOLVE_FAILED.into_error().with_source(error)
+                }
+                AuthSessionError::CaptchaRenderFailed => {
                     AUTH_RESOLVE_FAILED.into_error().with_source(error)
                 }
             }

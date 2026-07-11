@@ -1,6 +1,8 @@
-use admin_httpz::ApiResponse;
-use axum::Json;
+use admin_httpz::{ApiResponse, AppResult};
+use axum::{Json, extract::State};
 use serde_json::Value;
+
+use crate::{errors::auth::CAPTCHA_OPERATION_FAILED, state::AppState};
 
 #[utoipa::path(
     post,
@@ -10,11 +12,16 @@ use serde_json::Value;
         (status = 200, description = "Captcha config", body = crate::docs::CaptchaResponse)
     )
 )]
-pub async fn captcha() -> Json<ApiResponse<Value>> {
-    Json(ApiResponse::ok(serde_json::json!({
-        "captchaLength": 0,
-        "picPath": "",
-        "captchaId": "",
-        "openCaptcha": false
-    })))
+pub async fn captcha(State(state): State<AppState>) -> AppResult<Json<ApiResponse<Value>>> {
+    let challenge = state
+        .auth_session_service
+        .create_captcha()
+        .await
+        .map_err(|error| CAPTCHA_OPERATION_FAILED.into_error().with_source(error))?;
+    Ok(Json(ApiResponse::ok(serde_json::json!({
+        "captchaLength": 4,
+        "picPath": challenge.image,
+        "captchaId": challenge.id,
+        "openCaptcha": true
+    }))))
 }

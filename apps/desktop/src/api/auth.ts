@@ -8,6 +8,21 @@ export interface LoginPayload {
   captchaId: string
 }
 
+export interface CaptchaData {
+  captchaLength: number
+  picPath: string
+  captchaId: string
+  openCaptcha: boolean
+}
+
+export function fetchCaptcha() {
+  return http.post('/auth/captcha') as Promise<{
+    code: string
+    message: string
+    data?: CaptchaData
+  }>
+}
+
 export function login(payload: LoginPayload) {
   return http.post('/auth/login', payload)
 }

@@ -28,6 +28,7 @@ anyhow = "1"
 argon2 = { version = "0.6.0-rc.8", features = ["getrandom", "password-hash"] }
 axum = { version = "0.8", features = ["json", "multipart"] }
 axum-otel = "0.32.0"
+captcha-rs = "0.5"
 dotenvy = "0.15"
 hex = "0.4"
 jsonwebtoken = { version = "10", features = ["aws_lc_rs"] }
@@ -51,7 +52,7 @@ tokio = { version = "1", features = [
   "io-util",
 ] }
 tower = { version = "0.5", features = ["util"] }
-tower-http = { version = "0.6.6", features = [
+tower-http = { version = "0.6.11", features = [
   "cors",
   "fs",
   "request-id",

@@ -93,10 +93,10 @@ cargo run -p api
 cd apps/desktop && npm run dev
 ```
 
-Default login:
+Bootstrap login:
 
 ```text
-admin / 123456
+ADMIN_USERNAME / ADMIN_PASSWORD from the environment
 ```
 
 Before claiming a change is complete, report the exact verification commands that were run and whether they passed.

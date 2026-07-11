@@ -174,12 +174,12 @@ impl AppError {
     }
 }
 
-const MSG_INTERNAL_GENERIC: &str = "internal server error";
+const INTERNAL_SERVER_ERROR: &str = "internal server error";
 
 fn public_response_message(kind: &ErrorKind, diagnostic: &str) -> String {
     match kind {
         ErrorKind::Storage(_) | ErrorKind::Migration(_) | ErrorKind::Any(_) => {
-            MSG_INTERNAL_GENERIC.to_string()
+            INTERNAL_SERVER_ERROR.to_string()
         }
         ErrorKind::Http(status, _, _) => {
             if *status == StatusCode::REQUEST_TIMEOUT {
@@ -189,7 +189,7 @@ fn public_response_message(kind: &ErrorKind, diagnostic: &str) -> String {
                 return "service unavailable".to_string();
             }
             if status.is_server_error() {
-                return MSG_INTERNAL_GENERIC.to_string();
+                return INTERNAL_SERVER_ERROR.to_string();
             }
             diagnostic.to_string()
         }
@@ -201,8 +201,8 @@ impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let status = self.status();
         let code = self.code().into_owned();
-        let diagnostic = self.message();
-        let public_message = public_response_message(&self.kind, &diagnostic);
+        let message = self.message();
+        let public_message = public_response_message(&self.kind, &message);
         let span_trace = self.context;
         let kind = self.kind;
         let attach = self.source;
@@ -211,7 +211,7 @@ impl IntoResponse for AppError {
             tracing::error!(
                 status = status.as_u16(),
                 code = %code,
-                message = %diagnostic,
+                message = %message,
                 error = %kind,
                 attach = ?attach,
                 span_trace = %span_trace,
@@ -221,7 +221,7 @@ impl IntoResponse for AppError {
             tracing::warn!(
                 status = status.as_u16(),
                 code = %code,
-                message = %diagnostic,
+                message = %message,
                 error = %kind,
                 attach = ?attach,
                 span_trace = %span_trace,

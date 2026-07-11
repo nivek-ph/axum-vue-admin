@@ -10,7 +10,8 @@ async fn main() -> Result<()> {
     let logger = Logger::from_env(Some("LOG"))?.with_ansi(true);
     let _guard = logger.init()?;
 
-    let config = api::state::AppConfig::from_env().expect("config should load from environment");
+    let config =
+        api::state::BootstrapConfig::from_env().expect("config should load from environment");
 
     info!("connecting to database");
     let pool = db::connect(&config.database_url)
@@ -37,13 +38,6 @@ async fn main() -> Result<()> {
     )
     .await
     .expect("admin user should be bootstrapped");
-    system::users::ensure_builtin_user(&pool, &password_service, "dev", "123456", "Dev", 2)
-        .await
-        .expect("dev user should be bootstrapped");
-    system::users::ensure_builtin_user(&pool, &password_service, "ops", "123456", "Ops", 3)
-        .await
-        .expect("ops user should be bootstrapped");
-
     info!("default system data bootstrapped");
     Ok(())
 }
