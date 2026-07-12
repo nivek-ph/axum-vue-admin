@@ -85,10 +85,10 @@ pub async fn get_api_by_id(
     State(state): State<AppState>,
     Json(payload): Json<ApiIdRequest>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    let api = ApiItemResponse::from(state.apis.find(payload.id).await.map_err(map_error)?);
+    let api_record = state.apis.find(payload.id).await.map_err(map_error)?;
 
     Ok(Json(ApiResponse::ok(serde_json::json!({
-        "api": api,
+        "api": ApiItemResponse::from(api_record),
     }))))
 }
 
@@ -96,10 +96,10 @@ pub async fn get_api_by_path_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    let api = ApiItemResponse::from(state.apis.find(id).await.map_err(map_error)?);
+    let api_record = state.apis.find(id).await.map_err(map_error)?;
 
     Ok(Json(ApiResponse::ok(serde_json::json!({
-        "api": api,
+        "api": ApiItemResponse::from(api_record),
     }))))
 }
 
