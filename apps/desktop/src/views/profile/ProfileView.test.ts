@@ -14,7 +14,7 @@ describe('ProfileView', () => {
     const authStore = useAuthStore()
     const menuStore = useMenuStore()
     authStore.setSession('token-123', {
-      ID: 2,
+      id: 2,
       userName: 'nick',
       nickName: 'nick',
       authority: {

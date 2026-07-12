@@ -68,7 +68,7 @@ pub struct AuthorityDoc {
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct UserDoc {
-    #[serde(rename = "ID")]
+    #[serde(rename = "id")]
     pub id: i64,
     pub uuid: String,
     #[serde(rename = "userName")]
@@ -128,7 +128,7 @@ pub struct MenuMetaDoc {
 
 #[derive(Serialize, Deserialize, ToSchema)]
 pub struct MenuDoc {
-    #[serde(rename = "ID")]
+    #[serde(rename = "id")]
     pub id: i64,
     #[serde(rename = "parentId")]
     pub parent_id: i64,

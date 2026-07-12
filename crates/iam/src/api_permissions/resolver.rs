@@ -59,7 +59,7 @@ pub(crate) async fn resolve_required_permission(
     let rows = sqlx::query_as::<_, PermissionApiRow>(
         r#"
         SELECT p.code, pa.path_pattern
-        FROM sys_api_permissions pa
+        FROM sys_permission_apis pa
         JOIN sys_permissions p ON p.id = pa.permission_id
         WHERE pa.method = $1
           AND p.status = 'enabled'

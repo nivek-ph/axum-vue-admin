@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   fetchMenuList: vi.fn().mockResolvedValue([
     {
-      ID: 1,
+      id: 1,
       parentId: 0,
       path: 'users',
       name: 'users',
@@ -18,7 +18,7 @@ const mocks = vi.hoisted(() => ({
       menuType: 'page',
       children: [
         {
-          ID: 11,
+          id: 11,
           parentId: 1,
           path: '',
           name: 'users:internal-action',

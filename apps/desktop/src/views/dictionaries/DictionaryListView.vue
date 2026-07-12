@@ -50,7 +50,7 @@
             style="width: 100%"
             @current-change="handleSelectDictionary"
           >
-             <UiTableColumn prop="ID" label="ID" width="80" />
+             <UiTableColumn prop="id" label="ID" width="80" />
           <UiTableColumn prop="name" label="Name" min-width="140" />
           <UiTableColumn prop="type" label="Type" min-width="120" />
           <UiTableColumn label="Status" width="100">
@@ -63,7 +63,7 @@
              <UiTableColumn label="Actions" width="180">
             <template #default="{ row }">
                 <UiButton link type="primary" @click.stop="openEditDialog(row)">{{ $t('Edit') }}</UiButton>
-                <UiButton link type="danger" @click.stop="handleDelete(row.ID)">{{ $t('Delete') }}</UiButton>
+                <UiButton link type="danger" @click.stop="handleDelete(row.id)">{{ $t('Delete') }}</UiButton>
               </template>
             </UiTableColumn>
           </UiTable>
@@ -83,7 +83,7 @@
         <div class="surface-card">
           <UiTable
             :data="details"
-            row-key="ID"
+            row-key="id"
             default-expand-all
             :loading="detailLoading"
             style="width: 100%"
@@ -103,7 +103,7 @@
             <template #default="{ row }">
                 <UiButton link @click="openCreateChildDialog(row)">{{ $t('New child') }}</UiButton>
                 <UiButton link type="primary" @click="openDetailDialog(row)">{{ $t('Edit') }}</UiButton>
-                <UiButton link type="danger" @click="handleDeleteDetail(row.ID)">{{ $t('Delete') }}</UiButton>
+                <UiButton link type="danger" @click="handleDeleteDetail(row.id)">{{ $t('Delete') }}</UiButton>
               </template>
             </UiTableColumn>
           </UiTable>
@@ -148,9 +148,9 @@
             <UiOption :value="null" label="Root detail" />
             <UiOption
               v-for="item in flattenedDetailOptions"
-              :key="item.ID"
+              :key="item.id"
               :label="item.label"
-              :value="item.ID"
+              :value="item.id"
             />
           </UiSelect>
         </UiFormItem>
@@ -215,7 +215,7 @@ const filters = reactive({
   name: ''
 })
 const form = reactive<DictionaryRecord>({
-  ID: 0,
+  id: 0,
   name: '',
   type: '',
   status: true,
@@ -225,12 +225,12 @@ const form = reactive<DictionaryRecord>({
 const statusSwitch = ref(true)
 const detailStatusSwitch = ref(true)
 const detailForm = reactive({
-  ID: 0,
+  id: 0,
   label: '',
   value: '',
   extend: '',
   sort: 0,
-  sysDictionaryID: 0,
+  sysDictionaryId: 0,
   parentId: null as number | null
 })
 const enabledCount = computed(() => dictionaries.value.filter((item) => item.status).length)
@@ -242,7 +242,7 @@ function flattenDetails(list: DictionaryDetailRecord[]): DictionaryDetailRecord[
 }
 
 function resetForm() {
-  form.ID = 0
+  form.id = 0
   form.name = ''
   form.type = ''
   form.status = true
@@ -252,12 +252,12 @@ function resetForm() {
 }
 
 function resetDetailForm() {
-  detailForm.ID = 0
+  detailForm.id = 0
   detailForm.label = ''
   detailForm.value = ''
   detailForm.extend = ''
   detailForm.sort = 0
-  detailForm.sysDictionaryID = selectedDictionary.value?.ID || 0
+  detailForm.sysDictionaryId = selectedDictionary.value?.id || 0
   detailForm.parentId = null
   detailStatusSwitch.value = true
 }
@@ -270,10 +270,10 @@ async function loadDictionaries() {
     if (!selectedDictionary.value && list.length) {
       await handleSelectDictionary(list[0])
     } else if (selectedDictionary.value) {
-      const next = list.find((item) => item.ID === selectedDictionary.value?.ID) || null
+      const next = list.find((item) => item.id === selectedDictionary.value?.id) || null
       selectedDictionary.value = next
       if (next) {
-        await loadDetails(next.ID)
+        await loadDetails(next.id)
       } else {
         details.value = []
       }
@@ -285,10 +285,10 @@ async function loadDictionaries() {
   }
 }
 
-async function loadDetails(sysDictionaryID: number) {
+async function loadDetails(sysDictionaryId: number) {
   detailLoading.value = true
   try {
-    details.value = await fetchDictionaryDetails(sysDictionaryID)
+    details.value = await fetchDictionaryDetails(sysDictionaryId)
   } catch {
     ElMessage.error(t('Failed to load dictionary details'))
   } finally {
@@ -299,7 +299,7 @@ async function loadDetails(sysDictionaryID: number) {
 async function handleSelectDictionary(item: DictionaryRecord | undefined) {
   if (!item) return
   selectedDictionary.value = item
-  await loadDetails(item.ID)
+  await loadDetails(item.id)
 }
 
 function openCreateDialog() {
@@ -323,12 +323,12 @@ function openDetailDialog(item?: DictionaryDetailRecord) {
 
   if (item) {
     detailDialogMode.value = 'edit'
-    detailForm.ID = item.ID
+    detailForm.id = item.id
     detailForm.label = item.label
     detailForm.value = item.value
     detailForm.extend = item.extend
     detailForm.sort = item.sort
-    detailForm.sysDictionaryID = item.sysDictionaryID
+    detailForm.sysDictionaryId = item.sysDictionaryId
     detailForm.parentId = item.parentId ?? null
     detailStatusSwitch.value = Boolean(item.status)
   } else {
@@ -346,7 +346,7 @@ function openCreateChildDialog(parent: DictionaryDetailRecord) {
 
   detailDialogMode.value = 'create'
   resetDetailForm()
-  detailForm.parentId = parent.ID
+  detailForm.parentId = parent.id
   detailDialogVisible.value = true
 }
 
@@ -359,7 +359,7 @@ async function submitDictionary() {
   submitting.value = true
   try {
     const payload = {
-      ID: form.ID,
+      id: form.id,
       name: form.name.trim(),
       type: form.type.trim(),
       status: statusSwitch.value,
@@ -396,7 +396,7 @@ async function handleDelete(id: number) {
     const response = await deleteDictionary(id)
     if (response.code === 'OK') {
       ElMessage.success(t('Dictionary deleted'))
-      if (selectedDictionary.value?.ID === id) {
+      if (selectedDictionary.value?.id === id) {
         selectedDictionary.value = null
         details.value = []
       }
@@ -419,12 +419,12 @@ async function submitDetail() {
   detailSubmitting.value = true
   try {
     const payload = {
-      ID: detailForm.ID,
+      id: detailForm.id,
       label: detailForm.label.trim(),
       value: detailForm.value.trim(),
       extend: detailForm.extend.trim(),
       sort: detailForm.sort,
-      sysDictionaryID: selectedDictionary.value.ID,
+      sysDictionaryId: selectedDictionary.value.id,
       parentId: detailForm.parentId,
       status: detailStatusSwitch.value
     }
@@ -437,7 +437,7 @@ async function submitDetail() {
     if (response.code === 'OK') {
       ElMessage.success(t(detailDialogMode.value === 'create' ? 'Dictionary detail created' : 'Dictionary detail updated'))
       detailDialogVisible.value = false
-      await loadDetails(selectedDictionary.value.ID)
+      await loadDetails(selectedDictionary.value.id)
       return
     }
     ElMessage.error(response.message || t('Failed to save dictionary detail'))
@@ -461,7 +461,7 @@ async function handleDeleteDetail(id: number) {
     const response = await deleteDictionaryDetail(id)
     if (response.code === 'OK') {
       ElMessage.success(t('Dictionary detail deleted'))
-      await loadDetails(selectedDictionary.value.ID)
+      await loadDetails(selectedDictionary.value.id)
       return
     }
     ElMessage.error(response.message || t('Failed to delete dictionary detail'))

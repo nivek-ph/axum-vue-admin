@@ -192,7 +192,7 @@ pub(crate) async fn api_bindings(
     let apis = sqlx::query_as::<_, PermissionApiBinding>(
         r#"
         select method, path_pattern
-        from sys_api_permissions
+        from sys_permission_apis
         where permission_id = $1
         order by method, path_pattern
         "#,
@@ -212,7 +212,7 @@ pub(crate) async fn set_api_bindings(
     ensure_exists(pool, permission_id).await?;
 
     let mut tx = pool.begin().await?;
-    sqlx::query("delete from sys_api_permissions where permission_id = $1")
+    sqlx::query("delete from sys_permission_apis where permission_id = $1")
         .bind(permission_id)
         .execute(&mut *tx)
         .await?;
@@ -220,7 +220,7 @@ pub(crate) async fn set_api_bindings(
     for api in apis {
         sqlx::query(
             r#"
-            insert into sys_api_permissions (permission_id, method, path_pattern)
+            insert into sys_permission_apis (permission_id, method, path_pattern)
             values ($1, $2, $3)
             on conflict do nothing
             "#,

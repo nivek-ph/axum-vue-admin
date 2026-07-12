@@ -21,7 +21,7 @@ describe('auth store', () => {
     const store = useAuthStore()
 
     store.setSession('token-123', {
-      ID: 1,
+      id: 1,
       userName: 'admin',
       nickName: 'System Administrator'
     })
@@ -37,7 +37,7 @@ describe('auth store', () => {
     const store = useAuthStore()
 
     store.setSession('token-123', {
-      ID: 1,
+      id: 1,
       userName: 'admin',
       nickName: 'System Administrator'
     })
@@ -52,7 +52,7 @@ describe('auth store', () => {
     const store = useAuthStore()
 
     store.setSession('token-123', {
-      ID: 2,
+      id: 2,
       userName: 'operator',
       nickName: 'Operator',
       roles: [{ id: 2, code: 'operator', name: 'Operator' }],
@@ -69,7 +69,7 @@ describe('auth store', () => {
     const store = useAuthStore()
 
     store.setSession('token-123', {
-      ID: 1,
+      id: 1,
       userName: 'admin',
       nickName: 'Admin',
       roles: [{ id: 1, code: 'super_admin', name: 'Super Admin' }],

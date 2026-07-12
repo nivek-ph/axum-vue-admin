@@ -60,7 +60,7 @@ function mountView(permissions = ['system:user:create', 'system:user:assign-role
   setActivePinia(pinia);
   const authStore = useAuthStore();
   authStore.setSession('test-token', {
-    ID: 1,
+    id: 1,
     userName: 'tester',
     nickName: 'tester',
     permissions,
@@ -115,7 +115,7 @@ describe('UserListView', () => {
     mocks.fetchUsers.mockResolvedValue({
       list: [
         {
-          ID: 4,
+          id: 4,
           userName: 'nick',
           nickName: 'nick',
           phone: '',
@@ -150,7 +150,7 @@ describe('UserListView', () => {
     mocks.fetchUsers.mockResolvedValue({
       list: [
         {
-          ID: 4,
+          id: 4,
           userName: 'nick',
           nickName: 'nick',
           phone: '',

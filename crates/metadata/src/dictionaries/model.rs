@@ -3,7 +3,7 @@ use sqlx::FromRow;
 
 #[derive(Debug, Clone, FromRow, Serialize, Deserialize)]
 pub struct SysDictionary {
-    #[serde(rename = "ID", default)]
+    #[serde(rename = "id", default)]
     pub id: i64,
     pub name: String,
     #[serde(rename = "type")]
@@ -16,14 +16,14 @@ pub struct SysDictionary {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct SysDictionaryDetail {
-    #[serde(rename = "ID")]
+    #[serde(rename = "id")]
     pub id: i64,
     pub label: String,
     pub value: String,
     pub extend: String,
     pub status: Option<bool>,
     pub sort: i32,
-    #[serde(rename = "sysDictionaryID")]
+    #[serde(rename = "sysDictionaryId")]
     pub sys_dictionary_id: i64,
     #[serde(rename = "parentId")]
     pub parent_id: Option<i64>,

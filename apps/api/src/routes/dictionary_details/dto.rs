@@ -2,14 +2,14 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize)]
 pub struct DictionaryDetailResponse {
-    #[serde(rename = "ID")]
+    #[serde(rename = "id")]
     pub id: i64,
     pub label: String,
     pub value: String,
     pub extend: String,
     pub status: Option<bool>,
     pub sort: i32,
-    #[serde(rename = "sysDictionaryID")]
+    #[serde(rename = "sysDictionaryId")]
     pub dictionary_id: i64,
     #[serde(rename = "parentId")]
     pub parent_id: Option<i64>,
@@ -37,14 +37,14 @@ impl From<metadata::dictionaries::SysDictionaryDetail> for DictionaryDetailRespo
 
 #[derive(Debug, Deserialize)]
 pub struct DictionaryDetailPayload {
-    #[serde(rename = "ID", default)]
+    #[serde(rename = "id", default)]
     pub id: i64,
     pub label: String,
     pub value: String,
     pub extend: String,
     pub status: Option<bool>,
     pub sort: i32,
-    #[serde(rename = "sysDictionaryID")]
+    #[serde(rename = "sysDictionaryId")]
     pub dictionary_id: i64,
     #[serde(rename = "parentId")]
     pub parent_id: Option<i64>,
@@ -70,13 +70,13 @@ impl From<DictionaryDetailPayload> for metadata::dictionaries::SysDictionaryDeta
 
 #[derive(Debug, Deserialize)]
 pub struct IdRequest {
-    #[serde(rename = "ID", alias = "id")]
+    #[serde(rename = "id")]
     pub id: Option<i64>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct DictionaryTreeQuery {
-    #[serde(rename = "sysDictionaryID")]
+    #[serde(rename = "sysDictionaryId")]
     pub dictionary_id: i64,
 }
 

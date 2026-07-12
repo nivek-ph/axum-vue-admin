@@ -28,7 +28,7 @@ describe('AppHeader', () => {
     const authStore = useAuthStore()
     const menuStore = useMenuStore()
     authStore.setSession('token-123', {
-      ID: 1,
+      id: 1,
       userName: 'nick',
       nickName: 'nick',
       authority: {

@@ -135,7 +135,7 @@ function valueAt(row: Record<string, unknown>, prop?: string) {
 }
 
 function rowKey(row: Record<string, unknown>, level: number) {
-  return String(row.ID ?? row.id ?? row.authorityId ?? row.path ?? row.name ?? `${level}-${props.data.indexOf(row)}`)
+  return String(row.id ?? row.id ?? row.authorityId ?? row.path ?? row.name ?? `${level}-${props.data.indexOf(row)}`)
 }
 
 function isSelected(row: Record<string, unknown>) {

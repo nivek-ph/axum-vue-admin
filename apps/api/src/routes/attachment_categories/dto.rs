@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize)]
 pub struct CategoryResponse {
-    #[serde(rename = "ID")]
+    #[serde(rename = "id")]
     pub id: i64,
     pub name: String,
     pub pid: i64,
@@ -21,7 +21,7 @@ impl From<file_storage::categories::AttachmentCategory> for CategoryResponse {
 
 #[derive(Debug, Deserialize)]
 pub struct CategoryPayload {
-    #[serde(rename = "ID", default)]
+    #[serde(rename = "id", default)]
     pub id: i64,
     pub name: String,
     pub pid: i64,

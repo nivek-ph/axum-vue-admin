@@ -754,7 +754,7 @@ pub fn default_menus() -> Vec<MenuView> {
                     title: "List",
                     permission: "system:dept:list",
                     method: "GET",
-                    api_path: "/api/departments",
+                    api_path: "/api/depts",
                     sort: 10,
                 },
                 DefaultAction {
@@ -762,7 +762,7 @@ pub fn default_menus() -> Vec<MenuView> {
                     title: "Create",
                     permission: "system:dept:create",
                     method: "POST",
-                    api_path: "/api/departments",
+                    api_path: "/api/depts",
                     sort: 20,
                 },
                 DefaultAction {
@@ -770,7 +770,7 @@ pub fn default_menus() -> Vec<MenuView> {
                     title: "Update",
                     permission: "system:dept:update",
                     method: "PUT",
-                    api_path: "/api/departments/{id}",
+                    api_path: "/api/depts/{id}",
                     sort: 30,
                 },
                 DefaultAction {
@@ -778,7 +778,7 @@ pub fn default_menus() -> Vec<MenuView> {
                     title: "Delete",
                     permission: "system:dept:delete",
                     method: "DELETE",
-                    api_path: "/api/departments/{id}",
+                    api_path: "/api/depts/{id}",
                     sort: 40,
                 },
             ],

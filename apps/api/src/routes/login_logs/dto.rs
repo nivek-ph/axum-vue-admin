@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize)]
 pub struct LoginLogResponse {
-    #[serde(rename = "ID")]
+    #[serde(rename = "id")]
     pub id: i64,
     pub username: String,
     pub ip: String,
@@ -47,7 +47,7 @@ impl From<LoginLogSearch> for audit::login_logs::LoginLogSearch {
 }
 #[derive(Debug, Deserialize)]
 pub struct IdRequest {
-    #[serde(rename = "ID")]
+    #[serde(rename = "id")]
     pub id: i64,
 }
 #[derive(Debug, Deserialize)]

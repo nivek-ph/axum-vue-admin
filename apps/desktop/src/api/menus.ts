@@ -12,21 +12,21 @@ export interface MenuMeta {
 }
 
 export interface MenuParameter {
-  ID: number;
-  sysBaseMenuID: number;
+  id: number;
+  sysBaseMenuId: number;
   type: string;
   key: string;
   value: string;
 }
 
 export interface MenuButton {
-  ID: number;
+  id: number;
   name: string;
   desc: string;
 }
 
 export interface MenuRecord {
-  ID: number;
+  id: number;
   parentId: number;
   path: string;
   name: string;
@@ -74,7 +74,7 @@ export async function createMenu(payload: MenuRecord) {
 }
 
 export async function updateMenu(payload: MenuRecord) {
-  return http.put(`/menus/${payload.ID}`, payload, withAuthHeaders());
+  return http.put(`/menus/${payload.id}`, payload, withAuthHeaders());
 }
 
 export async function deleteMenu(id: number) {

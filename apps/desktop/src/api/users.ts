@@ -2,7 +2,7 @@ import { withAuthHeaders } from './core'
 import { http } from './http'
 
 export interface UserRecord {
-  ID: number
+  id: number
   userName: string
   nickName: string
   phone: string
@@ -99,5 +99,5 @@ export async function deleteUser(id: number) {
 }
 
 export async function resetUserPassword(id: number, password: string) {
-  return http.post(`/users/${id}/password/reset`, { ID: id, password }, withAuthHeaders())
+  return http.post(`/users/${id}/password/reset`, { id: id, password }, withAuthHeaders())
 }

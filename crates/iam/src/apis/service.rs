@@ -232,7 +232,7 @@ pub(crate) async fn get_api_roles(
     let authority_ids = sqlx::query_scalar(
         r#"
         select rp.role_id
-        from sys_api_permissions pa
+        from sys_permission_apis pa
         join sys_role_permissions rp on rp.permission_id = pa.permission_id
         join sys_roles r on r.id = rp.role_id
         where pa.path_pattern = $1
@@ -257,7 +257,7 @@ pub(crate) async fn get_apis_by_authority_id(
         r#"
         select distinct a.id, a.path, a.description, a.api_group, a.method
         from sys_apis a
-        join sys_api_permissions pa on pa.path_pattern = a.path and pa.method = a.method
+        join sys_permission_apis pa on pa.path_pattern = a.path and pa.method = a.method
         join sys_role_permissions rp on rp.permission_id = pa.permission_id and rp.role_id = $1
         join sys_roles r on r.id = rp.role_id
         where r.status = 'enabled'
@@ -279,7 +279,7 @@ pub(crate) async fn get_api_role_matrix(
             a.method,
             case when r.id is not null then rp.role_id end as authority_id
         from sys_apis a
-        left join sys_api_permissions pa on pa.path_pattern = a.path and pa.method = a.method
+        left join sys_permission_apis pa on pa.path_pattern = a.path and pa.method = a.method
         left join sys_role_permissions rp on rp.permission_id = pa.permission_id
         left join sys_roles r on r.id = rp.role_id and r.status = 'enabled'
         order by a.api_group, a.path, a.method, rp.role_id
@@ -370,7 +370,7 @@ async fn sync_api_permission_roles(
     let permission_ids: Vec<i64> = sqlx::query_scalar(
         r#"
         select permission_id
-        from sys_api_permissions
+        from sys_permission_apis
         where path_pattern = $1
           and method = $2
         order by permission_id

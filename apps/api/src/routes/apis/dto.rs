@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize)]
 pub struct ApiItemResponse {
-    #[serde(rename = "ID")]
+    #[serde(rename = "id")]
     pub id: i64,
     pub path: String,
     pub description: String,
@@ -83,7 +83,7 @@ impl From<SearchApiRequest> for iam::apis::SearchApiRequest {
 
 #[derive(Debug, Deserialize)]
 pub struct ApiIdRequest {
-    #[serde(rename = "ID", alias = "id")]
+    #[serde(rename = "id")]
     pub id: i64,
 }
 #[derive(Debug, Deserialize)]
@@ -92,7 +92,7 @@ pub struct DeleteApisByIdsRequest {
 }
 #[derive(Debug, Deserialize)]
 pub struct ApiPayload {
-    #[serde(rename = "ID", default)]
+    #[serde(rename = "id", default)]
     pub id: i64,
     pub path: String,
     pub description: String,

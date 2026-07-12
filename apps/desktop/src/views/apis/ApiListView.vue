@@ -50,7 +50,7 @@
 
       <div class="surface-card">
         <UiTable :data="apis" :loading="loading" style="width: 100%">
-          <UiTableColumn prop="ID" label="ID" width="80" />
+          <UiTableColumn prop="id" label="ID" width="80" />
           <UiTableColumn prop="method" label="Method" width="100">
             <template #default="{ row }">
               <UiTag :type="methodTagType(row.method)">{{ row.method }}</UiTag>
@@ -181,7 +181,7 @@ const filters = reactive({
   method: ''
 })
 const form = reactive<ApiRecord>({
-  ID: 0,
+  id: 0,
   path: '',
   description: '',
   apiGroup: '',
@@ -202,7 +202,7 @@ function flattenAuthorities(list: AuthorityRecord[]): AuthorityRecord[] {
 }
 
 function resetForm() {
-  form.ID = 0
+  form.id = 0
   form.path = ''
   form.description = ''
   form.apiGroup = ''
@@ -264,7 +264,7 @@ function openCreateDialog() {
 
 function openEditDialog(api: ApiRecord) {
   dialogMode.value = 'edit'
-  form.ID = api.ID
+  form.id = api.id
   form.path = api.path
   form.description = api.description
   form.apiGroup = api.apiGroup
@@ -281,7 +281,7 @@ async function submitApi() {
   submitting.value = true
   try {
     const payload = {
-      ID: form.ID,
+      id: form.id,
       path: form.path.trim(),
       description: form.description.trim(),
       apiGroup: form.apiGroup.trim(),
@@ -352,7 +352,7 @@ async function handleDelete(api: ApiRecord) {
   }
 
   try {
-    const response = await deleteApi(api.ID)
+    const response = await deleteApi(api.id)
     if (response.code === 'OK') {
       ElMessage.success(t('API deleted'))
       await loadBaseData()

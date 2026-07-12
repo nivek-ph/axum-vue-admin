@@ -11,7 +11,7 @@ describe('authStorage', () => {
     writeAuthSession({
       token: 'token-123',
       userInfo: {
-        ID: 1,
+        id: 1,
         userName: 'admin',
         nickName: 'System Administrator',
       },
@@ -20,7 +20,7 @@ describe('authStorage', () => {
     expect(readAuthSession()).toEqual({
       token: 'token-123',
       userInfo: {
-        ID: 1,
+        id: 1,
         userName: 'admin',
         nickName: 'System Administrator',
       },

@@ -10,7 +10,7 @@ pub struct OperationUserResponse {
 
 #[derive(Debug, Serialize)]
 pub struct OperationLogResponse {
-    #[serde(rename = "ID")]
+    #[serde(rename = "id")]
     pub id: i64,
     pub ip: String,
     pub method: String,
@@ -71,7 +71,7 @@ impl From<OperationLogSearch> for audit::operation_logs::OperationLogSearch {
 
 #[derive(Debug, Deserialize)]
 pub struct IdRequest {
-    #[serde(rename = "ID")]
+    #[serde(rename = "id")]
     pub id: i64,
 }
 

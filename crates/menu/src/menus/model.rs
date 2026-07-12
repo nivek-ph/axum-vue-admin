@@ -13,9 +13,9 @@ pub struct MenuMeta {
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MenuParameter {
-    #[serde(rename = "ID")]
+    #[serde(rename = "id")]
     pub id: i64,
-    #[serde(rename = "sysBaseMenuID")]
+    #[serde(rename = "sysBaseMenuId")]
     pub sys_base_menu_id: i64,
     #[serde(rename = "type")]
     pub parameter_type: String,
@@ -24,7 +24,7 @@ pub struct MenuParameter {
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MenuButton {
-    #[serde(rename = "ID")]
+    #[serde(rename = "id")]
     pub id: i64,
     pub name: String,
     pub desc: String,

@@ -9,7 +9,7 @@ vi.mock('@/api/apis', () => ({
   fetchApis: vi.fn().mockResolvedValue({
     list: [
       {
-        ID: 1,
+        id: 1,
         path: '/api/system/reload',
         description: 'Reload system',
         apiGroup: 'system',
@@ -40,7 +40,7 @@ function mountWithAuthority(authorityId = 1, permissions: string[] = []) {
   setActivePinia(pinia);
   const authStore = useAuthStore();
   authStore.setSession('token-123', {
-    ID: authorityId === 1 ? 1 : 2,
+    id: authorityId === 1 ? 1 : 2,
     userName: authorityId === 1 ? 'admin' : 'dev',
     nickName: authorityId === 1 ? 'admin' : 'dev',
     authority: {

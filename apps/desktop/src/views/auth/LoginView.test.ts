@@ -53,7 +53,7 @@ describe('LoginView', () => {
       data: {
         token: 'token-123',
         user: {
-          ID: 1,
+          id: 1,
           userName: 'operator',
           nickName: 'Operator',
           authority: {
@@ -123,7 +123,7 @@ describe('LoginView', () => {
       data: {
         token: 'token-123',
         user: {
-          ID: 1,
+          id: 1,
           userName: 'admin',
           nickName: 'Admin',
           authority: {
@@ -139,7 +139,7 @@ describe('LoginView', () => {
       message: 'ok',
       data: {
         userInfo: {
-          ID: 1,
+          id: 1,
           userName: 'admin',
           nickName: 'Admin',
           authority: {

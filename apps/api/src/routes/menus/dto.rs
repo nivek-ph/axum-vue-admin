@@ -18,9 +18,9 @@ pub struct MenuMeta {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct MenuParameter {
-    #[serde(rename = "ID")]
+    #[serde(rename = "id")]
     pub id: i64,
-    #[serde(rename = "sysBaseMenuID")]
+    #[serde(rename = "sysBaseMenuId")]
     pub menu_id: i64,
     #[serde(rename = "type")]
     pub parameter_type: String,
@@ -30,7 +30,7 @@ pub struct MenuParameter {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct MenuButton {
-    #[serde(rename = "ID")]
+    #[serde(rename = "id")]
     pub id: i64,
     pub name: String,
     pub desc: String,
@@ -38,7 +38,7 @@ pub struct MenuButton {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct MenuPayload {
-    #[serde(rename = "ID")]
+    #[serde(rename = "id")]
     pub id: i64,
     #[serde(rename = "parentId")]
     pub parent_id: i64,
@@ -182,7 +182,7 @@ impl From<menu::MenuRoleSelection> for MenuRoleSelectionResponse {
 
 #[derive(Debug, Deserialize)]
 pub struct MenuIdRequest {
-    #[serde(rename = "ID", alias = "id", alias = "menuId")]
+    #[serde(rename = "id", alias = "menuId")]
     pub id: i64,
 }
 #[derive(Debug, Deserialize)]

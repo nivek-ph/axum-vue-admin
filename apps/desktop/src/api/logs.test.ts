@@ -6,7 +6,7 @@ describe('logs api adapter', () => {
   it('normalizes login log payload', () => {
     const result = normalizeLoginLogListResponse({
       data: {
-        list: [{ ID: 1, username: 'admin', status: true }],
+        list: [{ id: 1, username: 'admin', status: true }],
         total: 1,
         page: 1,
         pageSize: 10
@@ -20,7 +20,7 @@ describe('logs api adapter', () => {
   it('normalizes operation log payload', () => {
     const result = normalizeOperationLogListResponse({
       data: {
-        list: [{ ID: 1, method: 'POST', path: '/api/auth/login', status: 200 }],
+        list: [{ id: 1, method: 'POST', path: '/api/auth/login', status: 200 }],
         total: 1,
         page: 1,
         pageSize: 10

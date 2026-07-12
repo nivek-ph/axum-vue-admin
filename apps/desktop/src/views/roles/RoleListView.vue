@@ -168,7 +168,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="menu in flatMenus" :key="menu.ID">
+                <tr v-for="menu in flatMenus" :key="menu.id">
                   <td class="resource-cell" :style="{ '--indent': `${menu.level * 22}px` }">
                     <div class="menu-resource">
                       <span class="menu-resource-title">{{ menuTitle(menu) }}</span>
@@ -183,7 +183,7 @@
                         data-test="page-access-chip"
                       >
                         <input
-                          :data-test="`menu-permission-${menu.ID}-${selectedAuthority.authorityId}`"
+                          :data-test="`menu-permission-${menu.id}-${selectedAuthority.authorityId}`"
                           type="checkbox"
                           :disabled="isPermissionEditingDisabled"
                           :checked="pageAccessChecked(menu)"
@@ -195,12 +195,12 @@
 
                       <label
                         v-for="action in actionsForMenu(menu)"
-                        :key="action.ID"
+                        :key="action.id"
                         class="permission-chip"
                         :class="actionAccessChecked(action) && 'is-checked'"
                       >
                         <input
-                          :data-test="`action-permission-${action.permission || action.ID}-${selectedAuthority.authorityId}`"
+                          :data-test="`action-permission-${action.permission || action.id}-${selectedAuthority.authorityId}`"
                           type="checkbox"
                           :disabled="isPermissionEditingDisabled"
                           :checked="actionAccessChecked(action)"
@@ -352,17 +352,17 @@
           <div class="member-list" data-test="member-list">
             <label
               v-for="user in filteredUserOptions"
-              :key="user.ID"
-              :class="['member-card', selectedUserIdSet.has(user.ID) && 'is-selected']"
+              :key="user.id"
+              :class="['member-card', selectedUserIdSet.has(user.id) && 'is-selected']"
             >
               <input
                 class="member-checkbox"
                 type="checkbox"
-                :checked="selectedUserIdSet.has(user.ID)"
-                @change="toggleUserSelection(user.ID)"
+                :checked="selectedUserIdSet.has(user.id)"
+                @change="toggleUserSelection(user.id)"
               />
               <span class="member-checkmark">
-                <span v-if="selectedUserIdSet.has(user.ID)">✓</span>
+                <span v-if="selectedUserIdSet.has(user.id)">✓</span>
               </span>
               <span class="member-avatar">{{ userInitial(user) }}</span>
               <span class="member-main">
@@ -573,7 +573,7 @@ function flattenAllMenus(list: MenuRecord[]): MenuRecord[] {
 function menuPermissionIdsFor(menuIds: number[]) {
   const selectedMenuIds = new Set(menuIds)
   return flattenAllMenus(menus.value)
-    .filter((menu) => selectedMenuIds.has(menu.ID))
+    .filter((menu) => selectedMenuIds.has(menu.id))
     .map((menu) => menu.permissionId)
     .filter((id): id is number => typeof id === 'number')
 }
@@ -586,7 +586,7 @@ function menuIdsForPermissionIds(permissionIds: number[]) {
     let hasSelectedMenu = false
 
     for (const item of items) {
-      const currentAncestors = [...ancestors, item.ID]
+      const currentAncestors = [...ancestors, item.id]
       const permissionSelected =
         typeof item.permissionId === 'number' && permissionIdSet.has(item.permissionId)
       const childSelected = visit(item.children || [], currentAncestors)
@@ -807,15 +807,15 @@ async function submitAuthority() {
 function actionsForMenu(menu: MenuRecord) {
   return (menu.children || [])
     .filter((child) => child.menuType === 'action')
-    .sort((left, right) => left.sort - right.sort || left.ID - right.ID)
+    .sort((left, right) => left.sort - right.sort || left.id - right.id)
 }
 
 function pageAccessChecked(menu: FlatMenu) {
-  return selectedMenuIdSet.value.has(menu.ID)
+  return selectedMenuIdSet.value.has(menu.id)
 }
 
 function actionAccessChecked(action: MenuRecord) {
-  return selectedMenuIdSet.value.has(action.ID)
+  return selectedMenuIdSet.value.has(action.id)
 }
 
 function setMenuAccess(menuId: number, enabled: boolean) {
@@ -833,9 +833,9 @@ function onPageAccessChange(menu: FlatMenu, event: Event) {
   if (!selectedAuthorityId.value || isPermissionEditingDisabled.value) return
 
   const enabled = (event.target as HTMLInputElement).checked
-  setMenuAccess(menu.ID, enabled)
+  setMenuAccess(menu.id, enabled)
   for (const action of actionsForMenu(menu)) {
-    setMenuAccess(action.ID, enabled)
+    setMenuAccess(action.id, enabled)
   }
 }
 
@@ -843,9 +843,9 @@ function onActionAccessChange(menu: FlatMenu, action: MenuRecord, event: Event) 
   if (!selectedAuthorityId.value || isPermissionEditingDisabled.value) return
 
   const enabled = (event.target as HTMLInputElement).checked
-  setMenuAccess(action.ID, enabled)
+  setMenuAccess(action.id, enabled)
   if (enabled) {
-    setMenuAccess(menu.ID, true)
+    setMenuAccess(menu.id, true)
   }
 }
 

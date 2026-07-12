@@ -69,7 +69,7 @@ impl From<iam::roles::RoleSummary> for UserRoleResponse {
 
 #[derive(Debug, Serialize)]
 pub struct UserResponse {
-    #[serde(rename = "ID")]
+    #[serde(rename = "id")]
     pub id: i64,
     pub uuid: String,
     #[serde(rename = "userName")]
@@ -157,7 +157,7 @@ impl From<RegisterRequest> for iam::users::RegisterRequest {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct UpdateUserRequest {
-    #[serde(rename = "ID")]
+    #[serde(rename = "id")]
     pub id: i64,
     #[serde(rename = "nickName")]
     pub nick_name: String,
@@ -242,7 +242,7 @@ pub struct DeleteUserRequest {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct ResetPasswordRequest {
-    #[serde(rename = "ID")]
+    #[serde(rename = "id")]
     pub id: i64,
     pub password: String,
 }

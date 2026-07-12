@@ -6,7 +6,7 @@ describe('params api adapter', () => {
   it('normalizes params payload', () => {
     const result = normalizeParamListResponse({
       data: {
-        list: [{ ID: 1, name: 'Site name', key: 'site.name', value: 'Admin Console', desc: '' }],
+        list: [{ id: 1, name: 'Site name', key: 'site.name', value: 'Admin Console', desc: '' }],
         total: 1,
         page: 1,
         pageSize: 10,

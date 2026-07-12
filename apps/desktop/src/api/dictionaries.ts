@@ -2,7 +2,7 @@ import { http } from './http';
 import { withAuthHeaders, type ApiResponse } from './core';
 
 export interface DictionaryRecord {
-  ID: number;
+  id: number;
   name: string;
   type: string;
   status?: boolean;
@@ -11,13 +11,13 @@ export interface DictionaryRecord {
 }
 
 export interface DictionaryDetailRecord {
-  ID: number;
+  id: number;
   label: string;
   value: string;
   extend: string;
   status?: boolean;
   sort: number;
-  sysDictionaryID: number;
+  sysDictionaryId: number;
   parentId?: number | null;
   level: number;
   path: string;
@@ -25,13 +25,13 @@ export interface DictionaryDetailRecord {
 }
 
 export interface DictionaryDetailPayload {
-  ID: number;
+  id: number;
   label: string;
   value: string;
   extend: string;
   status?: boolean;
   sort: number;
-  sysDictionaryID: number;
+  sysDictionaryId: number;
   parentId?: number | null;
 }
 
@@ -51,8 +51,8 @@ export async function fetchDictionaries(name = '') {
   return normalizeDictionaryListResponse(response);
 }
 
-export async function fetchDictionaryDetails(sysDictionaryID: number) {
-  const response = await http.get(`/dictionaries/${sysDictionaryID}/details/tree`, withAuthHeaders());
+export async function fetchDictionaryDetails(sysDictionaryId: number) {
+  const response = await http.get(`/dictionaries/${sysDictionaryId}/details/tree`, withAuthHeaders());
   return normalizeDictionaryDetailTreeResponse(response);
 }
 
@@ -61,7 +61,7 @@ export async function createDictionary(payload: DictionaryRecord) {
 }
 
 export async function updateDictionary(payload: DictionaryRecord) {
-  return http.put(`/dictionaries/${payload.ID}`, payload, withAuthHeaders());
+  return http.put(`/dictionaries/${payload.id}`, payload, withAuthHeaders());
 }
 
 export async function deleteDictionary(id: number) {
@@ -83,7 +83,7 @@ export async function createDictionaryDetail(payload: DictionaryDetailPayload) {
 
 export async function updateDictionaryDetail(payload: DictionaryDetailPayload) {
   return http.put(
-    `/dictionary-details/${payload.ID}`,
+    `/dictionary-details/${payload.id}`,
     {
       ...payload,
       level: 0,

@@ -6,7 +6,7 @@ describe('api registry adapter', () => {
   it('normalizes paginated api payload', () => {
     const result = normalizeApiListResponse({
       data: {
-        list: [{ ID: 1, path: '/api/users', method: 'GET', apiGroup: 'user', description: 'Get user list' }],
+        list: [{ id: 1, path: '/api/users', method: 'GET', apiGroup: 'user', description: 'Get user list' }],
         total: 1,
         page: 1,
         pageSize: 10,
@@ -30,7 +30,7 @@ describe('api registry adapter', () => {
   it('normalizes APIs assigned to one role', () => {
     const result = normalizeAuthorityApiListResponse({
       data: {
-        apis: [{ ID: 1, path: '/api/users', method: 'GET', apiGroup: 'user', description: 'List users' }],
+        apis: [{ id: 1, path: '/api/users', method: 'GET', apiGroup: 'user', description: 'List users' }],
       },
     });
 

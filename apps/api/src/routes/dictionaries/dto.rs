@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize)]
 pub struct DictionaryResponse {
-    #[serde(rename = "ID")]
+    #[serde(rename = "id")]
     pub id: i64,
     pub name: String,
     #[serde(rename = "type")]
@@ -27,14 +27,14 @@ impl From<metadata::dictionaries::SysDictionary> for DictionaryResponse {
 
 #[derive(Debug, Serialize)]
 pub struct DictionaryDetailResponse {
-    #[serde(rename = "ID")]
+    #[serde(rename = "id")]
     pub id: i64,
     pub label: String,
     pub value: String,
     pub extend: String,
     pub status: Option<bool>,
     pub sort: i32,
-    #[serde(rename = "sysDictionaryID")]
+    #[serde(rename = "sysDictionaryId")]
     pub dictionary_id: i64,
     #[serde(rename = "parentId")]
     pub parent_id: Option<i64>,
@@ -64,7 +64,7 @@ impl DictionaryDetailResponse {
 
 #[derive(Debug, Serialize)]
 pub struct DictionaryWithDetailsResponse {
-    #[serde(rename = "ID")]
+    #[serde(rename = "id")]
     pub id: i64,
     pub name: String,
     #[serde(rename = "type")]
@@ -94,7 +94,7 @@ impl From<metadata::dictionaries::DictionaryWithDetails> for DictionaryWithDetai
 
 #[derive(Debug, Deserialize)]
 pub struct DictionaryPayload {
-    #[serde(rename = "ID", default)]
+    #[serde(rename = "id", default)]
     pub id: i64,
     pub name: String,
     #[serde(rename = "type")]
@@ -120,7 +120,7 @@ impl From<DictionaryPayload> for metadata::dictionaries::SysDictionary {
 
 #[derive(Debug, Deserialize)]
 pub struct IdRequest {
-    #[serde(rename = "ID", alias = "id")]
+    #[serde(rename = "id")]
     pub id: Option<i64>,
     #[serde(rename = "type")]
     pub dictionary_type: Option<String>,

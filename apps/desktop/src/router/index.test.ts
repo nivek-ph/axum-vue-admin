@@ -36,7 +36,7 @@ describe('router', () => {
     const authStore = useAuthStore();
     const menuStore = useMenuStore();
     authStore.setSession('token-123', {
-      ID: 1,
+      id: 1,
       userName: 'operator',
       nickName: 'Operator',
       authority: {

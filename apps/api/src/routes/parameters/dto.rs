@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize)]
 pub struct ParamResponse {
-    #[serde(rename = "ID")]
+    #[serde(rename = "id")]
     pub id: i64,
     pub name: String,
     pub key: String,
@@ -23,7 +23,7 @@ impl From<metadata::parameters::SysParam> for ParamResponse {
 
 #[derive(Debug, Deserialize)]
 pub struct ParamPayload {
-    #[serde(rename = "ID", default)]
+    #[serde(rename = "id", default)]
     pub id: i64,
     pub name: String,
     pub key: String,
@@ -45,7 +45,7 @@ impl From<ParamPayload> for metadata::parameters::SysParam {
 
 #[derive(Debug, Deserialize)]
 pub struct IdRequest {
-    #[serde(rename = "ID", alias = "id")]
+    #[serde(rename = "id")]
     pub id: i64,
 }
 

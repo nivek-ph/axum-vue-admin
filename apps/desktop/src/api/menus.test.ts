@@ -10,10 +10,10 @@ describe('menu api adapter', () => {
     const result = normalizeMenuListResponse({
       data: [
         {
-          ID: 1,
+          id: 1,
           name: 'dashboard',
           meta: { title: 'Dashboard' },
-          children: [{ ID: 2, name: 'users', meta: { title: 'User' } }]
+          children: [{ id: 2, name: 'users', meta: { title: 'User' } }]
         }
       ]
     })

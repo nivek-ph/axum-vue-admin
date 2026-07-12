@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize)]
 pub struct FileResponse {
-    #[serde(rename = "ID")]
+    #[serde(rename = "id")]
     pub id: i64,
     pub name: String,
     pub url: String,
@@ -46,7 +46,7 @@ impl From<FileListQuery> for file_storage::files::FileListQuery {
 }
 #[derive(Debug, Deserialize)]
 pub struct FileEditPayload {
-    #[serde(rename = "ID")]
+    #[serde(rename = "id")]
     pub id: i64,
     pub name: String,
 }
@@ -60,7 +60,7 @@ impl From<FileEditPayload> for file_storage::files::FileEditPayload {
 }
 #[derive(Debug, Deserialize)]
 pub struct FileDeletePayload {
-    #[serde(rename = "ID")]
+    #[serde(rename = "id")]
     pub id: i64,
 }
 #[derive(Debug, Deserialize)]
