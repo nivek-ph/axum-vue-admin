@@ -210,11 +210,7 @@ function mountWithAuthority(authorityId = 1, permissions?: string[]) {
       authorityName: authorityId === 1 ? 'Super Admin' : 'Developer',
       defaultRouter: 'dashboard',
     },
-    permissions:
-      permissions ??
-      (authorityId === 1
-        ? []
-        : ['system:role:list', 'system:role:update-permission']),
+    permissions: permissions ?? (authorityId === 1 ? [] : ['system:role:list', 'system:role:update-permission']),
   });
 
   return mount(RoleListView, {
@@ -336,10 +332,7 @@ describe('RoleListView', () => {
     await wrapper.find('[data-test="save-data-scope"]').trigger('click');
     await flushWorkbench();
 
-    expect(mocks.updateRole).toHaveBeenCalledWith(
-      2,
-      expect.objectContaining({ data_scope: 'custom_depts' })
-    );
+    expect(mocks.updateRole).toHaveBeenCalledWith(2, expect.objectContaining({ data_scope: 'custom_depts' }));
     expect(mocks.setRoleDeptIds).toHaveBeenCalledWith(2, [1, 2]);
   });
 

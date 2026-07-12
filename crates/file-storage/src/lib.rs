@@ -1,3 +1,2 @@
-pub mod category;
-pub mod errors;
+pub mod categories;
 pub mod files;

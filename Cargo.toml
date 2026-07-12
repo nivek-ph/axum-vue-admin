@@ -1,11 +1,14 @@
 [workspace]
 members = [
   "apps/api",
+  "crates/audit",
   "crates/auth",
   "crates/db",
   "crates/file-storage",
   "crates/httpz",
-  "crates/system",
+  "crates/iam",
+  "crates/menu",
+  "crates/metadata",
 ]
 resolver = "2"
 
@@ -18,10 +21,13 @@ version = "0.1.0"
 # Local workspace crates. This lets us reference them in other crates without specifying a path.
 admin-httpz = { path = "crates/httpz" }
 api = { path = "apps/api" }
+audit = { path = "crates/audit" }
 auth = { path = "crates/auth" }
 db = { path = "crates/db" }
 file-storage = { path = "crates/file-storage" }
-system = { path = "crates/system" }
+iam = { path = "crates/iam" }
+menu = { path = "crates/menu" }
+metadata = { path = "crates/metadata" }
 
 # External crates.
 anyhow = "1"

@@ -32,5 +32,3 @@ target
 dist/
 node_modules/
 uploads/
-auto-imports.d.ts
-components.d.ts

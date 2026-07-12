@@ -1,6 +1,6 @@
-import { flushPromises, mount } from '@vue/test-utils'
-import { UiComponents } from '@/components/ui'
-import { describe, expect, it, vi } from 'vitest'
+import { flushPromises, mount } from '@vue/test-utils';
+import { UiComponents } from '@/components/ui';
+import { describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   fetchMenuList: vi.fn().mockResolvedValue([
@@ -38,11 +38,11 @@ const mocks = vi.hoisted(() => ({
       ],
     },
   ]),
-}))
+}));
 
 vi.mock('@/api/authorities', () => ({
-  fetchAuthorities: vi.fn().mockResolvedValue([])
-}))
+  fetchAuthorities: vi.fn().mockResolvedValue([]),
+}));
 
 vi.mock('@/api/menus', () => ({
   fetchMenuList: mocks.fetchMenuList,
@@ -50,25 +50,25 @@ vi.mock('@/api/menus', () => ({
   updateMenu: vi.fn(),
   deleteMenu: vi.fn(),
   fetchMenuRoles: vi.fn().mockResolvedValue({
-    roleIds: []
+    roleIds: [],
   }),
-  setMenuRoles: vi.fn()
-}))
+  setMenuRoles: vi.fn(),
+}));
 
-import MenuListView from './MenuListView.vue'
+import MenuListView from './MenuListView.vue';
 
 describe('MenuListView', () => {
   it('renders menu management actions', async () => {
     const wrapper = mount(MenuListView, {
       global: {
-        plugins: [UiComponents]
-      }
-    })
+        plugins: [UiComponents],
+      },
+    });
 
-    await flushPromises()
-    expect(wrapper.text()).toContain('Menus')
-    expect(wrapper.text()).toContain('New')
-    expect(wrapper.text()).toContain('Users')
-    expect(wrapper.text()).not.toContain('Internal action')
-  })
-})
+    await flushPromises();
+    expect(wrapper.text()).toContain('Menus');
+    expect(wrapper.text()).toContain('New');
+    expect(wrapper.text()).toContain('Users');
+    expect(wrapper.text()).not.toContain('Internal action');
+  });
+});

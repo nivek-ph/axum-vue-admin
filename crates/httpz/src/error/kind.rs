@@ -16,12 +16,6 @@ pub enum ErrorKind {
     InvalidJson(#[from] serde_json::Error),
 
     #[error("internal server error")]
-    Storage(#[from] sqlx::Error),
-
-    #[error("internal server error")]
-    Migration(#[from] sqlx::migrate::MigrateError),
-
-    #[error("internal server error")]
     Any(#[from] anyhow::Error),
 }
 
@@ -45,18 +39,14 @@ impl ErrorKind {
         match self {
             Self::Http(status, _, _) => *status,
             Self::JsonRejection(_) | Self::InvalidJson(_) => StatusCode::BAD_REQUEST,
-            Self::Storage(_) | Self::Migration(_) | Self::Any(_) => {
-                StatusCode::INTERNAL_SERVER_ERROR
-            }
+            Self::Any(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 
     pub fn code(&self) -> Cow<'static, str> {
         match self {
             Self::Http(_, code, _) => code.clone(),
-            Self::Storage(_) | Self::Migration(_) | Self::Any(_) => {
-                Self::status_code(StatusCode::INTERNAL_SERVER_ERROR)
-            }
+            Self::Any(_) => Self::status_code(StatusCode::INTERNAL_SERVER_ERROR),
             Self::JsonRejection(_) | Self::InvalidJson(_) => {
                 Self::status_code(StatusCode::BAD_REQUEST)
             }

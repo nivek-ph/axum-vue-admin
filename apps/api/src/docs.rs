@@ -156,12 +156,12 @@ pub struct MenuResponse {
 #[openapi(
     modifiers(&SecurityAddon),
     paths(
-        crate::routes::public::health::health,
-        crate::routes::public::captcha::captcha,
-        crate::routes::public::auth::login,
-        crate::routes::protected::session::logout,
-        crate::routes::protected::user::get_user_info,
-        crate::routes::protected::menu::get_menu,
+        crate::routes::health::health,
+        crate::routes::captcha::captcha,
+        crate::routes::auth::login,
+        crate::routes::session::logout,
+        crate::routes::users::get_user_info,
+        crate::routes::menus::get_menu,
     ),
     components(
         schemas(
@@ -169,7 +169,7 @@ pub struct MenuResponse {
             HealthResponse,
             CaptchaData,
             CaptchaResponse,
-            system::users::LoginRequest,
+            crate::routes::auth::LoginRequest,
             AuthorityDoc,
             UserDoc,
             LoginData,

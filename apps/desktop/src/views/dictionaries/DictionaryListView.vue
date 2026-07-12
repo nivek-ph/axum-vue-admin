@@ -144,7 +144,7 @@
     >
       <UiForm labelWidth="100px" @submit.prevent="submitDetail">
         <UiFormItem label="Parent detail">
-          <UiSelect v-model="detailForm.parentID" class="w-full" clearable>
+          <UiSelect v-model="detailForm.parentId" class="w-full" clearable>
             <UiOption :value="null" label="Root detail" />
             <UiOption
               v-for="item in flattenedDetailOptions"
@@ -220,7 +220,7 @@ const form = reactive<DictionaryRecord>({
   type: '',
   status: true,
   desc: '',
-  parentID: null
+  parentId: null
 })
 const statusSwitch = ref(true)
 const detailStatusSwitch = ref(true)
@@ -231,7 +231,7 @@ const detailForm = reactive({
   extend: '',
   sort: 0,
   sysDictionaryID: 0,
-  parentID: null as number | null
+  parentId: null as number | null
 })
 const enabledCount = computed(() => dictionaries.value.filter((item) => item.status).length)
 const detailCount = computed(() => flattenDetails(details.value).length)
@@ -247,7 +247,7 @@ function resetForm() {
   form.type = ''
   form.status = true
   form.desc = ''
-  form.parentID = null
+  form.parentId = null
   statusSwitch.value = true
 }
 
@@ -258,7 +258,7 @@ function resetDetailForm() {
   detailForm.extend = ''
   detailForm.sort = 0
   detailForm.sysDictionaryID = selectedDictionary.value?.ID || 0
-  detailForm.parentID = null
+  detailForm.parentId = null
   detailStatusSwitch.value = true
 }
 
@@ -329,7 +329,7 @@ function openDetailDialog(item?: DictionaryDetailRecord) {
     detailForm.extend = item.extend
     detailForm.sort = item.sort
     detailForm.sysDictionaryID = item.sysDictionaryID
-    detailForm.parentID = item.parentID ?? null
+    detailForm.parentId = item.parentId ?? null
     detailStatusSwitch.value = Boolean(item.status)
   } else {
     detailDialogMode.value = 'create'
@@ -346,7 +346,7 @@ function openCreateChildDialog(parent: DictionaryDetailRecord) {
 
   detailDialogMode.value = 'create'
   resetDetailForm()
-  detailForm.parentID = parent.ID
+  detailForm.parentId = parent.ID
   detailDialogVisible.value = true
 }
 
@@ -364,7 +364,7 @@ async function submitDictionary() {
       type: form.type.trim(),
       status: statusSwitch.value,
       desc: form.desc.trim(),
-      parentID: form.parentID ?? null
+      parentId: form.parentId ?? null
     }
     const response =
       dialogMode.value === 'create'
@@ -425,7 +425,7 @@ async function submitDetail() {
       extend: detailForm.extend.trim(),
       sort: detailForm.sort,
       sysDictionaryID: selectedDictionary.value.ID,
-      parentID: detailForm.parentID,
+      parentId: detailForm.parentId,
       status: detailStatusSwitch.value
     }
 

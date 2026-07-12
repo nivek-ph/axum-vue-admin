@@ -7,6 +7,14 @@ use tower::ServiceExt;
 
 fn test_state() -> api::state::AppState {
     let database_url = "postgres://postgres:postgres@localhost/axum_vue_admin";
+    let pool = db::DbPool::connect_lazy(database_url).expect("lazy pool should construct");
+    let passwords = auth::password::PasswordService::new();
+    let sessions = auth::session::AuthSessionService::without_revocation_store("test-secret");
+    let users = iam::users::service::UserService::new(pool.clone(), passwords);
+    let login_logs = audit::login_logs::service::LoginLogService::new(pool.clone());
+    let operation_logs = audit::operation_logs::service::OperationLogService::new(pool.clone());
+    let login =
+        api::routes::auth::LoginOperation::new(users.clone(), sessions.clone(), login_logs.clone());
     api::state::AppState {
         config: Arc::new(api::state::AppConfig {
             http_port: 3000,
@@ -14,11 +22,24 @@ fn test_state() -> api::state::AppState {
             redis_url: "redis://127.0.0.1:6379/".to_string(),
             jwt_secret: "test-secret".to_string(),
         }),
-        pool: db::DbPool::connect_lazy(database_url).expect("lazy pool should construct"),
-        auth_session_service: api::auth::session::AuthSessionService::without_revocation_store(
-            "test-secret",
+        auth_session_service: sessions,
+        login,
+        users,
+        roles: iam::roles::service::RoleService::new(pool.clone()),
+        permissions: iam::permissions::service::PermissionService::new(pool.clone()),
+        departments: iam::departments::service::DepartmentService::new(pool.clone()),
+        apis: iam::apis::service::ApiService::new(pool.clone()),
+        authorization: iam::authorization::service::AuthorizationService::new(pool.clone()),
+        dictionaries: metadata::dictionaries::service::DictionaryService::new(pool.clone()),
+        parameters: metadata::parameters::service::ParameterService::new(pool.clone()),
+        menus: menu::menus::service::MenuService::new(
+            pool.clone(),
+            iam::authorization::service::AuthorizationService::new(pool.clone()),
         ),
-        password_service: auth::password::PasswordService::new(),
+        login_logs,
+        operation_logs,
+        files: file_storage::files::service::FileService::new(pool.clone(), "./uploads"),
+        attachment_categories: file_storage::categories::service::CategoryService::new(pool),
     }
 }
 
