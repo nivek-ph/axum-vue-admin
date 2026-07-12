@@ -49,7 +49,6 @@ const zh: Record<string, string> = {
   Accounts: '账号列表',
   'Common actions stay inline for faster operation.': '高频动作保留在行内，减少认知负担。',
   'New user': '新增用户',
-  ID: 'ID',
   Nickname: '昵称',
   Phone: '手机号',
   Email: '邮箱',

@@ -52,7 +52,7 @@ vi.mock('@/api/authorities', () => ({
 vi.mock('@/api/menus', () => ({
   fetchMenuList: vi.fn().mockResolvedValue([
     {
-      ID: 1,
+      id: 1,
       parentId: 0,
       path: 'system',
       name: 'system',
@@ -64,7 +64,7 @@ vi.mock('@/api/menus', () => ({
       menuBtn: [],
       children: [
         {
-          ID: 2,
+          id: 2,
           parentId: 1,
           path: 'users',
           name: 'users',
@@ -77,7 +77,7 @@ vi.mock('@/api/menus', () => ({
           menuType: 'page',
           children: [
             {
-              ID: 20,
+              id: 20,
               parentId: 2,
               path: '',
               name: 'users:list',
@@ -95,7 +95,7 @@ vi.mock('@/api/menus', () => ({
               children: [],
             },
             {
-              ID: 21,
+              id: 21,
               parentId: 2,
               path: '',
               name: 'users:create',
@@ -122,8 +122,8 @@ vi.mock('@/api/menus', () => ({
 vi.mock('@/api/users', () => ({
   fetchUsers: vi.fn().mockResolvedValue({
     list: [
-      { ID: 1, userName: 'admin', nickName: 'admin', phone: '', email: '', enable: 1 },
-      { ID: 2, userName: 'nick', nickName: 'nick', phone: '', email: '', enable: 1 },
+      { id: 1, userName: 'admin', nickName: 'admin', phone: '', email: '', enable: 1 },
+      { id: 2, userName: 'nick', nickName: 'nick', phone: '', email: '', enable: 1 },
     ],
     total: 2,
     page: 1,
@@ -202,7 +202,7 @@ function mountWithAuthority(authorityId = 1, permissions?: string[]) {
   setActivePinia(pinia);
   const authStore = useAuthStore();
   authStore.setSession('token-123', {
-    ID: authorityId === 1 ? 1 : 2,
+    id: authorityId === 1 ? 1 : 2,
     userName: authorityId === 1 ? 'admin' : 'nick',
     nickName: authorityId === 1 ? 'admin' : 'nick',
     authority: {
@@ -210,11 +210,7 @@ function mountWithAuthority(authorityId = 1, permissions?: string[]) {
       authorityName: authorityId === 1 ? 'Super Admin' : 'Developer',
       defaultRouter: 'dashboard',
     },
-    permissions:
-      permissions ??
-      (authorityId === 1
-        ? []
-        : ['system:role:list', 'system:role:update-permission']),
+    permissions: permissions ?? (authorityId === 1 ? [] : ['system:role:list', 'system:role:update-permission']),
   });
 
   return mount(RoleListView, {
@@ -336,10 +332,7 @@ describe('RoleListView', () => {
     await wrapper.find('[data-test="save-data-scope"]').trigger('click');
     await flushWorkbench();
 
-    expect(mocks.updateRole).toHaveBeenCalledWith(
-      2,
-      expect.objectContaining({ data_scope: 'custom_depts' })
-    );
+    expect(mocks.updateRole).toHaveBeenCalledWith(2, expect.objectContaining({ data_scope: 'custom_depts' }));
     expect(mocks.setRoleDeptIds).toHaveBeenCalledWith(2, [1, 2]);
   });
 

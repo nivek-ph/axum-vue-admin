@@ -178,9 +178,7 @@ const INTERNAL_SERVER_ERROR: &str = "internal server error";
 
 fn public_response_message(kind: &ErrorKind, diagnostic: &str) -> String {
     match kind {
-        ErrorKind::Storage(_) | ErrorKind::Migration(_) | ErrorKind::Any(_) => {
-            INTERNAL_SERVER_ERROR.to_string()
-        }
+        ErrorKind::Any(_) => INTERNAL_SERVER_ERROR.to_string(),
         ErrorKind::Http(status, _, _) => {
             if *status == StatusCode::REQUEST_TIMEOUT {
                 return "request timed out".to_string();

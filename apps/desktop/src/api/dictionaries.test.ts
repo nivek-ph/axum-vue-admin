@@ -5,7 +5,7 @@ import { normalizeDictionaryDetailTreeResponse, normalizeDictionaryListResponse 
 describe('dictionaries api adapter', () => {
   it('normalizes dictionary list payload', () => {
     const result = normalizeDictionaryListResponse({
-      data: [{ ID: 1, name: 'Status', type: 'status', desc: '' }]
+      data: [{ id: 1, name: 'Status', type: 'status', desc: '' }]
     })
 
     expect(result).toHaveLength(1)
@@ -14,7 +14,7 @@ describe('dictionaries api adapter', () => {
   it('normalizes dictionary detail tree payload', () => {
     const result = normalizeDictionaryDetailTreeResponse({
       data: {
-        list: [{ ID: 1, label: 'Enabled', value: 'enabled', children: [] }]
+        list: [{ id: 1, label: 'Enabled', value: 'enabled', children: [] }]
       }
     })
 

@@ -5,16 +5,27 @@ use axum::{
     response::Response,
 };
 
-use admin_httpz::{AppResult, OptionAppExt};
-use system::users::LoginError;
+use admin_httpz::{AppError, AppResult, OptionAppExt};
+use iam::users::LoginError;
 
 use crate::errors::auth::{
-    self as errors, AUTH_RESOLVE_FAILED, PERMISSION_DENIED, SESSION_INVALID,
+    self as errors, AUTH_RESOLVE_FAILED, PERMISSION_DENIED, SESSION_INVALID, map_session_error,
 };
+use crate::errors::users::USER_DISABLED;
 use crate::state::AppState;
 
 const X_FORWARDED_FOR: &str = "x-forwarded-for";
 const USER_AGENT: &str = "user-agent";
+
+fn map_authorization_error(error: iam::authorization::AuthorizationError) -> AppError {
+    match error {
+        iam::authorization::AuthorizationError::Database(source) => {
+            crate::errors::INTERNAL_SERVER_ERROR
+                .into_error()
+                .with_source(source)
+        }
+    }
+}
 
 pub(crate) fn extract_bearer_token(headers: &HeaderMap) -> Option<&str> {
     let value = headers.get(AUTHORIZATION)?.to_str().ok()?;
@@ -51,12 +62,15 @@ pub async fn require_auth(
     let claims = state
         .auth_session_service
         .decode_active_token(token)
-        .await?;
-    let user = system::users::load_authenticated_user(&state.pool, claims.user_id)
+        .await
+        .map_err(map_session_error)?;
+    let user = state
+        .authorization
+        .resolve_user(claims.user_id)
         .await
         .map_err(|error| match error {
             LoginError::InvalidCredentials | LoginError::UserNotFound => SESSION_INVALID.into(),
-            LoginError::Disabled => system::errors::users::USER_DISABLED.into(),
+            LoginError::Disabled => USER_DISABLED.into(),
             LoginError::UserAlreadyExists | LoginError::InvalidPassword => {
                 AUTH_RESOLVE_FAILED.into_error()
             }
@@ -66,25 +80,29 @@ pub async fn require_auth(
         })?;
     let user_id = user.id;
 
-    let has_super_admin_role =
-        system::roles::user_has_role_code(&state.pool, user.id, "super_admin").await?;
+    let has_super_admin_role = state
+        .authorization
+        .has_super_admin_role(user.id)
+        .await
+        .map_err(map_authorization_error)?;
     let is_super_admin = is_super_admin_identity(has_super_admin_role);
 
     if !is_super_admin && !is_self_service_endpoint(&method, &permission_path) {
-        let required_permission = system::permission_apis::resolve_required_permission(
-            &state.pool,
-            &method,
-            &permission_path,
-        )
-        .await?;
+        let required_permission = state
+            .authorization
+            .required_permission(&method, &permission_path)
+            .await
+            .map_err(map_authorization_error)?;
 
         let Some(permission_code) = required_permission else {
             return Err(PERMISSION_DENIED.into());
         };
 
-        let allowed =
-            system::permissions::user_has_permission(&state.pool, user.id, &permission_code)
-                .await?;
+        let allowed = state
+            .authorization
+            .is_allowed(user.id, &permission_code)
+            .await
+            .map_err(map_authorization_error)?;
 
         if !allowed {
             return Err(PERMISSION_DENIED.into());
@@ -94,9 +112,9 @@ pub async fn require_auth(
     request.extensions_mut().insert(user);
 
     let response = next.run(request).await;
-    let _ = system::logs::create_operation_log(
-        &state.pool,
-        system::logs::CreateOperationLog {
+    let _ = state
+        .operation_logs
+        .record(audit::operation_logs::CreateOperationLog {
             ip,
             method,
             path,
@@ -106,9 +124,8 @@ pub async fn require_auth(
             body: String::new(),
             resp: String::new(),
             user_id,
-        },
-    )
-    .await;
+        })
+        .await;
 
     Ok(response)
 }

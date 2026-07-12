@@ -46,7 +46,7 @@
           <div class="profile-name">{{ authStore.userInfo?.nickName || $t('Not signed in') }}</div>
           <div class="profile-role">{{ authStore.userInfo?.authority?.authorityName || $t('Guest') }}</div>
           <div class="profile-meta">
-            {{ $t('User ID') }}：{{ authStore.userInfo?.ID || '-' }} / {{ $t('Default route') }}：{{
+            {{ $t('User ID') }}：{{ authStore.userInfo?.id || '-' }} / {{ $t('Default route') }}：{{
               authStore.userInfo?.authority?.defaultRouter || 'dashboard'
             }}
           </div>

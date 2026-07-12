@@ -24,7 +24,7 @@ describe('bootstrapAuthSession', () => {
       message: 'ok',
       data: {
         userInfo: {
-          ID: 1,
+          id: 1,
           userName: 'operator',
           nickName: 'Operator',
           authority: {
@@ -45,7 +45,7 @@ describe('bootstrapAuthSession', () => {
     writeAuthSession({
       token: 'token-123',
       userInfo: {
-        ID: 1,
+        id: 1,
         userName: 'operator',
         nickName: 'Operator'
       }
@@ -65,7 +65,7 @@ describe('bootstrapAuthSession', () => {
       message: 'ok',
       data: {
         userInfo: {
-          ID: 1,
+          id: 1,
           userName: 'admin',
           nickName: 'Admin',
           authority: {
@@ -87,7 +87,7 @@ describe('bootstrapAuthSession', () => {
     writeAuthSession({
       token: 'token-123',
       userInfo: {
-        ID: 1,
+        id: 1,
         userName: 'admin',
         nickName: 'Admin'
       }
@@ -116,7 +116,7 @@ describe('bootstrapAuthSession', () => {
     writeAuthSession({
       token: 'token-123',
       userInfo: {
-        ID: 1,
+        id: 1,
         userName: 'operator',
         nickName: 'Operator'
       }

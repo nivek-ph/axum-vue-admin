@@ -44,7 +44,7 @@
 
       <div class="surface-card">
         <UiTable :data="params" :loading="loading" style="width: 100%">
-          <UiTableColumn prop="ID" label="ID" width="80" />
+          <UiTableColumn prop="id" label="ID" width="80" />
           <UiTableColumn prop="name" label="Name" min-width="160" />
           <UiTableColumn prop="key" label="Key" min-width="180" />
           <UiTableColumn prop="value" label="Value" min-width="180" />
@@ -52,7 +52,7 @@
           <UiTableColumn label="Actions" width="180">
             <template #default="{ row }">
               <UiButton link type="primary" @click="openEditDialog(row)">{{ $t('Edit') }}</UiButton>
-              <UiButton link type="danger" @click="handleDelete(row.ID)">{{ $t('Delete') }}</UiButton>
+              <UiButton link type="danger" @click="handleDelete(row.id)">{{ $t('Delete') }}</UiButton>
             </template>
           </UiTableColumn>
         </UiTable>
@@ -116,7 +116,7 @@ const filters = reactive({
   key: ''
 })
 const form = reactive<ParamRecord>({
-  ID: 0,
+  id: 0,
   name: '',
   key: '',
   value: '',
@@ -127,7 +127,7 @@ const namespaceCount = computed(
 )
 
 function resetForm() {
-  form.ID = 0
+  form.id = 0
   form.name = ''
   form.key = ''
   form.value = ''
@@ -183,7 +183,7 @@ async function submitParam() {
   submitting.value = true
   try {
     const payload = {
-      ID: form.ID,
+      id: form.id,
       name: form.name.trim(),
       key: form.key.trim(),
       value: form.value.trim(),

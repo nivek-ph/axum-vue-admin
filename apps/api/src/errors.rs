@@ -1,6 +1,9 @@
 use admin_httpz::{AppError, ErrorSpec};
 
-use crate::auth::session::AuthSessionError;
+use ::auth::session::AuthSessionError;
+
+pub const INTERNAL_SERVER_ERROR: ErrorSpec =
+    ErrorSpec::internal("INTERNAL_SERVER_ERROR", "internal server error");
 
 pub mod auth {
     use super::*;
@@ -28,17 +31,15 @@ pub mod auth {
     pub const CAPTCHA_OPERATION_FAILED: ErrorSpec =
         ErrorSpec::internal("CAPTCHA_OPERATION_FAILED", "captcha operation failed");
 
-    impl From<AuthSessionError> for AppError {
-        fn from(error: AuthSessionError) -> Self {
-            match error {
-                AuthSessionError::Auth(error) => TOKEN_INVALID.into_error().with_source(error),
-                AuthSessionError::Revoked => TOKEN_REVOKED.into_error(),
-                AuthSessionError::RevocationStoreUnavailable | AuthSessionError::Redis(_) => {
-                    AUTH_RESOLVE_FAILED.into_error().with_source(error)
-                }
-                AuthSessionError::CaptchaRenderFailed => {
-                    CAPTCHA_OPERATION_FAILED.into_error().with_source(error)
-                }
+    pub fn map_session_error(error: AuthSessionError) -> AppError {
+        match error {
+            AuthSessionError::Auth(source) => TOKEN_INVALID.into_error().with_source(source),
+            AuthSessionError::Revoked => TOKEN_REVOKED.into_error(),
+            AuthSessionError::RevocationStoreUnavailable | AuthSessionError::Redis(_) => {
+                AUTH_RESOLVE_FAILED.into_error().with_source(error)
+            }
+            AuthSessionError::CaptchaRenderFailed => {
+                CAPTCHA_OPERATION_FAILED.into_error().with_source(error)
             }
         }
     }
@@ -56,4 +57,16 @@ pub mod request {
     pub fn multipart_field_error(error: axum::extract::multipart::MultipartError) -> AppError {
         MULTIPART_FIELD_FAILED.into_error().with_source(error)
     }
+}
+
+pub mod users {
+    use super::*;
+
+    pub const INVALID_CREDENTIALS: ErrorSpec =
+        ErrorSpec::unauthorized("INVALID_CREDENTIALS", "invalid username or password");
+    pub const USER_DISABLED: ErrorSpec = ErrorSpec::forbidden("USER_DISABLED", "user is disabled");
+    pub const USER_ALREADY_EXISTS: ErrorSpec =
+        ErrorSpec::conflict("USER_ALREADY_EXISTS", "user already exists");
+    pub const INVALID_PASSWORD: ErrorSpec =
+        ErrorSpec::bad_request("INVALID_PASSWORD", "invalid password");
 }

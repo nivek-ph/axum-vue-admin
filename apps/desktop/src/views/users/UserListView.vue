@@ -39,7 +39,7 @@
 
       <div class="surface-card">
         <UiTable :data="users" :loading="loading" style="width: 100%">
-          <UiTableColumn prop="ID" label="ID" width="80" />
+          <UiTableColumn prop="id" label="ID" width="80" />
           <UiTableColumn prop="userName" label="Username" min-width="140" />
           <UiTableColumn prop="nickName" label="Nickname" min-width="140" />
           <UiTableColumn prop="phone" label="Phone" min-width="140" />
@@ -81,7 +81,7 @@
                   v-if="canResetUserPassword"
                   link
                   data-test="reset-user-password-button"
-                  @click="handleResetPassword(row.ID)"
+                  @click="handleResetPassword(row.id)"
                 >
                   {{ $t('Reset password') }}
                 </UiButton>
@@ -90,7 +90,7 @@
                   link
                   type="danger"
                   data-test="delete-user-button"
-                  @click="handleDelete(row.ID)"
+                  @click="handleDelete(row.id)"
                 >
                   {{ $t('Delete') }}
                 </UiButton>
@@ -290,7 +290,7 @@ async function handleUpdateUserRole() {
 
   try {
     const res = await updateUserAuthoritiesMutation.mutateAsync({
-      id: selectedUser.value.ID,
+      id: selectedUser.value.id,
       roleIds: roleForm.roleIds
     })
     if (res.code === 'OK') {

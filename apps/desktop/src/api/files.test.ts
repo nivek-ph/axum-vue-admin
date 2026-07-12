@@ -6,7 +6,7 @@ describe('files api adapter', () => {
   it('normalizes file list payload', () => {
     const result = normalizeFileListResponse({
       data: {
-        list: [{ ID: 1, name: 'logo.png', url: '/uploads/logo.png', tag: 'png', classId: 0 }],
+        list: [{ id: 1, name: 'logo.png', url: '/uploads/logo.png', tag: 'png', classId: 0 }],
         total: 1,
         page: 1,
         pageSize: 10
@@ -18,7 +18,7 @@ describe('files api adapter', () => {
 
   it('normalizes category tree payload', () => {
     const result = normalizeCategoryListResponse({
-      data: [{ ID: 1, name: 'Images', pid: 0, children: [] }]
+      data: [{ id: 1, name: 'Images', pid: 0, children: [] }]
     })
 
     expect(result).toHaveLength(1)

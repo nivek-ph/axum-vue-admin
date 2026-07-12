@@ -9,7 +9,7 @@ describe('user api adapter', () => {
   it('normalizes backend list payload', () => {
     const result = normalizeUserListResponse({
       data: {
-        list: [{ ID: 1, userName: 'admin' }],
+        list: [{ id: 1, userName: 'admin' }],
         total: 1,
         page: 1,
         pageSize: 10,

@@ -2,7 +2,7 @@ import { http } from './http'
 import { withAuthHeaders, type ApiResponse } from './core'
 
 export interface LoginLogRecord {
-  ID: number
+  id: number
   username: string
   ip: string
   status: boolean
@@ -12,7 +12,7 @@ export interface LoginLogRecord {
 }
 
 export interface OperationLogRecord {
-  ID: number
+  id: number
   ip: string
   method: string
   path: string

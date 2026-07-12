@@ -19,25 +19,26 @@ async fn main() -> Result<()> {
         .expect("database pool should connect");
     info!("database connected");
 
-    system::roles::ensure_builtin_roles(&pool)
+    let role_service = iam::roles::service::RoleService::new(pool.clone());
+    role_service
+        .ensure_builtins()
         .await
-        .expect("builtin roles should be bootstrapped");
-    system::roles::ensure_builtin_role_permissions(&pool)
-        .await
-        .expect("builtin role permissions should be bootstrapped");
-    system::menu::ensure_default_menu(&pool)
-        .await
-        .expect("default menu should be bootstrapped");
-    let password_service = PasswordService::new();
-    system::users::ensure_admin_user(
-        &pool,
-        &password_service,
-        &config.admin_username,
-        &config.admin_password,
-        &config.admin_nickname,
+        .expect("builtin roles and permissions should be bootstrapped");
+    menu::menus::service::MenuService::new(
+        pool.clone(),
+        iam::authorization::service::AuthorizationService::new(pool.clone()),
     )
+    .ensure_default()
     .await
-    .expect("admin user should be bootstrapped");
+    .expect("default menu should be bootstrapped");
+    iam::users::service::UserService::new(pool, PasswordService::new())
+        .ensure_admin(
+            &config.admin_username,
+            &config.admin_password,
+            &config.admin_nickname,
+        )
+        .await
+        .expect("admin user should be bootstrapped");
     info!("default system data bootstrapped");
     Ok(())
 }

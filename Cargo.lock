@@ -32,7 +32,6 @@ dependencies = [
  "axum",
  "serde",
  "serde_json",
- "sqlx",
  "thiserror",
  "tokio",
  "tracing",
@@ -84,20 +83,20 @@ version = "0.1.0"
 dependencies = [
  "admin-httpz",
  "anyhow",
+ "audit",
  "auth",
  "axum",
  "axum-otel",
- "captcha-rs",
  "db",
  "dotenvy",
  "file-storage",
- "hex",
+ "iam",
+ "menu",
+ "metadata",
  "redis",
  "serde",
  "serde_json",
- "sha2 0.11.0",
  "sqlx",
- "system",
  "thiserror",
  "tokio",
  "tower",
@@ -106,7 +105,6 @@ dependencies = [
  "tracing-otel-extra",
  "utoipa",
  "utoipa-swagger-ui",
- "uuid",
 ]
 
 [[package]]
@@ -209,14 +207,28 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0"
 
 [[package]]
+name = "audit"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "sqlx",
+ "thiserror",
+]
+
+[[package]]
 name = "auth"
 version = "0.1.0"
 dependencies = [
  "argon2",
+ "captcha-rs",
+ "hex",
  "jsonwebtoken",
  "password-hash",
+ "redis",
  "serde",
+ "sha2 0.11.0",
  "thiserror",
+ "uuid",
 ]
 
 [[package]]
@@ -895,7 +907,6 @@ dependencies = [
 name = "file-storage"
 version = "0.1.0"
 dependencies = [
- "admin-httpz",
  "serde",
  "serde_json",
  "sqlx",
@@ -1441,6 +1452,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "iam"
+version = "0.1.0"
+dependencies = [
+ "auth",
+ "serde_json",
+ "sqlx",
+ "thiserror",
+ "uuid",
+]
+
+[[package]]
 name = "icu_collections"
 version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1828,6 +1850,27 @@ name = "memchr"
 version = "2.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f8ca58f447f06ed17d5fc4043ce1b10dd205e060fb3ce5b979b8ed8e59ff3f79"
+
+[[package]]
+name = "menu"
+version = "0.1.0"
+dependencies = [
+ "iam",
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror",
+]
+
+[[package]]
+name = "metadata"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "sqlx",
+ "thiserror",
+]
 
 [[package]]
 name = "mime"
@@ -3454,20 +3497,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "system"
-version = "0.1.0"
-dependencies = [
- "admin-httpz",
- "auth",
- "serde",
- "serde_json",
- "sqlx",
- "thiserror",
- "utoipa",
- "uuid",
 ]
 
 [[package]]

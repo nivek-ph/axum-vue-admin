@@ -4,7 +4,7 @@ import { defineStore } from 'pinia';
 import { clearAuthSession, readAuthSession, writeAuthSession } from './authStorage';
 
 export interface AuthUserInfo {
-  ID: number;
+  id: number;
   userName: string;
   nickName: string;
   headerImg?: string;

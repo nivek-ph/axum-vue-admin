@@ -1,5 +1,6 @@
 pub mod jwt;
 pub mod password;
+pub mod session;
 
 #[cfg(test)]
 mod tests {
@@ -7,7 +8,7 @@ mod tests {
 
     #[test]
     fn password_service_hashes_and_verifies_passwords() {
-        let password_service = PasswordService::default();
+        let password_service = PasswordService::new();
         let password_hash = password_service
             .hash_password("123456")
             .expect("password hash should be generated");

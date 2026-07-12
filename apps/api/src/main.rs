@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
-use api::{auth::session::AuthSessionService, state::AppConfig};
+use api::state::AppConfig;
 use auth::password::PasswordService;
+use auth::session::AuthSessionService;
 
 use anyhow::Result;
 use tracing::info;
@@ -34,12 +35,35 @@ async fn main() -> Result<()> {
 
     let password_service = PasswordService::new();
     let auth_session_service = AuthSessionService::new(&config.jwt_secret, redis_connection);
+    let users = iam::users::service::UserService::new(pool.clone(), password_service);
+    let login_logs = audit::login_logs::service::LoginLogService::new(pool.clone());
+    let operation_logs = audit::operation_logs::service::OperationLogService::new(pool.clone());
+    let login = api::routes::auth::LoginOperation::new(
+        users.clone(),
+        auth_session_service.clone(),
+        login_logs.clone(),
+    );
 
     let app_state = api::state::AppState {
         config: Arc::new(config.clone()),
-        pool,
         auth_session_service,
-        password_service,
+        login,
+        users,
+        roles: iam::roles::service::RoleService::new(pool.clone()),
+        permissions: iam::permissions::service::PermissionService::new(pool.clone()),
+        departments: iam::departments::service::DepartmentService::new(pool.clone()),
+        apis: iam::apis::service::ApiService::new(pool.clone()),
+        authorization: iam::authorization::service::AuthorizationService::new(pool.clone()),
+        dictionaries: metadata::dictionaries::service::DictionaryService::new(pool.clone()),
+        parameters: metadata::parameters::service::ParameterService::new(pool.clone()),
+        menus: menu::menus::service::MenuService::new(
+            pool.clone(),
+            iam::authorization::service::AuthorizationService::new(pool.clone()),
+        ),
+        login_logs,
+        operation_logs,
+        files: file_storage::files::service::FileService::new(pool.clone(), "./uploads"),
+        attachment_categories: file_storage::categories::service::CategoryService::new(pool),
     };
 
     let app = api::router::build_router(app_state);

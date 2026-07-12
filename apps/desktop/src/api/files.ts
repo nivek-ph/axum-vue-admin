@@ -2,7 +2,7 @@ import { http } from './http';
 import { withAuthHeaders, type ApiResponse } from './core';
 
 export interface FileRecord {
-  ID: number;
+  id: number;
   name: string;
   url: string;
   tag: string;
@@ -25,7 +25,7 @@ export interface FileFilters {
 }
 
 export interface CategoryRecord {
-  ID: number;
+  id: number;
   name: string;
   pid: number;
   children: CategoryRecord[];
@@ -62,11 +62,11 @@ export async function fetchCategories() {
   return normalizeCategoryListResponse(response);
 }
 
-export async function saveCategory(payload: { ID?: number; name: string; pid: number }) {
+export async function saveCategory(payload: { id?: number; name: string; pid: number }) {
   return http.post(
     '/attachment-categories',
     {
-      ID: payload.ID || 0,
+      id: payload.id || 0,
       name: payload.name,
       pid: payload.pid,
     },
@@ -82,8 +82,8 @@ export async function importFileUrl(payload: { name: string; url: string; classI
   return http.post('/files/import-url', payload, withAuthHeaders());
 }
 
-export async function renameFile(payload: { ID: number; name: string }) {
-  return http.patch(`/files/${payload.ID}/name`, payload, withAuthHeaders());
+export async function renameFile(payload: { id: number; name: string }) {
+  return http.patch(`/files/${payload.id}/name`, payload, withAuthHeaders());
 }
 
 export async function deleteFile(id: number) {

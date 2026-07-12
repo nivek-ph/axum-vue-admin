@@ -2,7 +2,7 @@ import { http } from './http'
 import { withAuthHeaders, type ApiResponse } from './core'
 
 export interface ParamRecord {
-  ID: number
+  id: number
   name: string
   key: string
   value: string
@@ -52,7 +52,7 @@ export async function createParam(payload: ParamRecord) {
 }
 
 export async function updateParam(payload: ParamRecord) {
-  return http.put(`/params/${payload.ID}`, payload, withAuthHeaders())
+  return http.put(`/params/${payload.id}`, payload, withAuthHeaders())
 }
 
 export async function deleteParam(id: number) {

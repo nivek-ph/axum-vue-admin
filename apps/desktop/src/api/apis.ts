@@ -2,7 +2,7 @@ import { http } from './http';
 import { withAuthHeaders, type ApiResponse } from './core';
 
 export interface ApiRecord {
-  ID: number;
+  id: number;
   path: string;
   description: string;
   apiGroup: string;
@@ -91,7 +91,7 @@ export async function createApi(payload: ApiRecord) {
 }
 
 export async function updateApi(payload: ApiRecord) {
-  return http.put(`/routes/${payload.ID}`, payload, withAuthHeaders());
+  return http.put(`/routes/${payload.id}`, payload, withAuthHeaders());
 }
 
 export async function deleteApi(id: number) {

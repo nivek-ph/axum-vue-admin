@@ -122,8 +122,8 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn sqlx_error_into_response_is_masked_internal() {
-        let error: crate::error::AppError = sqlx::Error::RowNotFound.into();
+    async fn internal_error_response_is_masked() {
+        let error = crate::error::AppError::internal_error(anyhow::anyhow!("database detail"));
         assert_eq!(
             error.status(),
             axum::http::StatusCode::INTERNAL_SERVER_ERROR

@@ -40,17 +40,17 @@
         <div class="surface-card category-card">
           <div
             v-for="item in flattenedCategories"
-            :key="item.ID"
+            :key="item.id"
             class="category-row"
-            :class="{ 'is-active': selectedClassId === item.ID }"
-            @click="selectCategory(item.ID)"
+            :class="{ 'is-active': selectedClassId === item.id }"
+            @click="selectCategory(item.id)"
           >
             <div class="category-name" :style="{ paddingLeft: `${item._depth * 14 + 12}px` }">
               {{ item.name }}
             </div>
             <div class="category-actions">
               <UiButton link type="primary" @click.stop="openCategoryDialog(item)">{{ $t('Edit') }}</UiButton>
-              <UiButton link type="danger" @click.stop="handleDeleteCategory(item.ID)">{{ $t('Delete') }}</UiButton>
+              <UiButton link type="danger" @click.stop="handleDeleteCategory(item.id)">{{ $t('Delete') }}</UiButton>
             </div>
           </div>
         </div>
@@ -93,7 +93,7 @@
 
         <div class="surface-card">
           <UiTable :data="files.list" :loading="loading" style="width: 100%">
-             <UiTableColumn prop="ID" label="ID" width="80" />
+             <UiTableColumn prop="id" label="ID" width="80" />
           <UiTableColumn label="Name" min-width="160">
             <template #default="{ row }">
                 <UiButton link type="primary" @click="openPreviewDialog(row)">{{ row.name }}</UiButton>
@@ -107,7 +107,7 @@
             <template #default="{ row }">
                 <UiButton link @click="openPreviewDialog(row)">{{ $t('Preview') }}</UiButton>
                 <UiButton link type="primary" @click="openRenameDialog(row)">{{ $t('Rename') }}</UiButton>
-                <UiButton link type="danger" @click="handleDeleteFile(row.ID)">{{ $t('Delete') }}</UiButton>
+                <UiButton link type="danger" @click="handleDeleteFile(row.id)">{{ $t('Delete') }}</UiButton>
               </template>
             </UiTableColumn>
           </UiTable>
@@ -126,7 +126,7 @@
       </article>
     </section>
 
-    <UiDialog v-model="categoryDialogVisible" :title="categoryForm.ID ? 'Edit category' : 'New category'" width="520px">
+    <UiDialog v-model="categoryDialogVisible" :title="categoryForm.id ? 'Edit category' : 'New category'" width="520px">
       <UiForm labelWidth="90px" @submit.prevent="submitCategory">
         <UiFormItem label="Name">
           <UiInput v-model="categoryForm.name" placeholder="Example: images" />
@@ -136,9 +136,9 @@
             <UiOption :value="0" label="Top-level category" />
             <UiOption
               v-for="item in flattenedCategories"
-              :key="item.ID"
+              :key="item.id"
               :label="item.name"
-              :value="item.ID"
+              :value="item.id"
             />
           </UiSelect>
         </UiFormItem>
@@ -163,9 +163,9 @@
             <UiOption :value="0" label="Uncategorized" />
             <UiOption
               v-for="item in flattenedCategories"
-              :key="item.ID"
+              :key="item.id"
               :label="item.name"
-              :value="item.ID"
+              :value="item.id"
             />
           </UiSelect>
         </UiFormItem>
@@ -285,7 +285,7 @@ const filters = reactive({
 const categoryDialogVisible = ref(false)
 const submittingCategory = ref(false)
 const categoryForm = reactive({
-  ID: 0,
+  id: 0,
   name: '',
   pid: 0
 })
@@ -301,7 +301,7 @@ const submittingRename = ref(false)
 const previewDialogVisible = ref(false)
 const previewFile = ref<FileRecord | null>(null)
 const renameForm = reactive({
-  ID: 0,
+  id: 0,
   name: ''
 })
 
@@ -321,7 +321,7 @@ function flattenCategories(list: CategoryRecord[], depth = 0): Array<CategoryRec
 }
 
 function resetCategoryForm() {
-  categoryForm.ID = 0
+  categoryForm.id = 0
   categoryForm.name = ''
   categoryForm.pid = 0
 }
@@ -335,7 +335,7 @@ function resolveFileUrl(url: string) {
 }
 
 function categoryName(classId: number) {
-  return flattenedCategories.value.find((item) => item.ID === classId)?.name || t('Uncategorized')
+  return flattenedCategories.value.find((item) => item.id === classId)?.name || t('Uncategorized')
 }
 
 function isPreviewImage(file: FileRecord) {
@@ -398,7 +398,7 @@ function handlePageChange(nextPage: number) {
 
 function openCategoryDialog(item?: CategoryRecord) {
   if (item) {
-    categoryForm.ID = item.ID
+    categoryForm.id = item.id
     categoryForm.name = item.name
     categoryForm.pid = item.pid
   } else {
@@ -416,7 +416,7 @@ async function submitCategory() {
   submittingCategory.value = true
   try {
     const response = await saveCategory({
-      ID: categoryForm.ID || 0,
+      id: categoryForm.id || 0,
       name: categoryForm.name.trim(),
       pid: categoryForm.pid
     })
@@ -492,7 +492,7 @@ async function submitImport() {
 }
 
 function openRenameDialog(item: FileRecord) {
-  renameForm.ID = item.ID
+  renameForm.id = item.id
   renameForm.name = item.name
   renameDialogVisible.value = true
 }
@@ -516,7 +516,7 @@ async function submitRename() {
   submittingRename.value = true
   try {
     const response = await renameFile({
-      ID: renameForm.ID,
+      id: renameForm.id,
       name: renameForm.name.trim()
     })
     if (response.code === 'OK') {
@@ -567,7 +567,7 @@ async function handleFileSelected(event: Event) {
   selectedUpload.sizeLabel = `${(file.size / 1024 / 1024).toFixed(2)} MB`
   selectedUpload.extension = file.name.split('.').pop()?.toUpperCase() || ''
   selectedUpload.classLabel =
-    flattenedCategories.value.find((item) => item.ID === selectedClassId.value)?.name || t('Uncategorized')
+    flattenedCategories.value.find((item) => item.id === selectedClassId.value)?.name || t('Uncategorized')
   if (file.type.startsWith('image/')) {
     selectedUpload.previewUrl = URL.createObjectURL(file)
   }

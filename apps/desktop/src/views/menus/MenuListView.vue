@@ -39,12 +39,12 @@
       <div class="surface-card">
         <UiTable
           :data="navigationMenus"
-          row-key="ID"
+          row-key="id"
           default-expand-all
           :loading="loading"
           style="width: 100%"
         >
-          <UiTableColumn prop="ID" label="ID" width="80" />
+          <UiTableColumn prop="id" label="ID" width="80" />
           <UiTableColumn label="Title" min-width="180">
             <template #default="{ row }">
               {{ row.meta?.title || row.name }}
@@ -83,9 +83,9 @@
             <UiOption :value="0" label="Top-level menus" />
             <UiOption
               v-for="item in menuOptions"
-              :key="item.ID"
+              :key="item.id"
               :label="`${item.meta?.title || item.name} (${item.name})`"
-              :value="item.ID"
+              :value="item.id"
             />
           </UiSelect>
         </UiFormItem>
@@ -205,7 +205,7 @@ const hiddenMenuCount = computed(() => menuOptions.value.filter((item) => item.h
 
 function createEmptyMenu(): MenuRecord {
   return {
-    ID: 0,
+    id: 0,
     parentId: 0,
     path: '',
     name: '',
@@ -230,7 +230,7 @@ function createEmptyMenu(): MenuRecord {
 
 function cloneMenu(menu: MenuRecord): MenuRecord {
   return {
-    ID: menu.ID,
+    id: menu.id,
     parentId: menu.parentId,
     path: menu.path,
     name: menu.name,
@@ -330,7 +330,7 @@ async function openRoleDialog(menu: MenuRecord) {
   selectedMenu.value = menu
   roleDialogVisible.value = true
   try {
-    const selection = await fetchMenuRoles(menu.ID)
+    const selection = await fetchMenuRoles(menu.id)
     selectedAuthorityIds.value = selection.roleIds
   } catch {
     ElMessage.error(t('Failed to load menu roles'))
@@ -342,7 +342,7 @@ async function submitMenuRoles() {
 
   roleSubmitting.value = true
   try {
-    const response = await setMenuRoles(selectedMenu.value.ID, selectedAuthorityIds.value)
+    const response = await setMenuRoles(selectedMenu.value.id, selectedAuthorityIds.value)
     if (response.code === 'OK') {
       ElMessage.success(t('Menu roles updated'))
       roleDialogVisible.value = false
@@ -367,7 +367,7 @@ async function handleDelete(menu: MenuRecord) {
   }
 
   try {
-    const response = await deleteMenu(menu.ID)
+    const response = await deleteMenu(menu.id)
     if (response.code === 'OK') {
       ElMessage.success(t('Menu deleted'))
       await loadData()
