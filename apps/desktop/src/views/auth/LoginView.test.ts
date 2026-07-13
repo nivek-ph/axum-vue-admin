@@ -56,11 +56,7 @@ describe('LoginView', () => {
           id: 1,
           userName: 'operator',
           nickName: 'Operator',
-          authority: {
-            authorityId: 999,
-            authorityName: 'Operator',
-            defaultRouter: 'dashboard',
-          },
+          roles: [{ id: 999, code: 'operator', name: 'Operator' }],
         },
       },
     });
@@ -115,6 +111,7 @@ describe('LoginView', () => {
       routes: [
         { path: '/login', name: 'login', component: LoginView },
         { path: '/dashboard', name: 'dashboard', component: { template: '<div />' } },
+        { path: '/users', name: 'users', component: { template: '<div />' } },
       ],
     });
     vi.mocked(login).mockResolvedValue({
@@ -126,11 +123,8 @@ describe('LoginView', () => {
           id: 1,
           userName: 'admin',
           nickName: 'Admin',
-          authority: {
-            authorityId: 1,
-            authorityName: 'Legacy compatible',
-            defaultRouter: 'dashboard',
-          },
+          homeRoute: 'users',
+          roles: [{ id: 1, code: 'super_admin', name: 'Super Admin' }],
         },
       },
     });
@@ -142,11 +136,7 @@ describe('LoginView', () => {
           id: 1,
           userName: 'admin',
           nickName: 'Admin',
-          authority: {
-            authorityId: 1,
-            authorityName: 'Legacy compatible',
-            defaultRouter: 'dashboard',
-          },
+          homeRoute: 'users',
           roles: [{ id: 1, code: 'super_admin', name: 'Super Admin' }],
         },
       },
@@ -177,5 +167,6 @@ describe('LoginView', () => {
 
     const menuStore = useMenuStore();
     expect(menuStore.canAccessRouteName('roles')).toBe(true);
+    expect(router.currentRoute.value.name).toBe('users');
   });
 });
