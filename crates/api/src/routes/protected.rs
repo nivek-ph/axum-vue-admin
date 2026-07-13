@@ -6,7 +6,6 @@ pub fn router() -> Router<crate::state::AppState> {
     Router::new()
         .nest("/depts", departments::routes())
         .nest("/dictionaries", dictionaries::routes())
-        .nest("/dictionary-details", dictionaries::detail_routes())
         .nest("/files", files::routes())
         .nest("/menus", menus::routes())
         .merge(audit::routes())

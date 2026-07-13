@@ -8,10 +8,9 @@ use serde_json::Value;
 
 use crate::state::AppState;
 
-use super::details;
 use super::dto::{
-    DictionaryListQuery, DictionaryPayload, DictionaryResponse, DictionaryWithDetailsResponse,
-    ImportDictionaryPayload,
+    DictionaryDetailPayload, DictionaryDetailResponse, DictionaryListQuery, DictionaryPayload,
+    DictionaryResponse, DictionaryWithDetailsResponse, ImportDictionaryPayload,
 };
 use super::error::map_error;
 
@@ -23,6 +22,10 @@ pub fn routes() -> Router<AppState> {
         )
         .route("/import", post(import_sys_dictionary))
         .route(
+            "/by-type/{dictionary_type}/tree",
+            get(get_dictionary_tree_by_type),
+        )
+        .route(
             "/{id}",
             get(find_sys_dictionary_by_id)
                 .put(update_sys_dictionary_by_id)
@@ -30,8 +33,22 @@ pub fn routes() -> Router<AppState> {
         )
         .route("/{id}/export", get(export_sys_dictionary_by_id))
         .route(
-            "/{id}/details/tree",
-            get(details::get_dictionary_tree_list_by_id),
+            "/{id}/tree",
+            get(get_dictionary_tree).post(create_dictionary_tree_node),
+        )
+        .route(
+            "/{id}/tree/{node_id}",
+            get(find_dictionary_tree_node)
+                .put(update_dictionary_tree_node)
+                .delete(delete_dictionary_tree_node),
+        )
+        .route(
+            "/{id}/tree/{node_id}/children",
+            get(get_dictionary_tree_node_children),
+        )
+        .route(
+            "/{id}/tree/{node_id}/path",
+            get(get_dictionary_tree_node_path),
         )
 }
 
@@ -119,4 +136,125 @@ pub async fn import_sys_dictionary(
         .await
         .map_err(map_error)?;
     Ok(Json(ApiResponse::ok_message("imported")))
+}
+
+pub async fn get_dictionary_tree(
+    State(state): State<AppState>,
+    Path(id): Path<i64>,
+) -> AppResult<Json<ApiResponse<Value>>> {
+    let list = state
+        .dictionaries
+        .tree_by_dictionary(id)
+        .await
+        .map_err(map_error)?
+        .into_iter()
+        .map(DictionaryDetailResponse::from)
+        .collect::<Vec<_>>();
+    Ok(Json(ApiResponse::ok(serde_json::json!({
+        "list": list
+    }))))
+}
+
+pub async fn create_dictionary_tree_node(
+    State(state): State<AppState>,
+    Path(dictionary_id): Path<i64>,
+    Json(payload): Json<DictionaryDetailPayload>,
+) -> AppResult<Json<ApiResponse<Value>>> {
+    state
+        .dictionaries
+        .create_detail(dictionary_id, payload.into())
+        .await
+        .map_err(map_error)?;
+    Ok(Json(ApiResponse::ok_message("created")))
+}
+
+pub async fn find_dictionary_tree_node(
+    State(state): State<AppState>,
+    Path((dictionary_id, node_id)): Path<(i64, i64)>,
+) -> AppResult<Json<ApiResponse<Value>>> {
+    let item = DictionaryDetailResponse::from(
+        state
+            .dictionaries
+            .find_detail(dictionary_id, node_id)
+            .await
+            .map_err(map_error)?,
+    );
+    Ok(Json(ApiResponse::ok(serde_json::json!({
+        "reSysDictionaryDetail": item
+    }))))
+}
+
+pub async fn update_dictionary_tree_node(
+    State(state): State<AppState>,
+    Path((dictionary_id, node_id)): Path<(i64, i64)>,
+    Json(payload): Json<DictionaryDetailPayload>,
+) -> AppResult<Json<ApiResponse<Value>>> {
+    state
+        .dictionaries
+        .update_detail(dictionary_id, node_id, payload.into())
+        .await
+        .map_err(map_error)?;
+    Ok(Json(ApiResponse::ok_message("updated")))
+}
+
+pub async fn delete_dictionary_tree_node(
+    State(state): State<AppState>,
+    Path((dictionary_id, node_id)): Path<(i64, i64)>,
+) -> AppResult<Json<ApiResponse<Value>>> {
+    state
+        .dictionaries
+        .delete_detail(dictionary_id, node_id)
+        .await
+        .map_err(map_error)?;
+    Ok(Json(ApiResponse::ok_message("deleted")))
+}
+
+pub async fn get_dictionary_tree_by_type(
+    State(state): State<AppState>,
+    Path(dictionary_type): Path<String>,
+) -> AppResult<Json<ApiResponse<Value>>> {
+    let list = state
+        .dictionaries
+        .tree_by_type(&dictionary_type)
+        .await
+        .map_err(map_error)?
+        .into_iter()
+        .map(DictionaryDetailResponse::from)
+        .collect::<Vec<_>>();
+    Ok(Json(ApiResponse::ok(serde_json::json!({ "list": list }))))
+}
+
+pub async fn get_dictionary_tree_node_children(
+    State(state): State<AppState>,
+    Path((dictionary_id, node_id)): Path<(i64, i64)>,
+) -> AppResult<Json<ApiResponse<Value>>> {
+    state
+        .dictionaries
+        .find_detail(dictionary_id, node_id)
+        .await
+        .map_err(map_error)?;
+    let list = state
+        .dictionaries
+        .details_by_parent(dictionary_id, node_id)
+        .await
+        .map_err(map_error)?
+        .into_iter()
+        .map(DictionaryDetailResponse::from)
+        .collect::<Vec<_>>();
+    Ok(Json(ApiResponse::ok(serde_json::json!({ "list": list }))))
+}
+
+pub async fn get_dictionary_tree_node_path(
+    State(state): State<AppState>,
+    Path((dictionary_id, node_id)): Path<(i64, i64)>,
+) -> AppResult<Json<ApiResponse<Value>>> {
+    let list = state
+        .dictionaries
+        .detail_path(dictionary_id, node_id)
+        .await
+        .map_err(map_error)?
+        .into_iter()
+        .map(DictionaryDetailResponse::from)
+        .collect::<Vec<_>>();
+    Ok(Json(ApiResponse::ok(serde_json::json!({ "list": list }))))
 }
