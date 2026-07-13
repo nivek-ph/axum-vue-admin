@@ -226,33 +226,30 @@ fn validate_node(node: &AccessNode, nodes: &HashMap<i64, AccessNode>) -> Result<
     }
 
     match (node.menu_type.as_str(), node.parent_id) {
-        ("action", Some(parent_id)) => {
+        ("action", Some(parent_id))
             if nodes
                 .get(&parent_id)
                 .map(|parent| parent.menu_type.as_str())
-                != Some("page")
-            {
-                return Err(CatalogError::InvalidTree);
-            }
+                != Some("page") =>
+        {
+            return Err(CatalogError::InvalidTree);
         }
         ("action", None) => return Err(CatalogError::InvalidTree),
-        ("page", Some(parent_id)) => {
+        ("page", Some(parent_id))
             if nodes
                 .get(&parent_id)
                 .map(|parent| parent.menu_type.as_str())
-                != Some("directory")
-            {
-                return Err(CatalogError::InvalidTree);
-            }
+                != Some("directory") =>
+        {
+            return Err(CatalogError::InvalidTree);
         }
-        ("directory", Some(parent_id)) => {
+        ("directory", Some(parent_id))
             if nodes
                 .get(&parent_id)
                 .map(|parent| parent.menu_type.as_str())
-                != Some("directory")
-            {
-                return Err(CatalogError::InvalidTree);
-            }
+                != Some("directory") =>
+        {
+            return Err(CatalogError::InvalidTree);
         }
         _ => {}
     }
