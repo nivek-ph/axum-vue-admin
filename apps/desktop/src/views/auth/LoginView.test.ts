@@ -37,7 +37,7 @@ describe('LoginView', () => {
     });
   });
 
-  it('handles successful login responses with missing optional menu details', async () => {
+  it('persists permissions while handling missing optional menu details', async () => {
     const pinia = createPinia();
     setActivePinia(pinia);
     const router = createRouter({
@@ -68,7 +68,9 @@ describe('LoginView', () => {
     vi.mocked(getMenu).mockResolvedValue({
       code: 'OK',
       message: 'ok',
-      data: {},
+      data: {
+        permissions: ['system:user:create'],
+      },
     } as Awaited<ReturnType<typeof getMenu>>);
     await router.push('/login');
     await router.isReady();
@@ -90,6 +92,7 @@ describe('LoginView', () => {
     const authStore = useAuthStore();
     const menuStore = useMenuStore();
     expect(authStore.isAuthenticated).toBe(true);
+    expect(authStore.can('system:user:create')).toBe(true);
     expect(menuStore.firstAuthorizedPath()).toBe('/profile');
     expect(router.currentRoute.value.name).toBe('profile');
     expect(ElMessage.error).not.toHaveBeenCalled();

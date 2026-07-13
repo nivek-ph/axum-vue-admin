@@ -26,16 +26,18 @@ impl RoleService {
         Ok(list(&self.pool).await?)
     }
     pub async fn create(&self, p: RolePayload) -> Result<RoleSummary, RoleError> {
+        let role = create(&self.pool, p).await?;
         self.changed().await?;
-        create(&self.pool, p).await
+        Ok(role)
     }
     pub async fn update(&self, id: i64, p: RolePayload) -> Result<RoleSummary, RoleError> {
+        let role = update(&self.pool, id, p).await?;
         self.changed().await?;
-        update(&self.pool, id, p).await
+        Ok(role)
     }
     pub async fn delete(&self, id: i64) -> Result<(), RoleError> {
-        self.changed().await?;
-        delete(&self.pool, id).await
+        delete(&self.pool, id).await?;
+        self.changed().await
     }
     pub async fn menu_ids(&self, id: i64) -> Result<Vec<i64>, RoleError> {
         ids(&self.pool, id, "sys_role_menus", "menu_id").await
@@ -45,24 +47,24 @@ impl RoleService {
         let values = normalize(values);
         self.authorization
             .validate_menu_assignment(&values.iter().copied().collect())?;
-        self.changed().await?;
-        replace(&self.pool, id, "sys_role_menus", "menu_id", values).await
+        replace(&self.pool, id, "sys_role_menus", "menu_id", values).await?;
+        self.changed().await
     }
     pub async fn dept_ids(&self, id: i64) -> Result<Vec<i64>, RoleError> {
         ids(&self.pool, id, "sys_role_depts", "dept_id").await
     }
     pub async fn set_dept_ids(&self, id: i64, v: Vec<i64>) -> Result<(), RoleError> {
         ensure_mutable(&self.pool, id).await?;
-        self.changed().await?;
-        replace(&self.pool, id, "sys_role_depts", "dept_id", normalize(v)).await
+        replace(&self.pool, id, "sys_role_depts", "dept_id", normalize(v)).await?;
+        self.changed().await
     }
     pub async fn user_ids(&self, id: i64) -> Result<Vec<i64>, RoleError> {
         ids(&self.pool, id, "sys_user_roles", "user_id").await
     }
     pub async fn set_user_ids(&self, id: i64, v: Vec<i64>) -> Result<(), RoleError> {
         ensure_mutable(&self.pool, id).await?;
-        self.changed().await?;
-        replace(&self.pool, id, "sys_user_roles", "user_id", normalize(v)).await
+        replace(&self.pool, id, "sys_user_roles", "user_id", normalize(v)).await?;
+        self.changed().await
     }
     async fn changed(&self) -> Result<(), RoleError> {
         self.authorization.invalidate().await?;
@@ -77,6 +79,7 @@ pub(crate) async fn list(pool: &PgPool) -> Result<Vec<RoleSummary>, sqlx::Error>
     .fetch_all(pool)
     .await
 }
+
 pub(crate) async fn find(pool: &PgPool, id: i64) -> Result<Option<RoleSummary>, sqlx::Error> {
     sqlx::query_as(
         "SELECT id,code,name,status,sort,data_scope,is_system FROM sys_roles WHERE id=$1",
@@ -88,6 +91,7 @@ pub(crate) async fn find(pool: &PgPool, id: i64) -> Result<Option<RoleSummary>, 
 async fn create(pool: &PgPool, p: RolePayload) -> Result<RoleSummary, RoleError> {
     Ok(sqlx::query_as("INSERT INTO sys_roles(code,name,status,sort,data_scope) VALUES($1,$2,$3,$4,$5) RETURNING id,code,name,status,sort,data_scope,is_system").bind(p.code).bind(p.name).bind(p.status.unwrap_or_else(||"enabled".into())).bind(p.sort.unwrap_or(0)).bind(p.data_scope.unwrap_or_else(||"self".into())).fetch_one(pool).await?)
 }
+
 async fn update(pool: &PgPool, id: i64, p: RolePayload) -> Result<RoleSummary, RoleError> {
     let current = find(pool, id).await?.ok_or(RoleError::NotFound)?;
     if current.is_system {
@@ -95,6 +99,7 @@ async fn update(pool: &PgPool, id: i64, p: RolePayload) -> Result<RoleSummary, R
     }
     sqlx::query_as("UPDATE sys_roles SET name=$1,status=COALESCE($2,status),sort=COALESCE($3,sort),data_scope=COALESCE($4,data_scope),updated_at=now() WHERE id=$5 RETURNING id,code,name,status,sort,data_scope,is_system").bind(p.name).bind(p.status).bind(p.sort).bind(p.data_scope).bind(id).fetch_one(pool).await.map_err(Into::into)
 }
+
 async fn delete(pool: &PgPool, id: i64) -> Result<(), RoleError> {
     ensure_mutable(pool, id).await?;
     let used: bool =
@@ -119,6 +124,7 @@ async fn ensure_mutable(pool: &PgPool, id: i64) -> Result<(), RoleError> {
         Ok(())
     }
 }
+
 async fn ids(
     pool: &PgPool,
     role_id: i64,
@@ -134,6 +140,7 @@ async fn ids(
         .fetch_all(pool)
         .await?)
 }
+
 async fn replace(
     pool: &PgPool,
     role_id: i64,
@@ -162,6 +169,7 @@ async fn replace(
     tx.commit().await?;
     Ok(())
 }
+
 fn normalize(v: Vec<i64>) -> Vec<i64> {
     v.into_iter()
         .filter(|v| *v > 0)
@@ -173,6 +181,7 @@ fn normalize(v: Vec<i64>) -> Vec<i64> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
     #[test]
     fn normalizes_ids() {
         assert_eq!(normalize(vec![3, 1, 3, 0]), vec![1, 3]);

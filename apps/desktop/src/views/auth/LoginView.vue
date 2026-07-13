@@ -130,6 +130,7 @@ async function handleLogin() {
     const currentUser = userInfoRes.code === 'OK' ? userInfoRes.data?.userInfo || loginUser : loginUser
     authStore.setSession(loginToken, currentUser)
     menuStore.setAuthorizedMenus(menuRes.data?.menus || [], authStore.isSuperAdmin)
+    authStore.setPermissions(menuRes.data?.permissions || [])
     const homeRouteName = authStore.homeRouteName
     await router.push(
       router.hasRoute(homeRouteName) && menuStore.canAccessRouteName(homeRouteName)
