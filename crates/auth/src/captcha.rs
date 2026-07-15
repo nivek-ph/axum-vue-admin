@@ -11,13 +11,28 @@ pub struct CaptchaChallenge {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum CaptchaError {
+#[error("{kind}")]
+pub struct CaptchaError {
+    #[source]
+    kind: CaptchaErrorKind,
+}
+
+#[derive(Debug, thiserror::Error)]
+enum CaptchaErrorKind {
     #[error("captcha store is unavailable")]
     StoreUnavailable,
-    #[error("{0}")]
-    Redis(#[from] redis::RedisError),
+    #[error("captcha store operation failed")]
+    Store(#[source] redis::RedisError),
     #[error("captcha image rendering failed")]
     RenderFailed,
+}
+
+impl From<redis::RedisError> for CaptchaError {
+    fn from(source: redis::RedisError) -> Self {
+        Self {
+            kind: CaptchaErrorKind::Store(source),
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -56,7 +71,9 @@ impl CaptchaService {
         let code = captcha.text;
 
         if image == "data:image/jpeg;base64," {
-            return Err(CaptchaError::RenderFailed);
+            return Err(CaptchaError {
+                kind: CaptchaErrorKind::RenderFailed,
+            });
         }
 
         let key = format!("{CAPTCHA_KEY_PREFIX}{id}");
@@ -81,8 +98,30 @@ impl CaptchaService {
     }
 
     fn redis_connection(&self) -> Result<MultiplexedConnection, CaptchaError> {
-        self.redis_connection
-            .clone()
-            .ok_or(CaptchaError::StoreUnavailable)
+        self.redis_connection.clone().ok_or(CaptchaError {
+            kind: CaptchaErrorKind::StoreUnavailable,
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::error::Error as _;
+
+    use redis::ErrorKind;
+
+    use super::CaptchaError;
+
+    #[test]
+    fn redis_failure_keeps_a_stable_capability_message_and_source() {
+        let source = redis::RedisError::from((ErrorKind::Io, "redis detail"));
+        let error = CaptchaError::from(source);
+
+        assert_eq!(error.to_string(), "captcha store operation failed");
+        let kind = error
+            .source()
+            .expect("capability error should keep its kind");
+        let source = kind.source().expect("store error should keep Redis source");
+        assert!(source.downcast_ref::<redis::RedisError>().is_some());
     }
 }
