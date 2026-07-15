@@ -397,3 +397,72 @@ impl IntoResponse for AppError {
         (status, Json(body)).into_response()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use axum::body::to_bytes;
+    use serde_json::json;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn internal_error_response_is_redacted() {
+        let response =
+            AppError::internal_error(anyhow::anyhow!("database password must stay internal"))
+                .into_response();
+
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+
+        let body = to_bytes(response.into_body(), usize::MAX)
+            .await
+            .expect("response body should be readable");
+        assert_eq!(
+            serde_json::from_slice::<serde_json::Value>(&body).expect("body should be json"),
+            json!({
+                "code": "INTERNAL_SERVER_ERROR",
+                "message": "internal server error",
+                "data": null
+            })
+        );
+    }
+
+    #[tokio::test]
+    async fn public_response_projection_preserves_client_messages_and_redacts_unavailable() {
+        let cases = [
+            (
+                AppError::custom(StatusCode::BAD_REQUEST, "INVALID_INPUT", "input is invalid"),
+                StatusCode::BAD_REQUEST,
+                json!({
+                    "code": "INVALID_INPUT",
+                    "message": "input is invalid",
+                    "data": null
+                }),
+            ),
+            (
+                AppError::custom(
+                    StatusCode::SERVICE_UNAVAILABLE,
+                    "AUTHORIZATION_UNAVAILABLE",
+                    "authorization storage is unavailable",
+                ),
+                StatusCode::SERVICE_UNAVAILABLE,
+                json!({
+                    "code": "AUTHORIZATION_UNAVAILABLE",
+                    "message": "service unavailable",
+                    "data": null
+                }),
+            ),
+        ];
+
+        for (error, status, expected_body) in cases {
+            let response = error.into_response();
+            assert_eq!(response.status(), status);
+            let body = to_bytes(response.into_body(), usize::MAX)
+                .await
+                .expect("response body should be readable");
+            assert_eq!(
+                serde_json::from_slice::<serde_json::Value>(&body).expect("body should be json"),
+                expected_body
+            );
+        }
+    }
+}
