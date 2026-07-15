@@ -1,30 +1,52 @@
 use std::collections::{HashMap, HashSet};
 
 use super::{CreateDeptPayload, Dept, DeptError, DeptNode, UpdateDeptPayload};
+use crate::access::AccessService;
 
 #[derive(Clone)]
 pub struct DepartmentService {
     pool: sqlx::PgPool,
+    access: AccessService,
 }
 
 impl DepartmentService {
     pub fn new(pool: sqlx::PgPool) -> Self {
-        Self { pool }
+        Self {
+            access: AccessService::new(pool.clone()),
+            pool,
+        }
     }
+
+    pub fn with_access(pool: sqlx::PgPool, access: AccessService) -> Self {
+        Self { pool, access }
+    }
+
     pub async fn tree(&self) -> Result<Vec<DeptNode>, DeptError> {
         Ok(tree(&self.pool).await?)
     }
+
     pub async fn find(&self, id: i64) -> Result<Option<Dept>, DeptError> {
         Ok(find(&self.pool, id).await?)
     }
+
     pub async fn create(&self, payload: CreateDeptPayload) -> Result<(), DeptError> {
-        Ok(create(&self.pool, payload).await?)
+        create(&self.pool, payload).await?;
+        self.bump_access_version().await
     }
+
     pub async fn update(&self, id: i64, payload: UpdateDeptPayload) -> Result<(), DeptError> {
-        update(&self.pool, id, payload).await
+        update(&self.pool, id, payload).await?;
+        self.bump_access_version().await
     }
+
     pub async fn delete(&self, id: i64) -> Result<(), DeptError> {
-        Ok(delete(&self.pool, id).await?)
+        delete(&self.pool, id).await?;
+        self.bump_access_version().await
+    }
+
+    async fn bump_access_version(&self) -> Result<(), DeptError> {
+        self.access.bump_version().await?;
+        Ok(())
     }
 }
 
@@ -116,8 +138,8 @@ pub(crate) async fn update(
         return Err(DeptError::InvalidParent);
     }
 
-    if let Some(parent_id) = payload.parent_id {
-        let creates_cycle: bool = sqlx::query_scalar(
+    if let Some(parent_id) = payload.parent_id
+        && sqlx::query_scalar(
             r#"
             with recursive ancestors as (
                 select id, parent_id from sys_depts where id = $1
@@ -132,11 +154,9 @@ pub(crate) async fn update(
         .bind(parent_id)
         .bind(id)
         .fetch_one(pool)
-        .await?;
-
-        if creates_cycle {
-            return Err(DeptError::InvalidParent);
-        }
+        .await?
+    {
+        return Err(DeptError::InvalidParent);
     }
 
     sqlx::query(

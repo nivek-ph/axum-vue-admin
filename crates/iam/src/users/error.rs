@@ -14,6 +14,8 @@ pub enum UserError {
     Password(#[from] PasswordError),
     #[error("{0}")]
     Database(#[from] sqlx::Error),
+    #[error(transparent)]
+    Access(#[from] crate::access::AccessError),
 }
 
 #[derive(Debug, thiserror::Error)]

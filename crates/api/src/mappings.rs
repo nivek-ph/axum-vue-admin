@@ -36,10 +36,6 @@ const INVALID_ROLES: ErrorSpec =
 const MULTIPART_FIELD_FAILED: ErrorSpec =
     ErrorSpec::bad_request("MULTIPART_FIELD_FAILED", "failed to read upload content");
 
-pub(crate) fn access_invalidation_error(error: iam::access::AccessError) -> AppError {
-    INTERNAL_SERVER_ERROR.into_error().with_source(error)
-}
-
 impl From<axum::extract::multipart::MultipartError> for AppError {
     fn from(error: axum::extract::multipart::MultipartError) -> Self {
         MULTIPART_FIELD_FAILED.into_error().with_source(error)
@@ -117,6 +113,7 @@ impl From<iam::users::UserError> for AppError {
             UserError::InvalidRoles => INVALID_ROLES.into(),
             UserError::Password(source) => INTERNAL_SERVER_ERROR.into_error().with_source(source),
             UserError::Database(source) => INTERNAL_SERVER_ERROR.into_error().with_source(source),
+            UserError::Access(source) => source.into(),
         }
     }
 }
@@ -201,6 +198,7 @@ impl From<iam::departments::DeptError> for AppError {
                 ErrorSpec::validation("DEPT_INVALID_PARENT", "invalid department parent").into()
             }
             DeptError::Database(source) => INTERNAL_SERVER_ERROR.into_error().with_source(source),
+            DeptError::Access(source) => source.into(),
         }
     }
 }
@@ -291,11 +289,17 @@ mod tests {
     }
 
     #[test]
-    fn access_invalidation_failure_remains_internal() {
-        let source = sqlx::Error::PoolTimedOut;
-        let error = access_invalidation_error(iam::access::AccessError::Database(source));
+    fn iam_mutation_invalidation_failure_remains_internal() {
+        let user_error = AppError::from(iam::users::UserError::Access(
+            iam::access::AccessError::Database(sqlx::Error::PoolTimedOut),
+        ));
+        let department_error = AppError::from(iam::departments::DeptError::Access(
+            iam::access::AccessError::Database(sqlx::Error::PoolTimedOut),
+        ));
 
-        assert_eq!(error.status(), StatusCode::INTERNAL_SERVER_ERROR);
-        assert_eq!(error.code(), "INTERNAL_SERVER_ERROR");
+        for error in [user_error, department_error] {
+            assert_eq!(error.status(), StatusCode::INTERNAL_SERVER_ERROR);
+            assert_eq!(error.code(), "INTERNAL_SERVER_ERROR");
+        }
     }
 }

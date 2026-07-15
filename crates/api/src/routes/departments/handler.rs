@@ -57,7 +57,6 @@ pub async fn create_dept(
     State(state): State<AppState>,
     Json(payload): Json<DeptPayload>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    invalidate_access(&state).await?;
     state.departments.create(payload.into()).await?;
     Ok(Json(ApiResponse::ok_message("created")))
 }
@@ -76,7 +75,6 @@ pub async fn update_dept_by_id(
     Path(id): Path<i64>,
     Json(payload): Json<DeptPayload>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    invalidate_access(&state).await?;
     state.departments.update(id, payload.into()).await?;
     Ok(Json(ApiResponse::ok_message("updated")))
 }
@@ -93,15 +91,6 @@ pub async fn delete_dept_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    invalidate_access(&state).await?;
     state.departments.delete(id).await?;
     Ok(Json(ApiResponse::ok_message("deleted")))
-}
-
-async fn invalidate_access(state: &AppState) -> AppResult<()> {
-    state
-        .access
-        .invalidate()
-        .await
-        .map_err(crate::mappings::access_invalidation_error)
 }

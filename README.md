@@ -64,7 +64,7 @@ cp .env.example .env
 Default local database URL from `.env.example`:
 
 ```text
-postgres://postgres:postgres@localhost/axum_vue_admin
+postgres://postgres:postgres@localhost/ava
 ```
 
 On API startup, the server runs migrations. Default authority, menu, route

@@ -26,17 +26,17 @@ impl RoleService {
     }
     pub async fn create(&self, p: RolePayload) -> Result<RoleSummary, RoleError> {
         let role = create(&self.pool, p).await?;
-        self.changed().await?;
+        self.bump_access_version().await?;
         Ok(role)
     }
     pub async fn update(&self, id: i64, p: RolePayload) -> Result<RoleSummary, RoleError> {
         let role = update(&self.pool, id, p).await?;
-        self.changed().await?;
+        self.bump_access_version().await?;
         Ok(role)
     }
     pub async fn delete(&self, id: i64) -> Result<(), RoleError> {
         delete(&self.pool, id).await?;
-        self.changed().await
+        self.bump_access_version().await
     }
     pub async fn menu_ids(&self, id: i64) -> Result<Vec<i64>, RoleError> {
         ids(&self.pool, id, "sys_role_menus", "menu_id").await
@@ -47,7 +47,7 @@ impl RoleService {
         self.access
             .validate_menu_assignment(&values.iter().copied().collect())?;
         replace(&self.pool, id, "sys_role_menus", "menu_id", values).await?;
-        self.changed().await
+        self.bump_access_version().await
     }
     pub async fn dept_ids(&self, id: i64) -> Result<Vec<i64>, RoleError> {
         ids(&self.pool, id, "sys_role_depts", "dept_id").await
@@ -55,7 +55,7 @@ impl RoleService {
     pub async fn set_dept_ids(&self, id: i64, v: Vec<i64>) -> Result<(), RoleError> {
         ensure_mutable(&self.pool, id).await?;
         replace(&self.pool, id, "sys_role_depts", "dept_id", normalize(v)).await?;
-        self.changed().await
+        self.bump_access_version().await
     }
     pub async fn user_ids(&self, id: i64) -> Result<Vec<i64>, RoleError> {
         ids(&self.pool, id, "sys_user_roles", "user_id").await
@@ -63,10 +63,10 @@ impl RoleService {
     pub async fn set_user_ids(&self, id: i64, v: Vec<i64>) -> Result<(), RoleError> {
         ensure_mutable(&self.pool, id).await?;
         replace(&self.pool, id, "sys_user_roles", "user_id", normalize(v)).await?;
-        self.changed().await
+        self.bump_access_version().await
     }
-    async fn changed(&self) -> Result<(), RoleError> {
-        self.access.invalidate().await?;
+    async fn bump_access_version(&self) -> Result<(), RoleError> {
+        self.access.bump_version().await?;
         Ok(())
     }
 }
