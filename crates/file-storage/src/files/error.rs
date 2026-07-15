@@ -1,32 +1,9 @@
 #[derive(Debug, thiserror::Error)]
-#[error("file storage operation failed")]
-pub struct FileError {
-    #[source]
-    source: FileErrorSource,
-}
-
-#[derive(Debug, thiserror::Error)]
-enum FileErrorSource {
-    #[error("file database operation failed")]
-    Database(#[source] sqlx::Error),
-    #[error("file system operation failed")]
-    Io(#[source] std::io::Error),
-}
-
-impl From<sqlx::Error> for FileError {
-    fn from(source: sqlx::Error) -> Self {
-        Self {
-            source: FileErrorSource::Database(source),
-        }
-    }
-}
-
-impl From<std::io::Error> for FileError {
-    fn from(source: std::io::Error) -> Self {
-        Self {
-            source: FileErrorSource::Io(source),
-        }
-    }
+pub enum FileError {
+    #[error("file storage operation failed")]
+    Database(#[from] sqlx::Error),
+    #[error("file storage operation failed")]
+    Io(#[from] std::io::Error),
 }
 
 #[cfg(test)]
@@ -40,10 +17,7 @@ mod tests {
         let error = FileError::from(std::io::Error::other("disk detail"));
 
         assert_eq!(error.to_string(), "file storage operation failed");
-        let kind = error
-            .source()
-            .expect("capability error should keep its kind");
-        let source = kind
+        let source = error
             .source()
             .expect("file error should keep its I/O source");
         let source = source
