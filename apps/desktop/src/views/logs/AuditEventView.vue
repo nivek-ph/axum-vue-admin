@@ -42,11 +42,14 @@
         <UiSelect v-model="filters.resourceType" clearable :placeholder="$t('Resource')">
           <UiOption v-for="resource in resourceOptions" :key="resource" :label="resource" :value="resource" />
         </UiSelect>
+        <UiInput v-model="filters.resourceId" :placeholder="$t('Resource ID')" clearable />
         <UiSelect v-model="filters.result" clearable :placeholder="$t('Result')">
           <UiOption label="Succeeded" value="succeeded" />
           <UiOption label="Denied" value="denied" />
           <UiOption label="Failed" value="failed" />
         </UiSelect>
+        <UiInput v-model="filters.startedAt" :placeholder="$t('Started at (ISO 8601)')" clearable />
+        <UiInput v-model="filters.endedAt" :placeholder="$t('Ended at (ISO 8601)')" clearable />
         <UiButton type="primary" @click="handleSearch">{{ $t('Search') }}</UiButton>
       </div>
 
@@ -126,7 +129,15 @@ const detailVisible = ref(false)
 const selectedEvent = ref<AuditEventRecord | null>(null)
 const page = ref(1)
 const pageSize = ref(10)
-const filters = reactive({ actor: '', action: '', resourceType: '', result: '' })
+const filters = reactive({
+  actor: '',
+  action: '',
+  resourceType: '',
+  resourceId: '',
+  result: '',
+  startedAt: '',
+  endedAt: ''
+})
 const unsuccessfulCount = computed(() => events.value.filter((event) => event.result !== 'succeeded').length)
 
 function resultTagType(result: AuditEventRecord['result']) {
@@ -180,7 +191,7 @@ onMounted(loadEvents)
 
 <style scoped>
 .audit-event-filter {
-  grid-template-columns: repeat(4, minmax(150px, 1fr)) auto;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
 }
 
 .event-detail {

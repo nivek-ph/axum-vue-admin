@@ -239,4 +239,46 @@ mod tests {
 
         assert!(matches!(error, LoginError::CaptchaRequired));
     }
+
+    #[sqlx::test(migrations = "../../migrations")]
+    async fn missing_captcha_records_a_denied_login_event(pool: sqlx::PgPool) {
+        let state = crate::state::test_state(pool.clone());
+        let error = execute_login(
+            &state,
+            LoginInput {
+                username: "admin".to_string(),
+                password: "must-not-be-recorded".to_string(),
+                captcha: String::new(),
+                captcha_id: String::new(),
+                ip: "127.0.0.1".to_string(),
+                agent: "login-test".to_string(),
+            },
+        )
+        .await
+        .expect_err("missing captcha should fail");
+        assert!(matches!(error, LoginError::CaptchaRequired));
+
+        let event: (String, String, String, String) = sqlx::query_as(
+            r#"
+            select action, result, reason_code, changes::text
+            from sys_audit_events
+            where actor_label = 'admin'
+            "#,
+        )
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        assert_eq!(event.0, "auth.login");
+        assert_eq!(event.1, "denied");
+        assert_eq!(event.2, "captcha_required");
+        assert_eq!(event.3, "[]");
+
+        let payload = sqlx::query_scalar::<_, String>(
+            "select jsonb_agg(to_jsonb(e))::text from sys_audit_events e",
+        )
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+        assert!(!payload.contains("must-not-be-recorded"));
+    }
 }

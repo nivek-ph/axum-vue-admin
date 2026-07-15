@@ -21,3 +21,22 @@ pub struct AppState {
     pub audits: AuditService,
     pub files: FileService,
 }
+
+#[cfg(test)]
+pub(crate) fn test_state(pool: sqlx::PgPool) -> AppState {
+    let passwords = auth::password::PasswordService::new();
+    let access = AccessService::new(pool.clone());
+    AppState {
+        tokens: TokenService::without_revocation_store("test-secret"),
+        captcha: CaptchaService::without_store(),
+        users: UserService::new(pool.clone(), passwords),
+        roles: RoleService::new(pool.clone()),
+        departments: DepartmentService::new(pool.clone()),
+        access: access.clone(),
+        dictionaries: DictionaryService::new(pool.clone()),
+        parameters: ParameterService::new(pool.clone()),
+        menus: MenuService::new(pool.clone(), access),
+        audits: AuditService::new(pool.clone()),
+        files: FileService::new(pool, "./uploads"),
+    }
+}

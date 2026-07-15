@@ -29,7 +29,10 @@ export interface AuditEventFilters {
   actor?: string;
   action?: string;
   resourceType?: string;
+  resourceId?: string;
   result?: string;
+  startedAt?: string;
+  endedAt?: string;
 }
 
 export function normalizeAuditEventListResponse(payload: ApiResponse<PaginatedResult<AuditEventRecord>>): PaginatedResult<AuditEventRecord> {
@@ -50,7 +53,10 @@ export async function fetchAuditEvents(filters: AuditEventFilters = {}) {
       actor: filters.actor || undefined,
       action: filters.action || undefined,
       resourceType: filters.resourceType || undefined,
+      resourceId: filters.resourceId || undefined,
       result: filters.result || undefined,
+      startedAt: filters.startedAt || undefined,
+      endedAt: filters.endedAt || undefined,
     },
   });
   return normalizeAuditEventListResponse(response);

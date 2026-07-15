@@ -144,6 +144,8 @@ pub struct AuditQuery {
     pub action: Option<String>,
     #[serde(rename = "resourceType")]
     pub resource_type: Option<String>,
+    #[serde(rename = "resourceId")]
+    pub resource_id: Option<String>,
     pub result: Option<String>,
     #[serde(rename = "startedAt")]
     pub started_at: Option<String>,
