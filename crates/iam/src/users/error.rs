@@ -1,5 +1,7 @@
 use auth::password::PasswordError;
 
+use crate::access::AccessError;
+
 #[derive(Debug, thiserror::Error)]
 pub enum UserError {
     #[error("user not found")]
@@ -15,7 +17,7 @@ pub enum UserError {
     #[error("{0}")]
     Database(#[from] sqlx::Error),
     #[error(transparent)]
-    Access(#[from] crate::access::AccessError),
+    Access(#[from] AccessError),
 }
 
 #[derive(Debug, thiserror::Error)]

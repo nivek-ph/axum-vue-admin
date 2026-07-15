@@ -1,3 +1,5 @@
+use crate::access::AccessError;
+
 #[derive(Debug, thiserror::Error)]
 pub enum DeptError {
     #[error("{0}")]
@@ -5,5 +7,5 @@ pub enum DeptError {
     #[error("invalid department parent")]
     InvalidParent,
     #[error(transparent)]
-    Access(#[from] crate::access::AccessError),
+    Access(#[from] AccessError),
 }

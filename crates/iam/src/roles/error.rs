@@ -1,3 +1,5 @@
+use crate::access::{AccessError, CatalogError};
+
 #[derive(Debug, thiserror::Error)]
 pub enum RoleError {
     #[error("{0}")]
@@ -9,7 +11,7 @@ pub enum RoleError {
     #[error("role is assigned to users")]
     InUse,
     #[error(transparent)]
-    Access(#[from] crate::access::AccessError),
+    Access(#[from] AccessError),
     #[error(transparent)]
-    InvalidMenuAssignment(#[from] crate::access::CatalogError),
+    InvalidMenuAssignment(#[from] CatalogError),
 }
