@@ -7,7 +7,10 @@ use super::{
     ResetPasswordRequest, SetSelfInfoRequest, SetSelfSettingRequest, SetUserRolesRequest,
     UpdateUserRequest, UserError, UserInfoView, UserRecord,
 };
-use crate::{access::DataScopeFilter, roles::RoleSummary};
+use crate::{
+    access::{AccessService, DataScopeFilter},
+    roles::RoleSummary,
+};
 
 /// Default avatar when none is provided. Empty so the UI falls back to initials
 const HEADER_IMG: &str = "";
@@ -16,11 +19,28 @@ const HEADER_IMG: &str = "";
 pub struct UserService {
     pool: sqlx::PgPool,
     passwords: PasswordService,
+    access: AccessService,
 }
 
 impl UserService {
     pub fn new(pool: sqlx::PgPool, passwords: PasswordService) -> Self {
-        Self { pool, passwords }
+        Self {
+            access: AccessService::new(pool.clone()),
+            pool,
+            passwords,
+        }
+    }
+
+    pub fn with_access(
+        pool: sqlx::PgPool,
+        passwords: PasswordService,
+        access: AccessService,
+    ) -> Self {
+        Self {
+            pool,
+            passwords,
+            access,
+        }
     }
 
     pub async fn list(
@@ -53,7 +73,8 @@ impl UserService {
     }
 
     pub async fn register(&self, payload: RegisterRequest) -> Result<(), UserError> {
-        register_user(&self.pool, &self.passwords, payload).await
+        register_user(&self.pool, &self.passwords, payload).await?;
+        self.bump_access_version().await
     }
 
     pub async fn register_as(
@@ -63,7 +84,8 @@ impl UserService {
     ) -> Result<(), UserError> {
         let role_ids = normalize_role_ids(payload.role_ids.as_ref())?;
         ensure_role_assignment_actor(&self.pool, actor_user_id, &role_ids).await?;
-        register_user(&self.pool, &self.passwords, payload).await
+        register_user(&self.pool, &self.passwords, payload).await?;
+        self.bump_access_version().await
     }
 
     pub async fn authenticate(
@@ -89,7 +111,8 @@ impl UserService {
     ) -> Result<(), UserError> {
         ensure_user_in_scope(&self.pool, actor_user_id, target_user_id).await?;
         payload.id = target_user_id;
-        update_user(&self.pool, payload).await
+        update_user(&self.pool, payload).await?;
+        self.bump_access_version().await
     }
 
     pub async fn set_self_info(
@@ -110,7 +133,8 @@ impl UserService {
 
     pub async fn delete(&self, actor_user_id: i64, target_user_id: i64) -> Result<(), UserError> {
         ensure_user_in_scope(&self.pool, actor_user_id, target_user_id).await?;
-        delete_user(&self.pool, DeleteUserRequest { id: target_user_id }).await
+        delete_user(&self.pool, DeleteUserRequest { id: target_user_id }).await?;
+        self.bump_access_version().await
     }
 
     pub async fn reset_password_as(
@@ -132,7 +156,13 @@ impl UserService {
     ) -> Result<(), UserError> {
         ensure_user_in_scope(&self.pool, actor_user_id, target_user_id).await?;
         ensure_role_assignment_actor(&self.pool, actor_user_id, &payload.role_ids).await?;
-        set_user_roles(&self.pool, target_user_id, payload).await
+        set_user_roles(&self.pool, target_user_id, payload).await?;
+        self.bump_access_version().await
+    }
+
+    async fn bump_access_version(&self) -> Result<(), UserError> {
+        self.access.bump_version().await?;
+        Ok(())
     }
 }
 

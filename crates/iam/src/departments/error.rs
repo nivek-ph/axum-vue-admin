@@ -4,4 +4,6 @@ pub enum DeptError {
     Database(#[from] sqlx::Error),
     #[error("invalid department parent")]
     InvalidParent,
+    #[error(transparent)]
+    Access(#[from] crate::access::AccessError),
 }

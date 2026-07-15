@@ -74,8 +74,6 @@ pub async fn admin_register(
     CurrentUser(user): CurrentUser,
     Json(payload): Json<RegisterRequest>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    invalidate_access(&state).await?;
-
     state.users.register_as(user.id, payload).await?;
 
     Ok(Json(ApiResponse::ok_message("registered")))
@@ -114,8 +112,6 @@ pub async fn set_user_info_by_id(
     Path(id): Path<i64>,
     Json(payload): Json<UpdateUserRequest>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    invalidate_access(&state).await?;
-
     state.users.update(user.id, id, payload).await?;
 
     Ok(Json(ApiResponse::ok_message("updated")))
@@ -170,7 +166,6 @@ pub async fn delete_user_by_id(
     CurrentUser(user): CurrentUser,
     Path(id): Path<i64>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    invalidate_access(&state).await?;
     state.users.delete(user.id, id).await?;
 
     Ok(Json(ApiResponse::ok_message("deleted")))
@@ -211,17 +206,7 @@ pub async fn set_user_roles_by_id(
     Path(id): Path<i64>,
     Json(payload): Json<SetUserRolesRequest>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    invalidate_access(&state).await?;
-
     state.users.set_roles_as(user.id, id, payload).await?;
 
     Ok(Json(ApiResponse::ok_message("roles updated")))
-}
-
-async fn invalidate_access(state: &AppState) -> AppResult<()> {
-    state
-        .access
-        .invalidate()
-        .await
-        .map_err(crate::mappings::access_invalidation_error)
 }

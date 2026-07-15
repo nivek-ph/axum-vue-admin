@@ -10,8 +10,8 @@ use super::{
 };
 use crate::{access::scope::DataScopeFilter, users};
 
-const AUTHZ_VERSION_KEY: &str = "axum-vue-admin:authz:version";
-const AUTHZ_USER_KEY_PREFIX: &str = "axum-vue-admin:authz:user:";
+const AUTHZ_VERSION_KEY: &str = "ava:authz:version";
+const AUTHZ_USER_KEY_PREFIX: &str = "ava:authz:user:";
 const AUTHZ_SNAPSHOT_TTL_SECONDS: u64 = 300;
 const SUPER_ADMIN_ROLE_CODE: &str = "super_admin";
 
@@ -81,7 +81,7 @@ impl AccessService {
             catalog,
             redis: Some(redis),
         };
-        service.invalidate().await?;
+        service.bump_version().await?;
         Ok(service)
     }
 
@@ -118,7 +118,7 @@ impl AccessService {
         Ok(snapshot)
     }
 
-    pub async fn invalidate(&self) -> Result<(), AccessError> {
+    pub async fn bump_version(&self) -> Result<(), AccessError> {
         let Some(mut redis) = self.redis.clone() else {
             return Ok(());
         };

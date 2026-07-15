@@ -36,7 +36,7 @@ pub async fn run(config: ServeConfig) -> Result<()> {
     let access = AccessService::load(pool.clone(), redis_connection)
         .await
         .context("authorization catalog and cache should initialize")?;
-    let users = UserService::new(pool.clone(), password_service);
+    let users = UserService::with_access(pool.clone(), password_service, access.clone());
     let login_logs = LoginLogService::new(pool.clone());
     let operation_logs = OperationLogService::new(pool.clone());
     let state = api::AppState {
@@ -44,7 +44,7 @@ pub async fn run(config: ServeConfig) -> Result<()> {
         captcha,
         users,
         roles: RoleService::with_access(pool.clone(), access.clone()),
-        departments: DepartmentService::new(pool.clone()),
+        departments: DepartmentService::with_access(pool.clone(), access.clone()),
         access: access.clone(),
         dictionaries: DictionaryService::new(pool.clone()),
         parameters: ParameterService::new(pool.clone()),
