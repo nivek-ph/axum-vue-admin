@@ -137,8 +137,8 @@ pub(crate) async fn update(
         return Err(DeptError::InvalidParent);
     }
 
-    if let Some(parent_id) = payload.parent_id {
-        if sqlx::query_scalar(
+    if let Some(parent_id) = payload.parent_id
+        && sqlx::query_scalar(
             r#"
             with recursive ancestors as (
                 select id, parent_id from sys_depts where id = $1
@@ -154,9 +154,8 @@ pub(crate) async fn update(
         .bind(id)
         .fetch_one(pool)
         .await?
-        {
-            return Err(DeptError::InvalidParent);
-        }
+    {
+        return Err(DeptError::InvalidParent);
     }
 
     sqlx::query(
