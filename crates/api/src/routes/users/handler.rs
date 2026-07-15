@@ -1,4 +1,4 @@
-use admin_httpz::{ApiResponse, AppResult};
+use crate::{ApiResponse, AppResult};
 use axum::{
     Json, Router,
     extract::{Path, Query, State},
@@ -7,7 +7,6 @@ use axum::{
 use serde_json::Value;
 
 use super::dto::*;
-use super::error::map_error;
 use crate::extractors::current_user::CurrentUser;
 use crate::state::AppState;
 
@@ -36,7 +35,7 @@ pub async fn get_user_info(
     State(state): State<AppState>,
     CurrentUser(user): CurrentUser,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    let user = UserResponse::from(state.users.info(user.id).await.map_err(map_error)?);
+    let user = UserResponse::from(state.users.info(user.id).await?);
     Ok(Json(ApiResponse::ok(serde_json::json!({
         "userInfo": user,
     }))))
@@ -52,8 +51,7 @@ pub async fn get_user_list_by_query(
     let (list, total) = state
         .users
         .list_with_scope(payload.into(), user.data_scope.clone())
-        .await
-        .map_err(map_error)?;
+        .await?;
     let list = list.into_iter().map(UserResponse::from).collect::<Vec<_>>();
 
     Ok(Json(ApiResponse::ok(serde_json::json!({
@@ -70,11 +68,7 @@ pub async fn admin_register(
     Json(payload): Json<RegisterRequest>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     invalidate_access(&state).await?;
-    state
-        .users
-        .register_as(user.id, payload.into())
-        .await
-        .map_err(map_error)?;
+    state.users.register_as(user.id, payload.into()).await?;
 
     Ok(Json(ApiResponse::ok_message("registered")))
 }
@@ -84,11 +78,7 @@ pub async fn change_password(
     CurrentUser(user): CurrentUser,
     Json(payload): Json<ChangePasswordRequest>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    state
-        .users
-        .change_password(user.id, payload.into())
-        .await
-        .map_err(map_error)?;
+    state.users.change_password(user.id, payload.into()).await?;
 
     Ok(Json(ApiResponse::ok_message("updated")))
 }
@@ -100,11 +90,7 @@ pub async fn set_user_info_by_id(
     Json(payload): Json<UpdateUserRequest>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     invalidate_access(&state).await?;
-    state
-        .users
-        .update_as(user.id, id, payload.into())
-        .await
-        .map_err(map_error)?;
+    state.users.update(user.id, id, payload.into()).await?;
 
     Ok(Json(ApiResponse::ok_message("updated")))
 }
@@ -114,11 +100,7 @@ pub async fn set_self_info(
     CurrentUser(user): CurrentUser,
     Json(payload): Json<SetSelfInfoRequest>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    state
-        .users
-        .set_self_info(user.id, payload.into())
-        .await
-        .map_err(map_error)?;
+    state.users.set_self_info(user.id, payload.into()).await?;
 
     Ok(Json(ApiResponse::ok_message("updated")))
 }
@@ -131,8 +113,7 @@ pub async fn set_self_setting(
     state
         .users
         .set_self_setting(user.id, payload.into())
-        .await
-        .map_err(map_error)?;
+        .await?;
 
     Ok(Json(ApiResponse::ok_message("updated")))
 }
@@ -143,11 +124,7 @@ pub async fn delete_user_by_id(
     Path(id): Path<i64>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     invalidate_access(&state).await?;
-    state
-        .users
-        .delete_as(user.id, id)
-        .await
-        .map_err(map_error)?;
+    state.users.delete(user.id, id).await?;
 
     Ok(Json(ApiResponse::ok_message("deleted")))
 }
@@ -161,8 +138,7 @@ pub async fn reset_password_by_id(
     state
         .users
         .reset_password_as(user.id, id, payload.into())
-        .await
-        .map_err(map_error)?;
+        .await?;
 
     Ok(Json(ApiResponse::ok_message("password reset")))
 }
@@ -177,16 +153,15 @@ pub async fn set_user_roles_by_id(
     state
         .users
         .set_roles_as(user.id, id, payload.into())
-        .await
-        .map_err(map_error)?;
+        .await?;
 
     Ok(Json(ApiResponse::ok_message("roles updated")))
 }
 
 async fn invalidate_access(state: &AppState) -> AppResult<()> {
-    state.access.invalidate().await.map_err(|source| {
-        crate::errors::INTERNAL_SERVER_ERROR
-            .into_error()
-            .with_source(source)
-    })
+    state
+        .access
+        .invalidate()
+        .await
+        .map_err(crate::mappings::access_invalidation_error)
 }

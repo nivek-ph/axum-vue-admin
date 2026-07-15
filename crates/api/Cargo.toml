@@ -6,7 +6,6 @@ license.workspace = true
 
 [dependencies]
 # Local workspace crates
-admin-httpz.workspace = true
 audit.workspace = true
 auth.workspace = true
 db.workspace = true
@@ -15,6 +14,7 @@ iam.workspace = true
 metadata.workspace = true
 
 # External crates.
+anyhow.workspace = true
 axum.workspace = true
 axum-otel.workspace = true
 serde.workspace = true
@@ -24,6 +24,11 @@ tokio.workspace = true
 tower.workspace = true
 tower-http.workspace = true
 tracing.workspace = true
+tracing-error.workspace = true
 tracing-otel-extra.workspace = true
 utoipa.workspace = true
 utoipa-swagger-ui.workspace = true
+
+[dev-dependencies]
+jsonwebtoken.workspace = true
+sqlx.workspace = true

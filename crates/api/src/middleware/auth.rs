@@ -1,4 +1,4 @@
-use admin_httpz::{AppError, AppResult, OptionAppExt};
+use crate::AppResult;
 use axum::{
     extract::{Request, State},
     http::{HeaderMap, header::AUTHORIZATION},
@@ -7,34 +7,12 @@ use axum::{
 };
 
 use crate::{
-    errors::auth::{
-        self as errors, AUTHORIZATION_CONFIG_INVALID, AUTHORIZATION_UNAVAILABLE, PERMISSION_DENIED,
-        SESSION_INVALID, map_token_error,
-    },
-    errors::users::USER_DISABLED,
+    mappings::{LOGIN_REQUIRED, PERMISSION_DENIED},
     state::AppState,
 };
 
 const X_FORWARDED_FOR: &str = "x-forwarded-for";
 const USER_AGENT: &str = "user-agent";
-
-fn map_access_error(error: iam::access::AccessError) -> AppError {
-    use iam::access::AccessError::*;
-    match error {
-        UserNotFound => SESSION_INVALID.into(),
-        UserDisabled => USER_DISABLED.into(),
-        Cache(source) => AUTHORIZATION_UNAVAILABLE.into_error().with_source(source),
-        Catalog(source) => AUTHORIZATION_CONFIG_INVALID
-            .into_error()
-            .with_source(source),
-        Database(source) => crate::errors::INTERNAL_SERVER_ERROR
-            .into_error()
-            .with_source(source),
-        Serialization(source) => AUTHORIZATION_CONFIG_INVALID
-            .into_error()
-            .with_source(source),
-    }
-}
 
 pub(crate) fn extract_bearer_token(headers: &HeaderMap) -> Option<&str> {
     let value = headers.get(AUTHORIZATION)?.to_str().ok()?;
@@ -63,27 +41,12 @@ pub async fn require_auth(
         .and_then(|v| v.to_str().ok())
         .unwrap_or_default()
         .to_string();
-    let token = extract_bearer_token(headers).ok_or_spec(errors::LOGIN_REQUIRED)?;
-    let claims = state
-        .tokens
-        .decode_active(token)
-        .await
-        .map_err(map_token_error)?;
-    let snapshot = state
-        .access
-        .snapshot(claims.user_id)
-        .await
-        .map_err(map_access_error)?;
+    let token = extract_bearer_token(headers).ok_or(LOGIN_REQUIRED)?;
+    let claims = state.tokens.decode_active(token).await?;
+    let snapshot = state.access.snapshot(claims.user_id).await?;
 
     if !is_self_service_endpoint(&method, &path) {
-        let menu_id = state
-            .access
-            .required_menu(&method, &path)
-            .map_err(|source| {
-                AUTHORIZATION_CONFIG_INVALID
-                    .into_error()
-                    .with_source(source)
-            })?;
+        let menu_id = state.access.required_menu(&method, &path)?;
         if !snapshot.allows_menu(menu_id) {
             return Err(PERMISSION_DENIED.into());
         }
@@ -141,6 +104,7 @@ fn permission_registry_path(path: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
     #[test]
     fn self_service_is_explicit() {
         assert!(is_self_service_endpoint("GET", "/api/users/me"));

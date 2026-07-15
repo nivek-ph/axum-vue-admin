@@ -1,11 +1,12 @@
 use axum::{
-    body::Body,
+    body::{Body, to_bytes},
     http::{Method, Request, header},
 };
+use serde_json::json;
 use tower::ServiceExt;
 
 fn test_state() -> api::AppState {
-    let database_url = "postgres://postgres:postgres@localhost/axum_vue_admin";
+    let database_url = "postgres://postgres:postgres@127.0.0.1/axum_vue_admin";
     let pool = db::DbPool::connect_lazy(database_url).expect("lazy pool should construct");
     let passwords = auth::password::PasswordService::new();
     let tokens = auth::token::TokenService::without_revocation_store("test-secret");
@@ -62,6 +63,59 @@ async fn swagger_ui_route_is_available() {
         .expect("router should produce a response");
 
     assert_eq!(response.status(), 200);
+}
+
+#[tokio::test]
+async fn protected_route_without_bearer_returns_login_required_envelope() {
+    let response = api::router(test_state())
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/me")
+                .body(Body::empty())
+                .expect("request should build"),
+        )
+        .await
+        .expect("router should produce a response");
+
+    assert_eq!(response.status(), 401);
+    let body = to_bytes(response.into_body(), usize::MAX)
+        .await
+        .expect("response body should be readable");
+    assert_eq!(
+        serde_json::from_slice::<serde_json::Value>(&body).expect("body should be json"),
+        json!({
+            "code": "LOGIN_REQUIRED",
+            "message": "login required",
+            "data": null
+        })
+    );
+}
+
+#[tokio::test]
+async fn protected_route_with_invalid_bearer_returns_token_invalid_envelope() {
+    let response = api::router(test_state())
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/me")
+                .header(header::AUTHORIZATION, "Bearer invalid-token")
+                .body(Body::empty())
+                .expect("request should build"),
+        )
+        .await
+        .expect("router should produce a response");
+
+    assert_eq!(response.status(), 401);
+    let body = to_bytes(response.into_body(), usize::MAX)
+        .await
+        .expect("response body should be readable");
+    assert_eq!(
+        serde_json::from_slice::<serde_json::Value>(&body).expect("body should be json"),
+        json!({
+            "code": "TOKEN_INVALID",
+            "message": "session expired",
+            "data": null
+        })
+    );
 }
 
 #[tokio::test]

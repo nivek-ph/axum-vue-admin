@@ -24,7 +24,7 @@ This file gives repo-specific guidance for agents working in this project.
 }
 ```
 
-- Use `admin_httpz::AppError` and the local `errors.rs` modules for stable error codes and messages.
+- Use `api::AppError` and `crates/api/src/mappings.rs` for stable error codes and messages.
 - Keep business logic in the owning capability crate (`crates/iam`, `crates/audit`, `crates/metadata`, `crates/file-storage`, etc.) rather than pushing it into route handlers.
 - When adding SQL schema changes, create a new migration in `migrations/`; do not edit an already-applied migration unless the user explicitly confirms the database can be reset.
 - Keep `sqlx::migrate!("../../migrations")` working from `crates/db`.
@@ -32,16 +32,17 @@ This file gives repo-specific guidance for agents working in this project.
 
 ### Error Design
 
-- Route and middleware handlers should return `admin_httpz::AppResult<T>`.
-- `crates/httpz` owns the shared HTTP boundary types: `AppError`, `AppResult<T>`, `ErrorSpec`, `ErrorSpecExt`, and `OptionAppExt`.
+- Route and middleware handlers should return `api::AppResult<T>`.
+- `crates/api` owns the public HTTP boundary types `AppError`, `AppResult<T>`, and `ApiResponse<T>`.
+- Repeated fixed HTTP contracts may use crate-private `ErrorSpec` constants. Consume them with ordinary `ok_or` and `?`; do not add per-error constructor helpers or extension traits.
 - Keep stable error specs in the owning layer:
   - domain errors: the owning capability crate's local `error.rs` or `errors.rs`
-  - API boundary errors: `crates/api/src/errors.rs` and route-local `error.rs` modules
+  - API boundary errors: `crates/api/src/mappings.rs`, with route-local errors only for multi-capability workflows such as login
 - Add `impl From<...> for AppError` only when the source error has one stable API meaning in every context.
 - When the same error type has context-specific semantics, map it explicitly at the call site with `.map_err(...)`.
-- Do not collapse `LoginError` into one API mapping:
-  - CRUD/user management keeps IAM errors owned by `crates/iam/src/users`.
-  - Login maps `InvalidCredentials` and `UserNotFound` to `INVALID_CREDENTIALS` to avoid account enumeration.
+- Keep user-management and authentication errors distinct:
+  - CRUD/user management returns `UserError` from `crates/iam/src/users`.
+  - Login returns `AuthenticateError`; unknown users and incorrect passwords both become `INVALID_CREDENTIALS` to avoid account enumeration.
   - Auth middleware maps a missing/deleted token user to `SESSION_INVALID`.
 - `AuthSessionError` has one auth-session semantic, so `From<AuthSessionError> for AppError` is acceptable.
 
@@ -106,3 +107,17 @@ Before claiming a change is complete, report the exact verification commands tha
 - Do not commit or push unless the user explicitly asks for it.
 - Do not revert user changes. If unrelated dirty files exist, leave them alone.
 - Keep generated build artifacts, local uploads, and temporary browser screenshots out of commits.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and PRDs are tracked in GitHub Issues. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Triage uses the five canonical labels with their default names. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Domain documentation uses the single-context layout. See `docs/agents/domain.md`.

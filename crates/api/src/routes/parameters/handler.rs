@@ -1,4 +1,4 @@
-use admin_httpz::{ApiResponse, AppResult};
+use crate::{ApiResponse, AppResult};
 use axum::{
     Json, Router,
     extract::{Path, Query, State},
@@ -7,7 +7,6 @@ use axum::{
 use serde_json::Value;
 
 use super::dto::{IdsRequest, ParamListQuery, ParamPayload, ParamResponse};
-use super::error::map_error;
 use crate::state::AppState;
 
 pub fn routes() -> Router<AppState> {
@@ -27,11 +26,7 @@ pub async fn create_sys_params(
     State(state): State<AppState>,
     Json(payload): Json<ParamPayload>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    state
-        .parameters
-        .create(payload.into())
-        .await
-        .map_err(map_error)?;
+    state.parameters.create(payload.into()).await?;
     Ok(Json(ApiResponse::ok_message("created")))
 }
 
@@ -41,11 +36,7 @@ pub async fn update_sys_params_by_id(
     Json(mut payload): Json<ParamPayload>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     payload.id = id;
-    state
-        .parameters
-        .update(payload.into())
-        .await
-        .map_err(map_error)?;
+    state.parameters.update(payload.into()).await?;
     Ok(Json(ApiResponse::ok_message("updated")))
 }
 
@@ -53,12 +44,7 @@ pub async fn find_sys_params_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    let item = state
-        .parameters
-        .find(id)
-        .await
-        .map_err(map_error)?
-        .map(ParamResponse::from);
+    let item = state.parameters.find(id).await?.map(ParamResponse::from);
     Ok(Json(ApiResponse::ok(
         item.map(|value| serde_json::json!(value))
             .unwrap_or_else(|| serde_json::json!({})),
@@ -69,11 +55,7 @@ pub async fn get_sys_params_list(
     State(state): State<AppState>,
     Query(payload): Query<ParamListQuery>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    let (list, total, page, page_size) = state
-        .parameters
-        .list(payload.into())
-        .await
-        .map_err(map_error)?;
+    let (list, total, page, page_size) = state.parameters.list(payload.into()).await?;
     let list = list
         .into_iter()
         .map(ParamResponse::from)
@@ -90,7 +72,7 @@ pub async fn delete_sys_params_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    state.parameters.delete(id).await.map_err(map_error)?;
+    state.parameters.delete(id).await?;
     Ok(Json(ApiResponse::ok_message("deleted")))
 }
 
@@ -98,11 +80,7 @@ pub async fn delete_sys_params_by_ids(
     State(state): State<AppState>,
     Query(payload): Query<IdsRequest>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    state
-        .parameters
-        .delete_many(payload.ids)
-        .await
-        .map_err(map_error)?;
+    state.parameters.delete_many(payload.ids).await?;
     Ok(Json(ApiResponse::ok_message("deleted")))
 }
 
@@ -114,8 +92,7 @@ pub async fn get_sys_param(
     let item = state
         .parameters
         .by_key(&key)
-        .await
-        .map_err(map_error)?
+        .await?
         .map(ParamResponse::from);
     Ok(Json(ApiResponse::ok(serde_json::json!({
         "sysParam": item

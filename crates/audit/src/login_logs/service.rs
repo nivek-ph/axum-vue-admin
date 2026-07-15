@@ -9,15 +9,21 @@ impl LoginLogService {
     pub fn new(pool: sqlx::PgPool) -> Self {
         Self { pool }
     }
+
+    // record login log
     pub async fn record(&self, log: CreateLoginLog) -> Result<(), LoginLogError> {
         Ok(create_login_log(&self.pool, log).await?)
     }
+
+    // get login log list
     pub async fn list(
         &self,
         query: LoginLogSearch,
     ) -> Result<(Vec<LoginLogView>, i64), LoginLogError> {
         Ok(get_login_log_list(&self.pool, query).await?)
     }
+
+    // get login log by id
     pub async fn find(&self, id: i64) -> Result<Option<LoginLogView>, LoginLogError> {
         Ok(find_login_log(&self.pool, id).await?)
     }

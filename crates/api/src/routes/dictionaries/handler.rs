@@ -1,4 +1,4 @@
-use admin_httpz::{ApiResponse, AppResult};
+use crate::{ApiResponse, AppResult};
 use axum::{
     Json, Router,
     extract::{Path, Query, State},
@@ -12,7 +12,6 @@ use super::dto::{
     DictionaryDetailPayload, DictionaryDetailResponse, DictionaryListQuery, DictionaryPayload,
     DictionaryResponse, DictionaryWithDetailsResponse, ImportDictionaryPayload,
 };
-use super::error::map_error;
 
 pub fn routes() -> Router<AppState> {
     Router::new()
@@ -56,11 +55,7 @@ pub async fn create_sys_dictionary(
     State(state): State<AppState>,
     Json(payload): Json<DictionaryPayload>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    state
-        .dictionaries
-        .create(payload.into())
-        .await
-        .map_err(map_error)?;
+    state.dictionaries.create(payload.into()).await?;
     Ok(Json(ApiResponse::ok_message("created")))
 }
 
@@ -70,11 +65,7 @@ pub async fn update_sys_dictionary_by_id(
     Json(mut payload): Json<DictionaryPayload>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     payload.id = id;
-    state
-        .dictionaries
-        .update(payload.into())
-        .await
-        .map_err(map_error)?;
+    state.dictionaries.update(payload.into()).await?;
     Ok(Json(ApiResponse::ok_message("updated")))
 }
 
@@ -85,8 +76,7 @@ pub async fn find_sys_dictionary_by_id(
     let item = state
         .dictionaries
         .find(Some(id), None)
-        .await
-        .map_err(map_error)?
+        .await?
         .map(DictionaryWithDetailsResponse::from);
     Ok(Json(ApiResponse::ok(serde_json::json!({
         "resysDictionary": item.map(|value| serde_json::json!(value)).unwrap_or_else(|| serde_json::json!({}))
@@ -100,8 +90,7 @@ pub async fn get_sys_dictionary_list(
     let list = state
         .dictionaries
         .list(payload.into())
-        .await
-        .map_err(map_error)?
+        .await?
         .into_iter()
         .map(DictionaryResponse::from)
         .collect::<Vec<_>>();
@@ -112,7 +101,7 @@ pub async fn delete_sys_dictionary_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    state.dictionaries.delete(id).await.map_err(map_error)?;
+    state.dictionaries.delete(id).await?;
     Ok(Json(ApiResponse::ok_message("deleted")))
 }
 
@@ -120,7 +109,7 @@ pub async fn export_sys_dictionary_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    let data = state.dictionaries.export(id).await.map_err(map_error)?;
+    let data = state.dictionaries.export(id).await?;
     Ok(Json(ApiResponse::ok(
         data.unwrap_or_else(|| serde_json::json!({})),
     )))
@@ -130,11 +119,7 @@ pub async fn import_sys_dictionary(
     State(state): State<AppState>,
     Json(payload): Json<ImportDictionaryPayload>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    state
-        .dictionaries
-        .import(payload.into())
-        .await
-        .map_err(map_error)?;
+    state.dictionaries.import(payload.into()).await?;
     Ok(Json(ApiResponse::ok_message("imported")))
 }
 
@@ -145,8 +130,7 @@ pub async fn get_dictionary_tree(
     let list = state
         .dictionaries
         .tree_by_dictionary(id)
-        .await
-        .map_err(map_error)?
+        .await?
         .into_iter()
         .map(DictionaryDetailResponse::from)
         .collect::<Vec<_>>();
@@ -163,8 +147,7 @@ pub async fn create_dictionary_tree_node(
     state
         .dictionaries
         .create_detail(dictionary_id, payload.into())
-        .await
-        .map_err(map_error)?;
+        .await?;
     Ok(Json(ApiResponse::ok_message("created")))
 }
 
@@ -176,8 +159,7 @@ pub async fn find_dictionary_tree_node(
         state
             .dictionaries
             .find_detail(dictionary_id, node_id)
-            .await
-            .map_err(map_error)?,
+            .await?,
     );
     Ok(Json(ApiResponse::ok(serde_json::json!({
         "reSysDictionaryDetail": item
@@ -192,8 +174,7 @@ pub async fn update_dictionary_tree_node(
     state
         .dictionaries
         .update_detail(dictionary_id, node_id, payload.into())
-        .await
-        .map_err(map_error)?;
+        .await?;
     Ok(Json(ApiResponse::ok_message("updated")))
 }
 
@@ -204,8 +185,7 @@ pub async fn delete_dictionary_tree_node(
     state
         .dictionaries
         .delete_detail(dictionary_id, node_id)
-        .await
-        .map_err(map_error)?;
+        .await?;
     Ok(Json(ApiResponse::ok_message("deleted")))
 }
 
@@ -216,8 +196,7 @@ pub async fn get_dictionary_tree_by_type(
     let list = state
         .dictionaries
         .tree_by_type(&dictionary_type)
-        .await
-        .map_err(map_error)?
+        .await?
         .into_iter()
         .map(DictionaryDetailResponse::from)
         .collect::<Vec<_>>();
@@ -231,13 +210,11 @@ pub async fn get_dictionary_tree_node_children(
     state
         .dictionaries
         .find_detail(dictionary_id, node_id)
-        .await
-        .map_err(map_error)?;
+        .await?;
     let list = state
         .dictionaries
         .details_by_parent(dictionary_id, node_id)
-        .await
-        .map_err(map_error)?
+        .await?
         .into_iter()
         .map(DictionaryDetailResponse::from)
         .collect::<Vec<_>>();
@@ -251,8 +228,7 @@ pub async fn get_dictionary_tree_node_path(
     let list = state
         .dictionaries
         .detail_path(dictionary_id, node_id)
-        .await
-        .map_err(map_error)?
+        .await?
         .into_iter()
         .map(DictionaryDetailResponse::from)
         .collect::<Vec<_>>();

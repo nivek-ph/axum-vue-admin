@@ -6,7 +6,6 @@ members = [
   "crates/auth",
   "crates/db",
   "crates/file-storage",
-  "crates/httpz",
   "crates/iam",
   "crates/metadata",
 ]
@@ -19,7 +18,6 @@ version = "0.1.0"
 
 [workspace.dependencies]
 # Local workspace crates. This lets us reference them in other crates without specifying a path.
-admin-httpz = { path = "crates/httpz" }
 api = { path = "crates/api" }
 audit = { path = "crates/audit" }
 auth = { path = "crates/auth" }
