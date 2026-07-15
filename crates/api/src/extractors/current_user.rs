@@ -2,10 +2,10 @@ use std::ops::Deref;
 
 use axum::{extract::FromRequestParts, http::request::Parts};
 
-use admin_httpz::{AppError, OptionAppExt};
+use crate::AppError;
 use iam::users::AuthenticatedUser;
 
-use crate::errors::auth as errors;
+use crate::mappings::LOGIN_REQUIRED;
 
 #[derive(Debug, Clone)]
 pub struct CurrentUser(pub AuthenticatedUser);
@@ -25,11 +25,30 @@ where
     type Rejection = AppError;
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-        parts
+        Ok(parts
             .extensions
             .get::<AuthenticatedUser>()
             .cloned()
             .map(Self)
-            .ok_or_spec(errors::LOGIN_REQUIRED)
+            .ok_or(LOGIN_REQUIRED)?)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use axum::{extract::FromRequestParts, http::Request};
+
+    use super::*;
+
+    #[tokio::test]
+    async fn missing_current_user_extension_requires_login() {
+        let (mut parts, _) = Request::new(()).into_parts();
+
+        let error = CurrentUser::from_request_parts(&mut parts, &())
+            .await
+            .expect_err("missing current user should be rejected");
+
+        assert_eq!(error.status(), axum::http::StatusCode::UNAUTHORIZED);
+        assert_eq!(error.code(), "LOGIN_REQUIRED");
     }
 }

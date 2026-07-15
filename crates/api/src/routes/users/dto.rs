@@ -10,6 +10,7 @@ pub struct UserRoleResponse {
     pub data_scope: String,
     pub is_system: bool,
 }
+
 impl From<iam::roles::RoleSummary> for UserRoleResponse {
     fn from(v: iam::roles::RoleSummary) -> Self {
         Self {

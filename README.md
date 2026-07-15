@@ -30,7 +30,6 @@ crates/audit       login and operation audit logs
 crates/auth        password, token, and captcha helpers
 crates/db          database connection and migrations
 crates/file-storage
-crates/httpz       response envelope and application error model
 crates/iam         users, roles, departments, menus, and access control
 crates/metadata    parameters and dictionaries
 migrations         SQLx migrations
@@ -147,20 +146,21 @@ Authenticated requests send the JWT in the `Authorization: Bearer <token>` heade
 
 ## Error Design
 
-- `crates/httpz` owns the HTTP response envelope and the shared error boundary:
-  `AppError`, `AppResult<T>`, `ErrorSpec`, `ErrorSpecExt`, and `OptionAppExt`.
+- `crates/api` owns the HTTP response envelope and the shared error boundary:
+  public `AppError` and `AppResult<T>` types. Repeated fixed HTTP contracts use
+  crate-private `ErrorSpec` constants; callers use ordinary `ok_or` and `?`.
 - Stable user-facing error codes and messages live in the owning layer:
   domain errors in their owning capability crate and API boundary errors in
-  `crates/api/src/errors.rs` or route-local error modules.
+  `crates/api/src/mappings.rs`, with route-local errors reserved for multi-capability workflows.
 - Route and middleware handlers should return `AppResult<T>`.
 - Use `impl From<DomainError> for AppError` only when the source error has one
   stable HTTP/API meaning everywhere it is used.
 - Use explicit `.map_err(...)` at the call site when the same domain error needs
   different HTTP semantics in different contexts.
-- `LoginError` is intentionally context-mapped:
-  - CRUD/user management keeps IAM errors owned by `crates/iam/src/users`.
-  - Login maps `InvalidCredentials` and `UserNotFound` to `INVALID_CREDENTIALS`
-    so the login API does not reveal whether an account exists.
+- User-management and authentication errors remain distinct:
+  - CRUD/user management returns `UserError` from `crates/iam/src/users`.
+  - Login returns `AuthenticateError`; unknown users and incorrect passwords both become
+    `INVALID_CREDENTIALS` so the login API does not reveal whether an account exists.
   - Auth middleware maps missing/deleted users to `SESSION_INVALID`, because an
     already-issued token can no longer resolve to an active session.
 - `AuthSessionError` has a single auth-session meaning and can convert through

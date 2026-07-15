@@ -88,7 +88,7 @@ impl AccessService {
     pub async fn resolve_user(
         &self,
         user_id: i64,
-    ) -> Result<users::AuthenticatedUser, users::LoginError> {
+    ) -> Result<users::AuthenticatedUser, users::AuthSessionError> {
         users::load_authenticated_user(&self.pool, user_id).await
     }
 
@@ -126,11 +126,14 @@ impl AccessService {
         Ok(())
     }
 
-    pub fn required_menu(&self, method: &str, path: &str) -> Result<i64, CatalogError> {
-        self.catalog.resolve(method, path)
+    pub fn required_menu(&self, method: &str, path: &str) -> Result<i64, AccessError> {
+        Ok(self.catalog.resolve(method, path)?)
     }
 
-    pub fn validate_menu_assignment(&self, menu_ids: &BTreeSet<i64>) -> Result<(), CatalogError> {
+    pub(crate) fn validate_menu_assignment(
+        &self,
+        menu_ids: &BTreeSet<i64>,
+    ) -> Result<(), CatalogError> {
         self.catalog
             .validate_assignment(&menu_ids.iter().copied().collect())
     }

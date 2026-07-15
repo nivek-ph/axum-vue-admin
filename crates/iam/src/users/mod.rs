@@ -3,7 +3,7 @@ mod model;
 mod request;
 mod service;
 
-pub use error::LoginError;
+pub use error::{AuthSessionError, AuthenticateError, UserError};
 pub use model::*;
 pub use request::*;
 pub use service::UserService;

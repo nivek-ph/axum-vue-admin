@@ -1,4 +1,4 @@
-use admin_httpz::{ApiResponse, AppResult};
+use crate::{ApiResponse, AppResult};
 use axum::{
     Json, Router,
     extract::{Path, Query, State},
@@ -7,7 +7,6 @@ use axum::{
 use serde_json::Value;
 
 use super::dto::{LoginLogResponse, LoginLogSearch};
-use super::error::map_error;
 use crate::state::AppState;
 
 pub fn routes() -> Router<AppState> {
@@ -22,11 +21,7 @@ pub async fn get_login_log_list(
 ) -> AppResult<Json<ApiResponse<Value>>> {
     let page = payload.page.max(1);
     let page_size = payload.page_size.max(1);
-    let (list, total) = state
-        .login_logs
-        .list(payload.into())
-        .await
-        .map_err(map_error)?;
+    let (list, total) = state.login_logs.list(payload.into()).await?;
     let list = list
         .into_iter()
         .map(LoginLogResponse::from)
@@ -44,12 +39,7 @@ pub async fn find_login_log_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    let item = state
-        .login_logs
-        .find(id)
-        .await
-        .map_err(map_error)?
-        .map(LoginLogResponse::from);
+    let item = state.login_logs.find(id).await?.map(LoginLogResponse::from);
     Ok(Json(ApiResponse::ok(match item {
         Some(log) => serde_json::json!(log),
         None => serde_json::json!({}),

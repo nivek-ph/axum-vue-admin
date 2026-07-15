@@ -2,8 +2,6 @@ use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode}
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use crate::password::AuthError;
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Claims {
     pub user_id: i64,
@@ -23,7 +21,11 @@ impl JwtService {
         }
     }
 
-    pub fn issue_token(&self, user_id: i64, username: &str) -> Result<String, AuthError> {
+    pub fn issue_token(
+        &self,
+        user_id: i64,
+        username: &str,
+    ) -> Result<String, jsonwebtoken::errors::Error> {
         let expiration = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap_or_else(|_| Duration::from_secs(0))
@@ -39,16 +41,14 @@ impl JwtService {
             },
             &EncodingKey::from_secret(self.secret.as_bytes()),
         )
-        .map_err(AuthError::from)
     }
 
-    pub fn decode_token(&self, token: &str) -> Result<Claims, AuthError> {
+    pub fn decode_token(&self, token: &str) -> Result<Claims, jsonwebtoken::errors::Error> {
         decode::<Claims>(
             token,
             &DecodingKey::from_secret(self.secret.as_bytes()),
             &Validation::default(),
         )
         .map(|data| data.claims)
-        .map_err(AuthError::from)
     }
 }

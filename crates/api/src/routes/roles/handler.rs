@@ -1,4 +1,4 @@
-use admin_httpz::{ApiResponse, AppResult};
+use crate::{ApiResponse, AppResult};
 use axum::{
     Json, Router,
     extract::{Path, State},
@@ -7,7 +7,6 @@ use axum::{
 use serde_json::Value;
 
 use super::dto::{RoleDeptPayload, RoleMenuPayload, RolePayload, RoleResponse, RoleUsersPayload};
-use super::error::map_error;
 use crate::state::AppState;
 
 pub fn routes() -> Router<AppState> {
@@ -23,8 +22,7 @@ pub async fn get_roles(State(state): State<AppState>) -> AppResult<Json<ApiRespo
     let list = state
         .roles
         .list()
-        .await
-        .map_err(map_error)?
+        .await?
         .into_iter()
         .map(RoleResponse::from)
         .collect::<Vec<_>>();
@@ -36,13 +34,7 @@ pub async fn create_role(
     State(state): State<AppState>,
     Json(payload): Json<RolePayload>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    let role = RoleResponse::from(
-        state
-            .roles
-            .create(payload.into())
-            .await
-            .map_err(map_error)?,
-    );
+    let role = RoleResponse::from(state.roles.create(payload.into()).await?);
 
     Ok(Json(ApiResponse::ok(serde_json::json!({ "role": role }))))
 }
@@ -52,13 +44,7 @@ pub async fn update_role(
     Path(id): Path<i64>,
     Json(payload): Json<RolePayload>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    let role = RoleResponse::from(
-        state
-            .roles
-            .update(id, payload.into())
-            .await
-            .map_err(map_error)?,
-    );
+    let role = RoleResponse::from(state.roles.update(id, payload.into()).await?);
 
     Ok(Json(ApiResponse::ok(serde_json::json!({ "role": role }))))
 }
@@ -67,7 +53,7 @@ pub async fn delete_role(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    state.roles.delete(id).await.map_err(map_error)?;
+    state.roles.delete(id).await?;
 
     Ok(Json(ApiResponse::ok_message("deleted")))
 }
@@ -76,7 +62,7 @@ pub async fn get_role_menus(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    let menu_ids = state.roles.menu_ids(id).await.map_err(map_error)?;
+    let menu_ids = state.roles.menu_ids(id).await?;
 
     Ok(Json(ApiResponse::ok(serde_json::json!({
         "menuIds": menu_ids,
@@ -88,11 +74,7 @@ pub async fn set_role_menus(
     Path(id): Path<i64>,
     Json(payload): Json<RoleMenuPayload>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    state
-        .roles
-        .set_menu_ids(id, payload.menu_ids)
-        .await
-        .map_err(map_error)?;
+    state.roles.set_menu_ids(id, payload.menu_ids).await?;
 
     Ok(Json(ApiResponse::ok_message("saved")))
 }
@@ -101,7 +83,7 @@ pub async fn get_role_depts(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    let dept_ids = state.roles.dept_ids(id).await.map_err(map_error)?;
+    let dept_ids = state.roles.dept_ids(id).await?;
 
     Ok(Json(ApiResponse::ok(serde_json::json!({
         "deptIds": dept_ids,
@@ -113,11 +95,7 @@ pub async fn set_role_depts(
     Path(id): Path<i64>,
     Json(payload): Json<RoleDeptPayload>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    state
-        .roles
-        .set_dept_ids(id, payload.dept_ids)
-        .await
-        .map_err(map_error)?;
+    state.roles.set_dept_ids(id, payload.dept_ids).await?;
 
     Ok(Json(ApiResponse::ok_message("saved")))
 }
@@ -126,7 +104,7 @@ pub async fn get_role_users(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    let user_ids = state.roles.user_ids(id).await.map_err(map_error)?;
+    let user_ids = state.roles.user_ids(id).await?;
 
     Ok(Json(ApiResponse::ok(serde_json::json!(user_ids))))
 }
@@ -136,11 +114,7 @@ pub async fn set_role_users(
     Path(id): Path<i64>,
     Json(payload): Json<RoleUsersPayload>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    state
-        .roles
-        .set_user_ids(id, payload.user_ids)
-        .await
-        .map_err(map_error)?;
+    state.roles.set_user_ids(id, payload.user_ids).await?;
 
     Ok(Json(ApiResponse::ok_message("saved")))
 }

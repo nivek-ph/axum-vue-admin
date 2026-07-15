@@ -13,6 +13,7 @@ pub struct LoginLogResponse {
     #[serde(rename = "createdAt")]
     pub created_at: String,
 }
+
 impl From<audit::login_logs::LoginLogView> for LoginLogResponse {
     fn from(v: audit::login_logs::LoginLogView) -> Self {
         Self {

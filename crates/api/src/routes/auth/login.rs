@@ -1,13 +1,12 @@
-use admin_httpz::{ApiResponse, AppResult};
+use crate::{ApiResponse, AppResult};
 use audit::login_logs::CreateLoginLog;
-use auth::{captcha::CaptchaError, token::TokenError};
+use auth::{captcha::CaptchaError, token::TokenIssueError};
 use axum::{Json, extract::State, http::HeaderMap};
 use iam::users;
 use serde::Deserialize;
 use serde_json::Value;
 use utoipa::ToSchema;
 
-use super::error::map_error;
 use crate::{routes::users::dto::UserResponse, state::AppState};
 
 #[derive(Debug, Clone, Deserialize, ToSchema)]
@@ -52,9 +51,9 @@ pub(super) enum LoginError {
     #[error("captcha operation failed")]
     Captcha(#[source] CaptchaError),
     #[error("{0}")]
-    Identity(#[source] users::LoginError),
+    Identity(#[source] users::AuthenticateError),
     #[error("token operation failed")]
-    Token(#[source] TokenError),
+    Token(#[source] TokenIssueError),
 }
 
 #[utoipa::path(
@@ -83,8 +82,7 @@ pub async fn login(
             agent: header_value(&headers, "user-agent"),
         },
     )
-    .await
-    .map_err(map_error)?;
+    .await?;
 
     Ok(Json(ApiResponse::ok(serde_json::json!({
         "user": UserResponse::from(result.user),

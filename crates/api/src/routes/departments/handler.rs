@@ -1,4 +1,4 @@
-use admin_httpz::{ApiResponse, AppResult};
+use crate::{ApiResponse, AppResult};
 use axum::{
     Json, Router,
     extract::{Path, State},
@@ -7,7 +7,6 @@ use axum::{
 use serde_json::Value;
 
 use super::dto::{DeptNodeResponse, DeptPayload, DeptResponse};
-use super::error::map_error;
 use crate::state::AppState;
 
 pub fn routes() -> Router<AppState> {
@@ -25,8 +24,7 @@ pub async fn get_dept_tree(State(state): State<AppState>) -> AppResult<Json<ApiR
     let tree = state
         .departments
         .tree()
-        .await
-        .map_err(map_error)?
+        .await?
         .into_iter()
         .map(DeptNodeResponse::from)
         .collect::<Vec<_>>();
@@ -39,12 +37,7 @@ pub async fn find_dept_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
-    let item = state
-        .departments
-        .find(id)
-        .await
-        .map_err(map_error)?
-        .map(DeptResponse::from);
+    let item = state.departments.find(id).await?.map(DeptResponse::from);
     Ok(Json(ApiResponse::ok(serde_json::json!({
         "dept": item.map(|dept| serde_json::json!(dept)).unwrap_or_else(|| serde_json::json!({}))
     }))))
@@ -55,11 +48,7 @@ pub async fn create_dept(
     Json(payload): Json<DeptPayload>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     invalidate_access(&state).await?;
-    state
-        .departments
-        .create(payload.into())
-        .await
-        .map_err(map_error)?;
+    state.departments.create(payload.into()).await?;
     Ok(Json(ApiResponse::ok_message("created")))
 }
 
@@ -69,11 +58,7 @@ pub async fn update_dept_by_id(
     Json(payload): Json<DeptPayload>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     invalidate_access(&state).await?;
-    state
-        .departments
-        .update(id, payload.into())
-        .await
-        .map_err(map_error)?;
+    state.departments.update(id, payload.into()).await?;
     Ok(Json(ApiResponse::ok_message("updated")))
 }
 
@@ -82,14 +67,14 @@ pub async fn delete_dept_by_id(
     Path(id): Path<i64>,
 ) -> AppResult<Json<ApiResponse<Value>>> {
     invalidate_access(&state).await?;
-    state.departments.delete(id).await.map_err(map_error)?;
+    state.departments.delete(id).await?;
     Ok(Json(ApiResponse::ok_message("deleted")))
 }
 
 async fn invalidate_access(state: &AppState) -> AppResult<()> {
-    state.access.invalidate().await.map_err(|source| {
-        crate::errors::INTERNAL_SERVER_ERROR
-            .into_error()
-            .with_source(source)
-    })
+    state
+        .access
+        .invalidate()
+        .await
+        .map_err(crate::mappings::access_invalidation_error)
 }
