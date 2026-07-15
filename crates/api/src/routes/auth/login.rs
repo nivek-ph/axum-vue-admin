@@ -94,14 +94,7 @@ pub async fn login(
 
 async fn execute_login(state: &AppState, input: LoginInput) -> Result<LoginResult, LoginError> {
     if let Err(error) = input.validate() {
-        record_login(
-            &state.login_logs,
-            &input,
-            false,
-            "captcha is required",
-            None,
-        )
-        .await;
+        record_login(&state.login_logs, &input, false, error.to_string(), None).await;
         return Err(error);
     }
 
