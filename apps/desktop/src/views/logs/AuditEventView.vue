@@ -48,8 +48,8 @@
           <UiOption label="Denied" value="denied" />
           <UiOption label="Failed" value="failed" />
         </UiSelect>
-        <UiInput v-model="filters.startedAt" :placeholder="$t('Started at (ISO 8601)')" clearable />
-        <UiInput v-model="filters.endedAt" :placeholder="$t('Ended at (ISO 8601)')" clearable />
+        <UiDateTimePicker v-model="filters.startedAt" class="audit-time-filter" label="Start time (UTC)" />
+        <UiDateTimePicker v-model="filters.endedAt" class="audit-time-filter" label="End time (UTC)" />
         <UiButton type="primary" @click="handleSearch">{{ $t('Search') }}</UiButton>
       </div>
 
@@ -120,8 +120,8 @@ import { ElMessage } from '@/ui/feedback'
 import { fetchAuditEvent, fetchAuditEvents, type AuditEventRecord } from '@/api/logs'
 import { t } from '@/i18n'
 
-const actionOptions = ['auth.login', 'auth.access_denied', 'user.assign_roles', 'legacy.http_request']
-const resourceOptions = ['account', 'route', 'user', 'http_request']
+const actionOptions = ['auth.login', 'auth.access_denied', 'user.assign_roles']
+const resourceOptions = ['account', 'route', 'user']
 const events = ref<AuditEventRecord[]>([])
 const loading = ref(false)
 const total = ref(0)
@@ -192,6 +192,19 @@ onMounted(loadEvents)
 <style scoped>
 .audit-event-filter {
   grid-template-columns: repeat(4, minmax(150px, 1fr));
+}
+
+.audit-event-filter > .audit-time-filter {
+  flex: 0 1 220px;
+  max-width: 220px;
+}
+
+@media (max-width: 640px) {
+  .audit-event-filter > .audit-time-filter {
+    flex-basis: 100%;
+    width: 100%;
+    max-width: none;
+  }
 }
 
 .event-detail {

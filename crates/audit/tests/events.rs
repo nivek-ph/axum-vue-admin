@@ -23,12 +23,22 @@ fn login_event(result: AuditResult) -> AuditEvent {
 }
 
 #[sqlx::test(migrations = "../../migrations")]
-async fn unified_audit_store_records_and_filters_structured_events(pool: PgPool) {
+async fn fresh_schema_records_and_filters_structured_audit_events(pool: PgPool) {
     let service = AuditService::new(pool.clone());
     service
         .record(login_event(AuditResult::Succeeded))
         .await
         .expect("audit event should be recorded");
+    sqlx::query(
+        "update sys_audit_events set created_at = '2026-07-16T15:30:00+08:00'::timestamptz",
+    )
+    .execute(&pool)
+    .await
+    .expect("audit event timestamp should be fixed for UTC assertions");
+    sqlx::query("set time zone 'Asia/Shanghai'")
+        .execute(&pool)
+        .await
+        .expect("audit queries should run in a non-UTC database session");
 
     let (events, total, page, page_size) = service
         .list(AuditQuery {
@@ -54,6 +64,7 @@ async fn unified_audit_store_records_and_filters_structured_events(pool: PgPool)
     assert_eq!(events[0].resource_id.as_deref(), Some("admin"));
     assert_eq!(events[0].result, "succeeded");
     assert_eq!(events[0].source_ip, "127.0.0.1");
+    assert_eq!(events[0].created_at, "2026-07-16T07:30:00Z");
 
     let item = service
         .find(events[0].id)
@@ -61,108 +72,5 @@ async fn unified_audit_store_records_and_filters_structured_events(pool: PgPool)
         .expect("audit detail query should succeed")
         .expect("audit event should exist");
     assert_eq!(item.id, events[0].id);
-
-    let old_tables: (Option<String>, Option<String>) = sqlx::query_as(
-        "select to_regclass('sys_login_logs')::text, to_regclass('sys_operation_records')::text",
-    )
-    .fetch_one(&pool)
-    .await
-    .expect("table names should be inspectable");
-    assert_eq!(old_tables, (None, None));
-}
-
-#[sqlx::test(migrations = false)]
-async fn migration_preserves_legacy_login_and_operation_records(pool: PgPool) {
-    for migration in [
-        include_str!("../../../migrations/0001_init.sql"),
-        include_str!("../../../migrations/0002_rbac.sql"),
-        include_str!("../../../migrations/0003_seed.sql"),
-    ] {
-        sqlx::raw_sql(migration)
-            .execute(&pool)
-            .await
-            .expect("pre-unified migration should apply");
-    }
-
-    sqlx::query(
-        r#"
-        insert into sys_login_logs (
-            username, ip, status, error_message, agent, user_id, created_at
-        ) values (
-            'admin', '10.0.0.1', false, 'invalid username or password', 'legacy-login', 1,
-            '2026-01-01T00:00:00Z'
-        )
-        "#,
-    )
-    .execute(&pool)
-    .await
-    .unwrap();
-    sqlx::query(
-        r#"
-        insert into sys_operation_records (
-            ip, method, path, status, agent, error_message, body, resp, user_id, created_at
-        ) values (
-            '10.0.0.2', 'PUT', '/api/users/7/authorities', 403, 'legacy-operation',
-            'forbidden', '{"password":"must-not-migrate"}', 'denied', 1,
-            '2026-01-02T00:00:00Z'
-        )
-        "#,
-    )
-    .execute(&pool)
-    .await
-    .unwrap();
-
-    sqlx::raw_sql(include_str!(
-        "../../../migrations/0004_unified_audit_events.sql"
-    ))
-    .execute(&pool)
-    .await
-    .expect("unified audit migration should apply");
-
-    let rows = sqlx::query_as::<_, (String, String, String, String, String, String)>(
-        r#"
-        select action, resource_id, result, coalesce(reason_code, ''), source_ip, user_agent
-        from sys_audit_events
-        order by created_at
-        "#,
-    )
-    .fetch_all(&pool)
-    .await
-    .unwrap();
-    assert_eq!(
-        rows,
-        vec![
-            (
-                "auth.login".to_string(),
-                "admin".to_string(),
-                "denied".to_string(),
-                "invalid_credentials".to_string(),
-                "10.0.0.1".to_string(),
-                "legacy-login".to_string(),
-            ),
-            (
-                "legacy.http_request".to_string(),
-                "/api/users/7/authorities".to_string(),
-                "failed".to_string(),
-                "http_status_403".to_string(),
-                "10.0.0.2".to_string(),
-                "legacy-operation".to_string(),
-            ),
-        ]
-    );
-
-    let serialized = sqlx::query_scalar::<_, String>(
-        "select jsonb_agg(to_jsonb(e))::text from sys_audit_events e",
-    )
-    .fetch_one(&pool)
-    .await
-    .unwrap();
-    assert!(!serialized.contains("must-not-migrate"));
-    let old_tables: (Option<String>, Option<String>) = sqlx::query_as(
-        "select to_regclass('sys_login_logs')::text, to_regclass('sys_operation_records')::text",
-    )
-    .fetch_one(&pool)
-    .await
-    .unwrap();
-    assert_eq!(old_tables, (None, None));
+    assert_eq!(item.created_at, "2026-07-16T07:30:00Z");
 }

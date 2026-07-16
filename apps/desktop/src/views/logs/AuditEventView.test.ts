@@ -53,4 +53,19 @@ describe('AuditEventView', () => {
     expect(wrapper.text()).toContain('user.assign_roles')
     expect(wrapper.text()).not.toContain('Operation logs')
   })
+
+  it('uses date-time pickers for the audit range', async () => {
+    const wrapper = mount(AuditEventView, {
+      global: {
+        plugins: [UiComponents]
+      }
+    })
+
+    await flushPromises()
+
+    const pickers = wrapper.findAll('input[type="datetime-local"]')
+    expect(pickers).toHaveLength(2)
+    expect(pickers[0]?.attributes('aria-label')).toBe('Start time (UTC)')
+    expect(pickers[1]?.attributes('aria-label')).toBe('End time (UTC)')
+  })
 })

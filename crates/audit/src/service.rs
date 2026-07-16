@@ -19,16 +19,16 @@ impl AuditService {
     }
 
     pub async fn record_best_effort(&self, event: AuditEvent) {
-        let action = event.action.as_str();
+        let action = event.action.to_string();
         if let Err(error) = self.record(event).await {
             tracing::error!(action, error = ?error, "audit event write failed");
         }
     }
 
-    pub async fn record_in(
-        connection: &mut PgConnection,
-        event: AuditEvent,
-    ) -> Result<(), AuditError> {
+    pub async fn record_in(conn: &mut PgConnection, event: AuditEvent) -> Result<(), AuditError> {
+        let action = event.action.to_string();
+        let result = event.result.to_string();
+        let reason_code = event.reason_code.map(|code| code.to_string());
         let changes = serde_json::to_value(event.changes)?;
         sqlx::query(
             r#"
@@ -40,15 +40,15 @@ impl AuditService {
         )
         .bind(event.actor.id)
         .bind(event.actor.label)
-        .bind(event.action.as_str())
+        .bind(action)
         .bind(event.resource.resource_type())
         .bind(event.resource.resource_id())
-        .bind(event.result.as_str())
-        .bind(event.reason_code.map(|reason| reason.as_str()))
+        .bind(result)
+        .bind(reason_code)
         .bind(event.source.ip)
         .bind(event.source.user_agent)
         .bind(changes)
-        .execute(connection)
+        .execute(conn)
         .await?;
         Ok(())
     }
@@ -89,7 +89,7 @@ impl AuditService {
             select
                 id, actor_id, actor_label, action, resource_type, resource_id, result,
                 reason_code, source_ip, user_agent, changes,
-                to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS') as created_at
+                to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as created_at
             from sys_audit_events
             where ($1::text is null or actor_label ilike '%' || $1 || '%' or actor_id::text = $1)
               and ($2::text is null or action = $2)
@@ -123,7 +123,7 @@ impl AuditService {
             select
                 id, actor_id, actor_label, action, resource_type, resource_id, result,
                 reason_code, source_ip, user_agent, changes,
-                to_char(created_at, 'YYYY-MM-DD"T"HH24:MI:SS') as created_at
+                to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as created_at
             from sys_audit_events
             where id = $1
             "#,

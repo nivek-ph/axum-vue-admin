@@ -1,22 +1,16 @@
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
+use strum::EnumProperty;
 use utoipa::IntoParams;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, strum_macros::Display)]
 pub enum AuditAction {
+    #[strum(serialize = "auth.login")]
     Login,
+    #[strum(serialize = "auth.access_denied")]
     AccessDenied,
+    #[strum(serialize = "user.assign_roles")]
     AssignUserRoles,
-}
-
-impl AuditAction {
-    pub const fn as_str(self) -> &'static str {
-        match self {
-            Self::Login => "auth.login",
-            Self::AccessDenied => "auth.access_denied",
-            Self::AssignUserRoles => "user.assign_roles",
-        }
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -25,20 +19,21 @@ pub struct AuditActor {
     pub label: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, EnumProperty)]
 pub enum AuditResource {
+    #[strum(props(resource_type = "account"))]
     Account(String),
+    #[strum(props(resource_type = "user"))]
     User(i64),
+    #[strum(props(resource_type = "route"))]
     Route(String),
 }
 
 impl AuditResource {
-    pub const fn resource_type(&self) -> &'static str {
-        match self {
-            Self::Account(_) => "account",
-            Self::User(_) => "user",
-            Self::Route(_) => "route",
-        }
+    pub fn resource_type(&self) -> String {
+        self.get_str("resource_type")
+            .expect("every audit resource should declare its resource type")
+            .to_string()
     }
 
     pub fn resource_id(&self) -> String {
@@ -49,50 +44,36 @@ impl AuditResource {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, strum_macros::Display)]
 pub enum AuditResult {
+    #[strum(serialize = "succeeded")]
     Succeeded,
+    #[strum(serialize = "denied")]
     Denied,
+    #[strum(serialize = "failed")]
     Failed,
 }
 
-impl AuditResult {
-    pub const fn as_str(self) -> &'static str {
-        match self {
-            Self::Succeeded => "succeeded",
-            Self::Denied => "denied",
-            Self::Failed => "failed",
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, strum_macros::Display)]
 pub enum AuditReason {
+    #[strum(serialize = "captcha_required")]
     CaptchaRequired,
+    #[strum(serialize = "captcha_invalid")]
     CaptchaInvalid,
+    #[strum(serialize = "captcha_failed")]
     CaptchaFailed,
+    #[strum(serialize = "invalid_credentials")]
     InvalidCredentials,
+    #[strum(serialize = "user_disabled")]
     UserDisabled,
+    #[strum(serialize = "token_issue_failed")]
     TokenIssueFailed,
+    #[strum(serialize = "permission_denied")]
     PermissionDenied,
+    #[strum(serialize = "invalid_role_assignment")]
     InvalidRoleAssignment,
+    #[strum(serialize = "internal_error")]
     InternalError,
-}
-
-impl AuditReason {
-    pub const fn as_str(self) -> &'static str {
-        match self {
-            Self::CaptchaRequired => "captcha_required",
-            Self::CaptchaInvalid => "captcha_invalid",
-            Self::CaptchaFailed => "captcha_failed",
-            Self::InvalidCredentials => "invalid_credentials",
-            Self::UserDisabled => "user_disabled",
-            Self::TokenIssueFailed => "token_issue_failed",
-            Self::PermissionDenied => "permission_denied",
-            Self::InvalidRoleAssignment => "invalid_role_assignment",
-            Self::InternalError => "internal_error",
-        }
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
