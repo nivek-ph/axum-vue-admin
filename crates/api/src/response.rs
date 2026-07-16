@@ -1,5 +1,4 @@
 use serde::Serialize;
-use serde_json::Value;
 use utoipa::ToSchema;
 
 #[derive(Debug, Clone, Serialize, ToSchema)]
@@ -8,6 +7,10 @@ pub struct ApiResponse<T> {
     pub message: String,
     pub data: Option<T>,
 }
+
+/// Schema marker for stable envelopes whose contract has no data payload.
+#[derive(Debug, Serialize, ToSchema)]
+pub struct NoData {}
 
 impl<T> ApiResponse<T> {
     pub fn ok(data: T) -> Self {
@@ -27,10 +30,19 @@ impl<T> ApiResponse<T> {
     }
 }
 
-impl ApiResponse<Value> {
-    pub fn ok_message(message: impl Into<String>) -> Self {
-        Self::new("OK", message, None)
+pub type ApiErrorResponse = ApiResponse<NoData>;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn mutation_response_has_the_shared_null_data_contract() {
+        let value = serde_json::to_value(ApiResponse::<NoData>::new("OK", "saved", None))
+            .expect("mutation response should serialize");
+
+        assert_eq!(value["code"], "OK");
+        assert_eq!(value["message"], "saved");
+        assert!(value["data"].is_null());
     }
 }
-
-pub type ApiErrorResponse = ApiResponse<Value>;

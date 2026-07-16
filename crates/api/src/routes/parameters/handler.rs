@@ -2,13 +2,12 @@ use axum::{
     Json,
     extract::{Path, Query, State},
 };
-use serde_json::Value;
 
 use super::dto::{
     EmptyParameter, IdsRequest, ParamResponse, ParameterByKeyData, ParameterByKeyRequest,
     ParameterDetailData, ParameterListData, ParameterListRequest, ParameterRequest,
 };
-use crate::{ApiResponse, AppResult, state::AppState};
+use crate::{ApiResponse, AppResult, NoData, state::AppState};
 
 #[utoipa::path(
     post,
@@ -16,15 +15,15 @@ use crate::{ApiResponse, AppResult, state::AppState};
     tag = "parameter",
     security(("bearer_auth" = [])),
     request_body = ParameterRequest,
-    responses((status = 200, description = "Parameter created", body = ApiResponse<Value>))
+    responses((status = 200, description = "Parameter created", body = ApiResponse<NoData>))
 )]
 pub async fn create_sys_params(
     State(state): State<AppState>,
     Json(payload): Json<ParameterRequest>,
-) -> AppResult<Json<ApiResponse<Value>>> {
+) -> AppResult<Json<ApiResponse<NoData>>> {
     state.parameters.create(payload).await?;
 
-    Ok(Json(ApiResponse::ok_message("created")))
+    Ok(Json(ApiResponse::new("OK", "created", None)))
 }
 
 #[utoipa::path(
@@ -34,16 +33,16 @@ pub async fn create_sys_params(
     security(("bearer_auth" = [])),
     params(("id" = i64, Path, description = "Parameter ID")),
     request_body = ParameterRequest,
-    responses((status = 200, description = "Parameter updated", body = ApiResponse<Value>))
+    responses((status = 200, description = "Parameter updated", body = ApiResponse<NoData>))
 )]
 pub async fn update_sys_params_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
     Json(payload): Json<ParameterRequest>,
-) -> AppResult<Json<ApiResponse<Value>>> {
+) -> AppResult<Json<ApiResponse<NoData>>> {
     state.parameters.update(id, payload).await?;
 
-    Ok(Json(ApiResponse::ok_message("updated")))
+    Ok(Json(ApiResponse::new("OK", "updated", None)))
 }
 
 #[utoipa::path(
@@ -98,14 +97,14 @@ pub async fn get_sys_params_list(
     tag = "parameter",
     security(("bearer_auth" = [])),
     params(("id" = i64, Path, description = "Parameter ID")),
-    responses((status = 200, description = "Parameter deleted", body = ApiResponse<Value>))
+    responses((status = 200, description = "Parameter deleted", body = ApiResponse<NoData>))
 )]
 pub async fn delete_sys_params_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
-) -> AppResult<Json<ApiResponse<Value>>> {
+) -> AppResult<Json<ApiResponse<NoData>>> {
     state.parameters.delete(id).await?;
-    Ok(Json(ApiResponse::ok_message("deleted")))
+    Ok(Json(ApiResponse::new("OK", "deleted", None)))
 }
 
 #[utoipa::path(
@@ -114,14 +113,14 @@ pub async fn delete_sys_params_by_id(
     tag = "parameter",
     security(("bearer_auth" = [])),
     params(IdsRequest),
-    responses((status = 200, description = "Parameters deleted", body = ApiResponse<Value>))
+    responses((status = 200, description = "Parameters deleted", body = ApiResponse<NoData>))
 )]
 pub async fn delete_sys_params_by_ids(
     State(state): State<AppState>,
     Query(payload): Query<IdsRequest>,
-) -> AppResult<Json<ApiResponse<Value>>> {
+) -> AppResult<Json<ApiResponse<NoData>>> {
     state.parameters.delete_many(payload.ids).await?;
-    Ok(Json(ApiResponse::ok_message("deleted")))
+    Ok(Json(ApiResponse::new("OK", "deleted", None)))
 }
 
 #[utoipa::path(

@@ -3,13 +3,14 @@ use axum::{
     extract::{Multipart, Path, Query, State},
 };
 use file_storage::files::FileUpload;
-use serde_json::Value;
 
 use super::dto::{
     FileListData, FileListRequest, FileResponse, ImportFileUrlRequest, RenameFileRequest,
     UploadFileData, UploadFileRequest, UploadMetadataRequest,
 };
-use crate::{ApiResponse, AppResult, mappings::MULTIPLE_FILES_NOT_SUPPORTED, state::AppState};
+use crate::{
+    ApiResponse, AppResult, NoData, mappings::MULTIPLE_FILES_NOT_SUPPORTED, state::AppState,
+};
 
 #[utoipa::path(
     get,
@@ -39,14 +40,14 @@ pub async fn get_file_list_by_query(
     tag = "file",
     security(("bearer_auth" = [])),
     params(("id" = i64, Path, description = "File ID")),
-    responses((status = 200, description = "File deleted", body = ApiResponse<Value>))
+    responses((status = 200, description = "File deleted", body = ApiResponse<NoData>))
 )]
 pub async fn delete_file_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
-) -> AppResult<Json<ApiResponse<Value>>> {
+) -> AppResult<Json<ApiResponse<NoData>>> {
     state.files.delete(id).await?;
-    Ok(Json(ApiResponse::ok_message("deleted")))
+    Ok(Json(ApiResponse::new("OK", "deleted", None)))
 }
 
 #[utoipa::path(
@@ -56,15 +57,15 @@ pub async fn delete_file_by_id(
     security(("bearer_auth" = [])),
     params(("id" = i64, Path, description = "File ID")),
     request_body = RenameFileRequest,
-    responses((status = 200, description = "File renamed", body = ApiResponse<Value>))
+    responses((status = 200, description = "File renamed", body = ApiResponse<NoData>))
 )]
 pub async fn edit_file_name_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
     Json(payload): Json<RenameFileRequest>,
-) -> AppResult<Json<ApiResponse<Value>>> {
+) -> AppResult<Json<ApiResponse<NoData>>> {
     state.files.edit_name(payload.into_input(id)).await?;
-    Ok(Json(ApiResponse::ok_message("updated")))
+    Ok(Json(ApiResponse::new("OK", "updated", None)))
 }
 
 #[utoipa::path(
@@ -73,14 +74,14 @@ pub async fn edit_file_name_by_id(
     tag = "file",
     security(("bearer_auth" = [])),
     request_body = ImportFileUrlRequest,
-    responses((status = 200, description = "URL imported", body = ApiResponse<Value>))
+    responses((status = 200, description = "URL imported", body = ApiResponse<NoData>))
 )]
 pub async fn import_url(
     State(state): State<AppState>,
     Json(payload): Json<ImportFileUrlRequest>,
-) -> AppResult<Json<ApiResponse<Value>>> {
+) -> AppResult<Json<ApiResponse<NoData>>> {
     state.files.import_url(payload.into()).await?;
-    Ok(Json(ApiResponse::ok_message("imported")))
+    Ok(Json(ApiResponse::new("OK", "imported", None)))
 }
 
 #[utoipa::path(

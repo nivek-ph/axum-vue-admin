@@ -204,9 +204,6 @@ pub enum DictionaryDetailValue {
 pub struct EmptyDictionary {}
 
 #[derive(Debug, Serialize, ToSchema)]
-pub struct DictionaryImportData {}
-
-#[derive(Debug, Serialize, ToSchema)]
 pub struct DictionaryTreeData {
     pub list: Vec<DictionaryDetailResponse>,
 }
