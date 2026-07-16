@@ -16,6 +16,7 @@ pub struct AuditEventResponse {
     pub reason_code: Option<String>,
     pub source_ip: String,
     pub user_agent: String,
+    /// Audit producers own this event-specific JSON object, so its fields are intentionally open.
     pub changes: serde_json::Value,
     pub created_at: String,
 }
