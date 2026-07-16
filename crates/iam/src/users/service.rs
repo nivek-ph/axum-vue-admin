@@ -8,8 +8,8 @@ use uuid::Uuid;
 use super::{
     AuthSessionError, AuthenticateError, AuthenticatedUser, ChangePasswordRequest,
     DeleteUserRequest, GetUserListRequest, LoginIdentity, LoginRequest, RegisterRequest,
-    ResetPasswordRequest, SetSelfInfoRequest, SetSelfSettingRequest, SetUserRolesRequest,
-    UpdateUserRequest, UserError, UserInfoView, UserRecord,
+    ResetPasswordInput, SetSelfInfoRequest, SetSelfSettingRequest, SetUserRolesRequest,
+    UpdateUserInput, UserError, UserInfoView, UserRecord,
 };
 use crate::{
     access::{AccessService, DataScopeFilter},
@@ -114,11 +114,10 @@ impl UserService {
         &self,
         actor_user_id: i64,
         target_user_id: i64,
-        mut payload: UpdateUserRequest,
+        payload: UpdateUserInput,
     ) -> Result<(), UserError> {
         ensure_user_in_scope(&self.pool, actor_user_id, target_user_id).await?;
-        payload.id = target_user_id;
-        update_user(&self.pool, payload).await?;
+        update_user(&self.pool, target_user_id, payload).await?;
         self.bump_access_version().await
     }
 
@@ -148,11 +147,10 @@ impl UserService {
         &self,
         actor_user_id: i64,
         target_user_id: i64,
-        mut payload: ResetPasswordRequest,
+        payload: ResetPasswordInput,
     ) -> Result<(), UserError> {
         ensure_user_in_scope(&self.pool, actor_user_id, target_user_id).await?;
-        payload.id = target_user_id;
-        reset_password(&self.pool, &self.passwords, payload).await
+        reset_password(&self.pool, &self.passwords, target_user_id, payload).await
     }
 
     pub async fn set_roles_as(
@@ -590,7 +588,8 @@ pub(crate) async fn ensure_user_in_scope(
 
 pub(crate) async fn update_user(
     pool: &sqlx::PgPool,
-    payload: UpdateUserRequest,
+    user_id: i64,
+    payload: UpdateUserInput,
 ) -> Result<(), UserError> {
     sqlx::query(
         r#"
@@ -611,7 +610,7 @@ pub(crate) async fn update_user(
     .bind(payload.phone)
     .bind(payload.email)
     .bind(payload.dept_id)
-    .bind(payload.id)
+    .bind(user_id)
     .execute(pool)
     .await?;
 
@@ -632,7 +631,8 @@ pub(crate) async fn delete_user(
 pub(crate) async fn reset_password(
     pool: &sqlx::PgPool,
     password_service: &PasswordService,
-    payload: ResetPasswordRequest,
+    user_id: i64,
+    payload: ResetPasswordInput,
 ) -> Result<(), UserError> {
     let password_hash = password_service.hash_password(&payload.password)?;
     sqlx::query(
@@ -644,7 +644,7 @@ pub(crate) async fn reset_password(
         "#,
     )
     .bind(password_hash)
-    .bind(payload.id)
+    .bind(user_id)
     .execute(pool)
     .await?;
     Ok(())

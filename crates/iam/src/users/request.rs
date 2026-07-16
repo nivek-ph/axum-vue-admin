@@ -26,18 +26,13 @@ pub struct RegisterRequest {
     pub email: Option<String>,
 }
 
-#[derive(Debug, Clone, Deserialize, ToSchema)]
-pub struct UpdateUserRequest {
-    #[serde(rename = "id")]
-    pub id: i64,
-    #[serde(rename = "nickName")]
+#[derive(Debug, Clone)]
+pub struct UpdateUserInput {
     pub nick_name: String,
-    #[serde(rename = "headerImg")]
     pub header_img: String,
     pub enable: i32,
     pub phone: Option<String>,
     pub email: Option<String>,
-    #[serde(rename = "deptId", alias = "dept_id")]
     pub dept_id: Option<i64>,
 }
 
@@ -69,10 +64,8 @@ pub struct DeleteUserRequest {
     pub id: i64,
 }
 
-#[derive(Debug, Clone, Deserialize, ToSchema)]
-pub struct ResetPasswordRequest {
-    #[serde(rename = "id")]
-    pub id: i64,
+#[derive(Debug, Clone)]
+pub struct ResetPasswordInput {
     pub password: String,
 }
 
