@@ -1,5 +1,55 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
+
+pub type UserListRequest = iam::users::GetUserListRequest;
+pub type RegisterUserRequest = iam::users::RegisterRequest;
+pub type ChangePasswordRequest = iam::users::ChangePasswordRequest;
+pub type UpdateSelfRequest = iam::users::SetSelfInfoRequest;
+pub type UpdateSelfSettingsRequest = iam::users::SetSelfSettingRequest;
+pub type SetUserRolesRequest = iam::users::SetUserRolesRequest;
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct UpdateUserRequest {
+    #[serde(default)]
+    pub id: i64,
+    #[serde(rename = "nickName")]
+    pub nick_name: String,
+    #[serde(rename = "headerImg")]
+    pub header_img: String,
+    pub enable: i32,
+    pub phone: Option<String>,
+    pub email: Option<String>,
+    #[serde(rename = "deptId", alias = "dept_id")]
+    pub dept_id: Option<i64>,
+}
+
+impl From<UpdateUserRequest> for iam::users::UpdateUserInput {
+    fn from(value: UpdateUserRequest) -> Self {
+        Self {
+            nick_name: value.nick_name,
+            header_img: value.header_img,
+            enable: value.enable,
+            phone: value.phone,
+            email: value.email,
+            dept_id: value.dept_id,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct ResetPasswordRequest {
+    #[serde(default)]
+    pub id: i64,
+    pub password: String,
+}
+
+impl From<ResetPasswordRequest> for iam::users::ResetPasswordInput {
+    fn from(value: ResetPasswordRequest) -> Self {
+        Self {
+            password: value.password,
+        }
+    }
+}
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct UserRoleResponse {
@@ -58,6 +108,18 @@ pub struct UserInfoData {
     #[serde(rename = "userInfo")]
     pub user_info: UserResponse,
 }
+
+#[derive(Debug, Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct UserListData {
+    pub list: Vec<UserResponse>,
+    pub total: i64,
+    pub page: i64,
+    pub page_size: i64,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct UserMutationData {}
 impl From<iam::users::UserInfoView> for UserResponse {
     fn from(v: iam::users::UserInfoView) -> Self {
         Self {
@@ -108,5 +170,24 @@ mod tests {
         assert_eq!(value["userInfo"]["userName"], "admin");
         assert_eq!(value["userInfo"]["homeRoute"], "Dashboard");
         assert!(value.get("user_info").is_none());
+    }
+
+    #[test]
+    fn user_list_and_mutation_data_keep_transport_shape() {
+        let list = serde_json::to_value(UserListData {
+            list: Vec::new(),
+            total: 0,
+            page: 1,
+            page_size: 10,
+        })
+        .expect("user list data should serialize");
+        assert_eq!(list["pageSize"], 10);
+        assert!(list.get("page_size").is_none());
+
+        let mutation = serde_json::to_value(crate::ApiResponse::<UserMutationData>::new(
+            "OK", "updated", None,
+        ))
+        .expect("mutation response should serialize");
+        assert!(mutation["data"].is_null());
     }
 }
