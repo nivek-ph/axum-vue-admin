@@ -1,11 +1,9 @@
-use audit::AuditQuery;
 use axum::{
     Json,
     extract::{Path, Query, State},
 };
-use serde_json::Value;
 
-use super::dto::AuditEventResponse;
+use super::dto::{AuditEventListData, AuditEventListRequest, AuditEventResponse};
 use crate::{ApiResponse, AppResult, state::AppState};
 
 #[utoipa::path(
@@ -13,25 +11,25 @@ use crate::{ApiResponse, AppResult, state::AppState};
     path = "/audit/events",
     tag = "audit",
     security(("bearer_auth" = [])),
-    params(AuditQuery),
-    responses((status = 200, description = "Audit event list", body = ApiResponse<Value>))
+    params(AuditEventListRequest),
+    responses((status = 200, description = "Audit event list", body = ApiResponse<AuditEventListData>))
 )]
 pub async fn get_audit_events(
     State(state): State<AppState>,
-    Query(query): Query<AuditQuery>,
-) -> AppResult<Json<ApiResponse<Value>>> {
+    Query(query): Query<AuditEventListRequest>,
+) -> AppResult<Json<ApiResponse<AuditEventListData>>> {
     let (events, total, page, page_size) = state.audits.list(query).await?;
     let events = events
         .into_iter()
         .map(AuditEventResponse::from)
         .collect::<Vec<_>>();
 
-    Ok(Json(ApiResponse::ok(serde_json::json!({
-        "list": events,
-        "total": total,
-        "page": page,
-        "pageSize": page_size,
-    }))))
+    Ok(Json(ApiResponse::ok(AuditEventListData {
+        list: events,
+        total,
+        page,
+        page_size,
+    })))
 }
 
 #[utoipa::path(
@@ -40,12 +38,12 @@ pub async fn get_audit_events(
     tag = "audit",
     security(("bearer_auth" = [])),
     params(("id" = i64, Path, description = "Audit event ID")),
-    responses((status = 200, description = "Audit event detail", body = ApiResponse<Value>))
+    responses((status = 200, description = "Audit event detail", body = ApiResponse<Option<AuditEventResponse>>))
 )]
 pub async fn find_audit_event(
     State(state): State<AppState>,
     Path(id): Path<i64>,
-) -> AppResult<Json<ApiResponse<Value>>> {
+) -> AppResult<Json<ApiResponse<Option<AuditEventResponse>>>> {
     let event = state.audits.find(id).await?.map(AuditEventResponse::from);
-    Ok(Json(ApiResponse::ok(serde_json::json!(event))))
+    Ok(Json(ApiResponse::ok(event)))
 }
