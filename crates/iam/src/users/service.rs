@@ -671,19 +671,18 @@ async fn set_user_roles_with_audit(
         .bind(user_id)
         .execute(&mut *tx)
         .await?;
-    for role_id in &role_ids {
-        sqlx::query(
-            r#"
-            insert into sys_user_roles (user_id, role_id)
-            values ($1, $2)
-            on conflict do nothing
-            "#,
-        )
-        .bind(user_id)
-        .bind(role_id)
-        .execute(&mut *tx)
-        .await?;
-    }
+
+    sqlx::query(
+        r#"
+        insert into sys_user_roles (user_id, role_id)
+        select $1, unnest($2::bigint[])
+        on conflict do nothing
+        "#,
+    )
+    .bind(user_id)
+    .bind(&role_ids)
+    .execute(&mut *tx)
+    .await?;
 
     AuditService::record_in(
         &mut tx,
@@ -898,19 +897,17 @@ async fn replace_user_roles(
         .execute(&mut *tx)
         .await?;
 
-    for role_id in role_ids {
-        sqlx::query(
-            r#"
-            insert into sys_user_roles (user_id, role_id)
-            values ($1, $2)
-            on conflict do nothing
-            "#,
-        )
-        .bind(user_id)
-        .bind(role_id)
-        .execute(&mut *tx)
-        .await?;
-    }
+    sqlx::query(
+        r#"
+        insert into sys_user_roles (user_id, role_id)
+        select $1, unnest($2::bigint[])
+        on conflict do nothing
+        "#,
+    )
+    .bind(user_id)
+    .bind(&role_ids)
+    .execute(&mut *tx)
+    .await?;
 
     tx.commit().await?;
     Ok(())
