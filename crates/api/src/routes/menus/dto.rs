@@ -74,7 +74,7 @@ impl From<iam::menus::ApiBinding> for ApiBindingResponse {
 }
 
 #[derive(Debug, Serialize, ToSchema)]
-pub struct MenuPayload {
+pub struct MenuResponse {
     pub id: i64,
     #[serde(rename = "parentId")]
     pub parent_id: i64,
@@ -94,21 +94,21 @@ pub struct MenuPayload {
     #[serde(rename = "apiBindings")]
     pub api_bindings: Vec<ApiBindingResponse>,
     #[schema(no_recursion)]
-    pub children: Vec<MenuPayload>,
+    pub children: Vec<MenuResponse>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct MenuData {
-    pub menus: Vec<MenuPayload>,
+    pub menus: Vec<MenuResponse>,
     pub permissions: Vec<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct MenuTreeData {
-    pub menus: Vec<MenuPayload>,
+    pub menus: Vec<MenuResponse>,
 }
 
-impl From<iam::menus::MenuView> for MenuPayload {
+impl From<iam::menus::MenuView> for MenuResponse {
     fn from(v: iam::menus::MenuView) -> Self {
         Self {
             id: v.id,
@@ -144,7 +144,7 @@ mod tests {
 
     #[test]
     fn menu_payload_keeps_nested_transport_shape() {
-        let payload = MenuPayload::from(iam::menus::MenuView {
+        let payload = MenuResponse::from(iam::menus::MenuView {
             id: 1,
             parent_id: 0,
             path: "/dashboard".to_string(),
@@ -190,5 +190,23 @@ mod tests {
         assert_eq!(value["menuBtn"][0]["name"], "refresh");
         assert_eq!(value["apiBindings"][0]["pathPattern"], "/api/dashboard");
         assert!(value["apiBindings"][0].get("menu_id").is_none());
+    }
+
+    #[test]
+    fn current_and_definition_tree_keep_distinct_transport_shapes() {
+        let current = serde_json::to_value(MenuData {
+            menus: Vec::new(),
+            permissions: vec!["users:list".to_string()],
+        })
+        .expect("current menu data should serialize");
+        assert_eq!(
+            current,
+            serde_json::json!({ "menus": [], "permissions": ["users:list"] })
+        );
+
+        let definitions = serde_json::to_value(MenuTreeData { menus: Vec::new() })
+            .expect("menu definition tree should serialize");
+        assert_eq!(definitions, serde_json::json!({ "menus": [] }));
+        assert!(definitions.get("permissions").is_none());
     }
 }
