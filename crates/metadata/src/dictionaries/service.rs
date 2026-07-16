@@ -1,8 +1,8 @@
 use sqlx::PgPool;
 
 use super::{
-    DictionaryError, DictionaryListQuery, DictionaryWithDetails, ImportDictionaryPayload,
-    SysDictionary, SysDictionaryDetail, model::SysDictionaryDetailRow,
+    DictionaryDetailInput, DictionaryError, DictionaryInput, DictionaryListQuery,
+    DictionaryWithDetails, SysDictionary, SysDictionaryDetail, model::SysDictionaryDetailRow,
 };
 
 #[derive(Clone)]
@@ -22,12 +22,12 @@ impl DictionaryService {
         Ok(list(&self.pool, query).await?)
     }
 
-    pub async fn create(&self, payload: SysDictionary) -> Result<(), DictionaryError> {
+    pub async fn create(&self, payload: DictionaryInput) -> Result<(), DictionaryError> {
         Ok(create(&self.pool, payload).await?)
     }
 
-    pub async fn update(&self, payload: SysDictionary) -> Result<(), DictionaryError> {
-        Ok(update(&self.pool, payload).await?)
+    pub async fn update(&self, id: i64, payload: DictionaryInput) -> Result<(), DictionaryError> {
+        Ok(update(&self.pool, id, payload).await?)
     }
 
     pub async fn find(
@@ -42,33 +42,30 @@ impl DictionaryService {
         Ok(delete(&self.pool, id).await?)
     }
 
-    pub async fn export(&self, id: i64) -> Result<Option<serde_json::Value>, DictionaryError> {
+    pub async fn export(&self, id: i64) -> Result<Option<DictionaryWithDetails>, DictionaryError> {
         Ok(export_dictionary(&self.pool, id).await?)
     }
 
-    pub async fn import(&self, payload: ImportDictionaryPayload) -> Result<(), DictionaryError> {
-        Ok(import_dictionary(&self.pool, payload).await?)
+    pub async fn import(&self, payload: DictionaryInput) -> Result<(), DictionaryError> {
+        Ok(create(&self.pool, payload).await?)
     }
 
     pub async fn create_detail(
         &self,
         dictionary_id: i64,
-        mut payload: SysDictionaryDetail,
+        payload: DictionaryDetailInput,
     ) -> Result<(), DictionaryError> {
-        payload.sys_dictionary_id = dictionary_id;
         ensure_dictionary_exists(&self.pool, dictionary_id).await?;
-        create_detail(&self.pool, payload).await
+        create_detail(&self.pool, dictionary_id, payload).await
     }
 
     pub async fn update_detail(
         &self,
         dictionary_id: i64,
         detail_id: i64,
-        mut payload: SysDictionaryDetail,
+        payload: DictionaryDetailInput,
     ) -> Result<(), DictionaryError> {
-        payload.id = detail_id;
-        payload.sys_dictionary_id = dictionary_id;
-        update_detail(&self.pool, payload).await
+        update_detail(&self.pool, dictionary_id, detail_id, payload).await
     }
 
     pub async fn find_detail(
@@ -154,7 +151,10 @@ pub(crate) async fn list(
     Ok(list)
 }
 
-pub(crate) async fn create(pool: &sqlx::PgPool, payload: SysDictionary) -> Result<(), sqlx::Error> {
+pub(crate) async fn create(
+    pool: &sqlx::PgPool,
+    payload: DictionaryInput,
+) -> Result<(), sqlx::Error> {
     sqlx::query(
         "insert into sys_dictionaries (name, type, status, \"desc\", parent_id) values ($1, $2, $3, $4, $5)",
     )
@@ -168,7 +168,11 @@ pub(crate) async fn create(pool: &sqlx::PgPool, payload: SysDictionary) -> Resul
     Ok(())
 }
 
-pub(crate) async fn update(pool: &sqlx::PgPool, payload: SysDictionary) -> Result<(), sqlx::Error> {
+pub(crate) async fn update(
+    pool: &sqlx::PgPool,
+    id: i64,
+    payload: DictionaryInput,
+) -> Result<(), sqlx::Error> {
     sqlx::query(
         "update sys_dictionaries set name = $1, type = $2, status = $3, \"desc\" = $4, parent_id = $5 where id = $6",
     )
@@ -177,7 +181,7 @@ pub(crate) async fn update(pool: &sqlx::PgPool, payload: SysDictionary) -> Resul
     .bind(payload.status)
     .bind(payload.desc)
     .bind(payload.parent_id)
-    .bind(payload.id)
+    .bind(id)
     .execute(pool)
     .await?;
     Ok(())
@@ -245,14 +249,18 @@ pub(crate) async fn find_by_type(
 
 pub(crate) async fn create_detail(
     pool: &sqlx::PgPool,
-    payload: SysDictionaryDetail,
+    dictionary_id: i64,
+    payload: DictionaryDetailInput,
 ) -> Result<(), DictionaryError> {
-    let (level, path) = detail_level_and_path(pool, payload.parent_id, payload.sys_dictionary_id)
-        .await?
-        .ok_or(DictionaryError::DetailNotFound {
-            dictionary_id: payload.sys_dictionary_id,
-            detail_id: payload.parent_id.unwrap_or_default(),
-        })?;
+    let (level, path) = match payload.parent_id {
+        Some(parent_id) => detail_level_and_path(pool, Some(parent_id), dictionary_id)
+            .await?
+            .ok_or(DictionaryError::DetailNotFound {
+                dictionary_id,
+                detail_id: parent_id,
+            })?,
+        None => (0, String::new()),
+    };
     sqlx::query(
         r#"
         insert into sys_dictionary_details
@@ -265,7 +273,7 @@ pub(crate) async fn create_detail(
     .bind(payload.extend)
     .bind(payload.status)
     .bind(payload.sort)
-    .bind(payload.sys_dictionary_id)
+    .bind(dictionary_id)
     .bind(payload.parent_id)
     .bind(level)
     .bind(path)
@@ -276,16 +284,65 @@ pub(crate) async fn create_detail(
 
 pub(crate) async fn update_detail(
     pool: &sqlx::PgPool,
-    payload: SysDictionaryDetail,
+    dictionary_id: i64,
+    detail_id: i64,
+    payload: DictionaryDetailInput,
 ) -> Result<(), DictionaryError> {
-    let dictionary_id = payload.sys_dictionary_id;
-    let detail_id = payload.id;
-    let (level, path) = detail_level_and_path(pool, payload.parent_id, dictionary_id)
-        .await?
-        .ok_or(DictionaryError::DetailNotFound {
-            dictionary_id,
-            detail_id: payload.parent_id.unwrap_or_default(),
-        })?;
+    let mut transaction = pool.begin().await?;
+    if let Some(parent_id) = payload.parent_id {
+        let invalid_parent: bool = sqlx::query_scalar(
+            r#"
+            with recursive subtree as (
+                select id from sys_dictionary_details
+                where sys_dictionary_id = $1 and id = $2
+                union all
+                select child.id from sys_dictionary_details child
+                join subtree parent on child.parent_id = parent.id
+                where child.sys_dictionary_id = $1
+            )
+            select exists(select 1 from subtree where id = $3)
+            "#,
+        )
+        .bind(dictionary_id)
+        .bind(detail_id)
+        .bind(parent_id)
+        .fetch_one(&mut *transaction)
+        .await?;
+        if invalid_parent {
+            return Err(DictionaryError::InvalidParent {
+                dictionary_id,
+                detail_id,
+                parent_id,
+            });
+        }
+    }
+    let (level, path) = match payload.parent_id {
+        Some(parent_id) => {
+            let parent_info: Option<(i32, String)> = sqlx::query_as(
+                "select level, path from sys_dictionary_details where sys_dictionary_id = $1 and id = $2",
+            )
+            .bind(dictionary_id)
+            .bind(parent_id)
+            .fetch_optional(&mut *transaction)
+            .await?;
+
+            match parent_info {
+                Some((level, path)) => {
+                    let new_path = if path.is_empty() {
+                        parent_id.to_string()
+                    } else {
+                        format!("{path},{parent_id}")
+                    };
+                    Ok((level + 1, new_path))
+                }
+                None => Err(DictionaryError::DetailNotFound {
+                    dictionary_id,
+                    detail_id: parent_id,
+                }),
+            }
+        }
+        None => Ok((0, String::new())),
+    }?;
     let result = sqlx::query(
         r#"
         update sys_dictionary_details
@@ -299,13 +356,13 @@ pub(crate) async fn update_detail(
     .bind(payload.extend)
     .bind(payload.status)
     .bind(payload.sort)
-    .bind(payload.sys_dictionary_id)
+    .bind(dictionary_id)
     .bind(payload.parent_id)
     .bind(level)
     .bind(path)
-    .bind(payload.id)
+    .bind(detail_id)
     .bind(dictionary_id)
-    .execute(pool)
+    .execute(&mut *transaction)
     .await?;
     if result.rows_affected() == 0 {
         return Err(DictionaryError::DetailNotFound {
@@ -313,6 +370,34 @@ pub(crate) async fn update_detail(
             detail_id,
         });
     }
+    sqlx::query(
+        r#"
+        with recursive descendants as (
+            select id, level, path
+            from sys_dictionary_details
+            where sys_dictionary_id = $1 and id = $2
+            union all
+            select child.id,
+                   parent.level + 1,
+                   case when parent.path = '' then parent.id::text
+                        else parent.path || ',' || parent.id::text end
+            from sys_dictionary_details child
+            join descendants parent on child.parent_id = parent.id
+            where child.sys_dictionary_id = $1
+        )
+        update sys_dictionary_details detail
+        set level = descendants.level, path = descendants.path
+        from descendants
+        where detail.id = descendants.id
+          and detail.sys_dictionary_id = $1
+          and detail.id <> $2
+        "#,
+    )
+    .bind(dictionary_id)
+    .bind(detail_id)
+    .execute(&mut *transaction)
+    .await?;
+    transaction.commit().await?;
     Ok(())
 }
 
@@ -446,34 +531,15 @@ pub(crate) async fn detail_path(
 pub(crate) async fn export_dictionary(
     pool: &sqlx::PgPool,
     id: i64,
-) -> Result<Option<serde_json::Value>, sqlx::Error> {
+) -> Result<Option<DictionaryWithDetails>, sqlx::Error> {
     let Some(dictionary) = find(pool, id).await? else {
         return Ok(None);
     };
     let details = tree_by_dictionary(pool, id).await?;
-    Ok(Some(serde_json::json!({
-        "dictionary": dictionary,
-        "details": details
-    })))
-}
-
-pub(crate) async fn import_dictionary(
-    pool: &sqlx::PgPool,
-    payload: ImportDictionaryPayload,
-) -> Result<(), sqlx::Error> {
-    let value: serde_json::Value = serde_json::from_str(&payload.json)
-        .map_err(|err| sqlx::Error::Protocol(err.to_string()))?;
-    let dictionary = serde_json::from_value::<SysDictionary>(value["dictionary"].clone())
-        .map_err(|err| sqlx::Error::Protocol(err.to_string()))?;
-    create(
-        pool,
-        SysDictionary {
-            id: 0,
-            ..dictionary
-        },
-    )
-    .await?;
-    Ok(())
+    Ok(Some(DictionaryWithDetails {
+        dictionary,
+        details,
+    }))
 }
 
 async fn detail_level_and_path(

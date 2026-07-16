@@ -59,12 +59,12 @@ describe('dictionaries api adapter', () => {
     expect(get).toHaveBeenCalledWith('/dictionaries/7/tree', expect.any(Object))
     expect(post).toHaveBeenCalledWith(
       '/dictionaries/7/tree',
-      expect.objectContaining({ id: 9, sysDictionaryId: 7 }),
+      detail,
       expect.any(Object)
     )
     expect(put).toHaveBeenCalledWith(
       '/dictionaries/7/tree/9',
-      expect.objectContaining({ id: 9, sysDictionaryId: 7 }),
+      detail,
       expect.any(Object)
     )
     expect(remove).toHaveBeenCalledWith('/dictionaries/7/tree/9', expect.any(Object))

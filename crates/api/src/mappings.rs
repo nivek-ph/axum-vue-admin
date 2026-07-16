@@ -254,6 +254,11 @@ impl From<metadata::dictionaries::DictionaryError> for AppError {
                 ErrorSpec::not_found("DICTIONARY_DETAIL_NOT_FOUND", "dictionary detail not found")
                     .into()
             }
+            DictionaryError::InvalidParent { .. } => ErrorSpec::validation(
+                "INVALID_DICTIONARY_PARENT",
+                "dictionary parent cannot be the node or its descendant",
+            )
+            .into(),
             DictionaryError::Database(source) => {
                 INTERNAL_SERVER_ERROR.into_error().with_source(source)
             }
