@@ -1,7 +1,49 @@
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-#[derive(Debug, Serialize)]
+pub type DictionaryListRequest = metadata::dictionaries::DictionaryListQuery;
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct DictionaryRequest {
+    pub name: String,
+    #[serde(rename = "type")]
+    pub dictionary_type: String,
+    pub status: Option<bool>,
+    pub desc: String,
+    #[serde(rename = "parentId")]
+    pub parent_id: Option<i64>,
+}
+
+impl From<DictionaryRequest> for metadata::dictionaries::DictionaryInput {
+    fn from(value: DictionaryRequest) -> Self {
+        Self {
+            name: value.name,
+            dict_type: value.dictionary_type,
+            status: value.status,
+            desc: value.desc,
+            parent_id: value.parent_id,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct ImportDictionaryRequest {
+    pub json: String,
+}
+
+impl ImportDictionaryRequest {
+    pub fn into_input(self) -> Result<metadata::dictionaries::DictionaryInput, serde_json::Error> {
+        let document: DictionaryImportDocument = serde_json::from_str(&self.json)?;
+        Ok(document.dictionary.into())
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct DictionaryImportDocument {
+    dictionary: DictionaryRequest,
+}
+
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct DictionaryResponse {
     #[serde(rename = "id")]
     pub id: i64,
@@ -27,7 +69,7 @@ impl From<metadata::dictionaries::SysDictionary> for DictionaryResponse {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
 pub struct DictionaryDetailResponse {
     #[serde(rename = "id")]
     pub id: i64,
@@ -42,6 +84,7 @@ pub struct DictionaryDetailResponse {
     pub parent_id: Option<i64>,
     pub level: i32,
     pub path: String,
+    #[schema(no_recursion)]
     pub children: Vec<DictionaryDetailResponse>,
 }
 
@@ -85,7 +128,7 @@ impl DictionaryDetailResponse {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct DictionaryWithDetailsResponse {
     #[serde(rename = "id")]
     pub id: i64,
@@ -116,7 +159,7 @@ impl From<metadata::dictionaries::DictionaryWithDetails> for DictionaryWithDetai
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
-pub struct DictionaryDetailPayload {
+pub struct DictionaryDetailRequest {
     #[serde(rename = "id", default)]
     pub id: i64,
     pub label: String,
@@ -125,25 +168,73 @@ pub struct DictionaryDetailPayload {
     pub status: Option<bool>,
     pub sort: i32,
     #[serde(rename = "sysDictionaryId")]
-    pub dictionary_id: i64,
+    #[serde(default)]
+    pub dictionary_id: Option<i64>,
     #[serde(rename = "parentId")]
     pub parent_id: Option<i64>,
 }
 
-impl From<DictionaryDetailPayload> for metadata::dictionaries::SysDictionaryDetail {
-    fn from(value: DictionaryDetailPayload) -> Self {
+impl From<DictionaryDetailRequest> for metadata::dictionaries::DictionaryDetailInput {
+    fn from(value: DictionaryDetailRequest) -> Self {
         Self {
-            id: value.id,
             label: value.label,
             value: value.value,
             extend: value.extend,
             status: value.status,
             sort: value.sort,
-            sys_dictionary_id: value.dictionary_id,
             parent_id: value.parent_id,
-            level: 0,
-            path: String::new(),
-            children: Vec::new(),
         }
     }
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct DictionaryDetailData {
+    #[serde(rename = "resysDictionary")]
+    pub dictionary: DictionaryDetailValue,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+#[serde(untagged)]
+pub enum DictionaryDetailValue {
+    Dictionary(DictionaryWithDetailsResponse),
+    Empty(EmptyDictionary),
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct EmptyDictionary {}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct DictionaryImportData {}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct DictionaryTreeData {
+    pub list: Vec<DictionaryDetailResponse>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct DictionaryNodeData {
+    #[serde(rename = "reSysDictionaryDetail")]
+    pub detail: DictionaryDetailResponse,
+}
+
+#[derive(Debug, Deserialize, Serialize, ToSchema)]
+pub struct DictionaryExportData {
+    pub dictionary: DictionaryResponse,
+    pub details: Vec<DictionaryDetailResponse>,
+}
+
+impl From<metadata::dictionaries::DictionaryWithDetails> for DictionaryExportData {
+    fn from(value: metadata::dictionaries::DictionaryWithDetails) -> Self {
+        Self {
+            dictionary: value.dictionary.into(),
+            details: value.details.into_iter().map(Into::into).collect(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+#[serde(untagged)]
+pub enum DictionaryExportValue {
+    Dictionary(DictionaryExportData),
+    Empty(EmptyDictionary),
 }

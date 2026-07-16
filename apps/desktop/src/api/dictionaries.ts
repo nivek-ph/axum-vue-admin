@@ -71,12 +71,7 @@ export async function deleteDictionary(id: number) {
 export async function createDictionaryDetail(payload: DictionaryDetailPayload) {
   return http.post(
     `/dictionaries/${payload.sysDictionaryId}/tree`,
-    {
-      ...payload,
-      level: 0,
-      path: '',
-      children: [],
-    },
+    payload,
     withAuthHeaders()
   );
 }
@@ -84,12 +79,7 @@ export async function createDictionaryDetail(payload: DictionaryDetailPayload) {
 export async function updateDictionaryDetail(payload: DictionaryDetailPayload) {
   return http.put(
     `/dictionaries/${payload.sysDictionaryId}/tree/${payload.id}`,
-    {
-      ...payload,
-      level: 0,
-      path: '',
-      children: [],
-    },
+    payload,
     withAuthHeaders()
   );
 }
