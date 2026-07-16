@@ -10,6 +10,12 @@ use utoipa::{IntoParams, ToSchema};
 use super::dto::FileResponse;
 use crate::{ApiResponse, AppResult, mappings::MULTIPLE_FILES_NOT_SUPPORTED, state::AppState};
 
+async fn abort_upload(upload: FileUpload, reason: &'static str) {
+    if let Err(error) = upload.abort().await {
+        tracing::error!(%error, reason, "failed to clean up upload");
+    }
+}
+
 #[derive(Debug, Clone, Deserialize, IntoParams)]
 #[into_params(parameter_in = Query)]
 pub struct UploadMetadataQuery {
@@ -121,7 +127,7 @@ pub async fn upload_file(
             Ok(field) => field,
             Err(error) => {
                 if let Some(upload) = pending_upload.take() {
-                    upload.abort().await?;
+                    abort_upload(upload, "multipart read failed").await;
                 }
                 return Err(error.into());
             }
@@ -132,7 +138,7 @@ pub async fn upload_file(
 
         if let Some(file_name) = file_name {
             if let Some(upload) = pending_upload.take() {
-                upload.abort().await?;
+                abort_upload(upload, "multiple files received").await;
                 return Err(MULTIPLE_FILES_NOT_SUPPORTED.into());
             }
             let mut upload = state
@@ -143,7 +149,7 @@ pub async fn upload_file(
                 let chunk = match field.chunk().await {
                     Ok(chunk) => chunk,
                     Err(error) => {
-                        upload.abort().await?;
+                        abort_upload(upload, "file chunk read failed").await;
                         return Err(error.into());
                     }
                 };
@@ -151,7 +157,7 @@ pub async fn upload_file(
                     break;
                 };
                 if let Err(error) = upload.write_chunk(&chunk).await {
-                    upload.abort().await?;
+                    abort_upload(upload, "file chunk write failed").await;
                     return Err(error.into());
                 }
             }

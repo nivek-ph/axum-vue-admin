@@ -51,6 +51,10 @@ impl Drop for FileUpload {
 
 impl FileUpload {
     pub async fn abort(mut self) -> Result<(), FileError> {
+        self.cleanup().await
+    }
+
+    async fn cleanup(&mut self) -> Result<(), FileError> {
         self.file.take();
         if let Some(path) = self.cleanup_path.as_ref() {
             match tokio::fs::remove_file(path).await {
@@ -62,6 +66,12 @@ impl FileUpload {
             }
         }
         Ok(())
+    }
+
+    async fn cleanup_after_failure(&mut self, operation: &'static str) {
+        if let Err(error) = self.cleanup().await {
+            tracing::error!(%error, operation, "failed to clean up upload");
+        }
     }
 
     pub async fn write_chunk(&mut self, bytes: &[u8]) -> Result<(), FileError> {
@@ -82,11 +92,11 @@ impl FileUpload {
             && let Err(error) = file.flush().await
         {
             drop(file);
-            self.abort().await?;
+            self.cleanup_after_failure("file flush failed").await;
             return Err(error.into());
         }
         if let Err(error) = tokio::fs::rename(&self.temp_path, &self.final_path).await {
-            self.abort().await?;
+            self.cleanup_after_failure("file finalization failed").await;
             return Err(error.into());
         }
         self.cleanup_path = Some(self.final_path.clone());
@@ -120,17 +130,8 @@ impl FileUpload {
                 Ok(stored)
             }
             Err(error) => {
-                if let Some(path) = self.cleanup_path.as_ref() {
-                    match tokio::fs::remove_file(path).await {
-                        Ok(()) => self.cleanup_path = None,
-                        Err(cleanup_error)
-                            if cleanup_error.kind() == std::io::ErrorKind::NotFound =>
-                        {
-                            self.cleanup_path = None;
-                        }
-                        Err(cleanup_error) => return Err(cleanup_error.into()),
-                    }
-                }
+                self.cleanup_after_failure("metadata persistence failed")
+                    .await;
                 Err(error.into())
             }
         }
