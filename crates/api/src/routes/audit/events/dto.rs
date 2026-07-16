@@ -1,6 +1,9 @@
 use serde::Serialize;
+use utoipa::ToSchema;
 
-#[derive(Debug, Serialize)]
+pub type AuditEventListRequest = audit::AuditQuery;
+
+#[derive(Debug, Serialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct AuditEventResponse {
     pub id: i64,
@@ -15,6 +18,15 @@ pub struct AuditEventResponse {
     pub user_agent: String,
     pub changes: serde_json::Value,
     pub created_at: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct AuditEventListData {
+    pub list: Vec<AuditEventResponse>,
+    pub total: i64,
+    pub page: i64,
+    pub page_size: i64,
 }
 
 impl From<audit::AuditEventView> for AuditEventResponse {
