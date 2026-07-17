@@ -161,20 +161,6 @@ impl From<iam::users::AuthenticateError> for AppError {
     }
 }
 
-impl From<iam::users::AuthSessionError> for AppError {
-    fn from(error: iam::users::AuthSessionError) -> Self {
-        use iam::users::AuthSessionError;
-
-        match error {
-            AuthSessionError::UserNotFound => SESSION_INVALID.into(),
-            AuthSessionError::UserDisabled => USER_DISABLED.into(),
-            AuthSessionError::Database(source) => {
-                INTERNAL_SERVER_ERROR.into_error().with_source(source)
-            }
-        }
-    }
-}
-
 impl From<iam::menus::MenuError> for AppError {
     fn from(error: iam::menus::MenuError) -> Self {
         use iam::menus::MenuError;
@@ -185,7 +171,6 @@ impl From<iam::menus::MenuError> for AppError {
                 ErrorSpec::validation("MENU_INVALID_PAYLOAD", "invalid menu payload").into()
             }
             MenuError::Database(source) => INTERNAL_SERVER_ERROR.into_error().with_source(source),
-            MenuError::AccessEvaluation(source) => source.into(),
         }
     }
 }
@@ -339,16 +324,6 @@ mod tests {
 
         assert_eq!(error.status(), StatusCode::SERVICE_UNAVAILABLE);
         assert_eq!(error.code(), "AUTHORIZATION_UNAVAILABLE");
-    }
-
-    #[test]
-    fn menu_access_evaluation_uses_the_same_session_contract() {
-        let error = AppError::from(iam::menus::MenuError::AccessEvaluation(
-            iam::access::AccessEvaluationError::UserNotFound,
-        ));
-
-        assert_eq!(error.status(), StatusCode::UNAUTHORIZED);
-        assert_eq!(error.code(), "SESSION_INVALID");
     }
 
     #[tokio::test]

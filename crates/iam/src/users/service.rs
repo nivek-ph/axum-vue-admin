@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use audit::{
     AuditAction, AuditContext, AuditEvent, AuditReason, AuditResource, AuditResult, AuditService,
     AuditValue, FieldChange,
@@ -6,10 +8,9 @@ use auth::password::PasswordService;
 use uuid::Uuid;
 
 use super::{
-    AuthSessionError, AuthenticateError, AuthenticatedUser, ChangePasswordRequest,
-    DeleteUserRequest, GetUserListRequest, LoginIdentity, LoginRequest, RegisterRequest,
-    ResetPasswordInput, SetSelfInfoRequest, SetSelfSettingRequest, SetUserRolesRequest,
-    UpdateUserInput, UserError, UserInfoView, UserRecord,
+    AuthenticateError, ChangePasswordRequest, DeleteUserRequest, GetUserListRequest, LoginIdentity,
+    LoginRequest, RegisterRequest, ResetPasswordInput, SetSelfInfoRequest, SetSelfSettingRequest,
+    SetUserRolesRequest, UpdateUserInput, UserError, UserInfoView, UserRecord,
 };
 use crate::{
     access::{AccessService, DataScopeFilter},
@@ -400,24 +401,6 @@ pub(crate) async fn login(
     })
 }
 
-pub(crate) async fn load_authenticated_user(
-    pool: &sqlx::PgPool,
-    user_id: i64,
-) -> Result<AuthenticatedUser, AuthSessionError> {
-    let exists = sqlx::query_scalar::<_, bool>("SELECT enable FROM sys_users WHERE id = $1")
-        .bind(user_id)
-        .fetch_optional(pool)
-        .await?
-        .ok_or(AuthSessionError::UserNotFound)?;
-    if !exists {
-        return Err(AuthSessionError::UserDisabled);
-    }
-    Ok(AuthenticatedUser {
-        id: user_id,
-        data_scope: DataScopeFilter::All,
-    })
-}
-
 pub(crate) async fn get_user_list(
     pool: &sqlx::PgPool,
     query: GetUserListRequest,
@@ -533,9 +516,11 @@ async fn get_user_list_with_scope(
         .fetch_all(pool)
         .await?;
 
+    let user_ids = rows.iter().map(|record| record.id).collect::<Vec<_>>();
+    let mut roles_by_user_id = get_roles_by_user_ids(pool, &user_ids).await?;
     let mut list = Vec::with_capacity(rows.len());
     for record in rows {
-        let roles = get_roles_by_user_id(pool, record.id).await?;
+        let roles = roles_by_user_id.remove(&record.id).unwrap_or_default();
         list.push(build_user_info(&record, roles));
     }
 
@@ -868,22 +853,71 @@ fn build_user_info(record: &UserRecord, roles: Vec<RoleSummary>) -> UserInfoView
     }
 }
 
+#[derive(sqlx::FromRow)]
+struct UserRoleRow {
+    user_id: i64,
+    id: i64,
+    code: String,
+    name: String,
+    status: String,
+    sort: i32,
+    data_scope: String,
+    is_system: bool,
+}
+
+impl From<UserRoleRow> for RoleSummary {
+    fn from(row: UserRoleRow) -> Self {
+        Self {
+            id: row.id,
+            code: row.code,
+            name: row.name,
+            status: row.status,
+            sort: row.sort,
+            data_scope: row.data_scope,
+            is_system: row.is_system,
+        }
+    }
+}
+
+async fn get_roles_by_user_ids(
+    pool: &sqlx::PgPool,
+    user_ids: &[i64],
+) -> Result<HashMap<i64, Vec<RoleSummary>>, sqlx::Error> {
+    if user_ids.is_empty() {
+        return Ok(HashMap::new());
+    }
+
+    let rows = sqlx::query_as::<_, UserRoleRow>(
+        r#"
+        select ur.user_id, r.id, r.code, r.name, r.status, r.sort, r.data_scope, r.is_system
+        from sys_user_roles ur
+        join sys_roles r on r.id = ur.role_id
+        where ur.user_id = any($1) and r.status = 'enabled'
+        order by ur.user_id, r.sort, r.id
+        "#,
+    )
+    .bind(user_ids)
+    .fetch_all(pool)
+    .await?;
+
+    let mut roles_by_user_id = HashMap::<i64, Vec<RoleSummary>>::new();
+    for row in rows {
+        roles_by_user_id
+            .entry(row.user_id)
+            .or_default()
+            .push(row.into());
+    }
+    Ok(roles_by_user_id)
+}
+
 async fn get_roles_by_user_id(
     pool: &sqlx::PgPool,
     user_id: i64,
 ) -> Result<Vec<RoleSummary>, sqlx::Error> {
-    sqlx::query_as::<_, RoleSummary>(
-        r#"
-        select r.id, r.code, r.name, r.status, r.sort, r.data_scope, r.is_system
-        from sys_user_roles ur
-        join sys_roles r on r.id = ur.role_id
-        where ur.user_id = $1 and r.status = 'enabled'
-        order by r.sort, r.id
-        "#,
-    )
-    .bind(user_id)
-    .fetch_all(pool)
-    .await
+    Ok(get_roles_by_user_ids(pool, &[user_id])
+        .await?
+        .remove(&user_id)
+        .unwrap_or_default())
 }
 
 async fn replace_user_roles(
@@ -1040,6 +1074,89 @@ mod tests {
             normalize_role_ids(Some(&vec![2, 1, 2])).unwrap(),
             vec![1, 2]
         );
+    }
+
+    #[sqlx::test(migrations = "../../migrations")]
+    async fn paged_users_keep_their_roles_and_order(pool: sqlx::PgPool) {
+        sqlx::query(
+            r#"
+            insert into sys_users (
+                id, uuid, username, password_hash, nick_name, header_img, home_route,
+                enable, dept_id, is_system
+            ) values
+                (200, 'batch-a-uuid', 'batch-a', 'hash', 'Batch A', '', 'dashboard', true, 1, false),
+                (201, 'batch-b-uuid', 'batch-b', 'hash', 'Batch B', '', 'dashboard', true, 1, false),
+                (202, 'batch-c-uuid', 'batch-c', 'hash', 'Batch C', '', 'dashboard', true, 1, false)
+            "#,
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+        sqlx::query(
+            r#"
+            insert into sys_roles (id, code, name, status, sort, data_scope, is_system)
+            values
+                (10, 'batch-later', 'Batch Later', 'enabled', 20, 'self', false),
+                (11, 'batch-first', 'Batch First', 'enabled', 10, 'self', false),
+                (12, 'batch-disabled', 'Batch Disabled', 'disabled', 0, 'self', false)
+            "#,
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+        sqlx::query(
+            r#"
+            insert into sys_user_roles (user_id, role_id)
+            values (200, 10), (200, 11), (201, 10), (202, 12)
+            "#,
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+
+        let service = UserService::new(pool, PasswordService::new());
+        let first_page = GetUserListRequest {
+            page: 1,
+            page_size: 2,
+            username: Some("batch-".to_string()),
+            nick_name: None,
+            phone: None,
+            email: None,
+            order_key: Some("username".to_string()),
+            desc: Some(false),
+        };
+        let (users, total) = service
+            .list_with_scope(first_page.clone(), DataScopeFilter::All)
+            .await
+            .unwrap();
+
+        assert_eq!(total, 3);
+        assert_eq!(
+            users
+                .iter()
+                .map(|user| user.user_name.as_str())
+                .collect::<Vec<_>>(),
+            vec!["batch-a", "batch-b"]
+        );
+        assert_eq!(users[0].role_ids, vec![11, 10]);
+        assert_eq!(users[1].role_ids, vec![10]);
+
+        let (users, total) = service
+            .list_with_scope(
+                GetUserListRequest {
+                    page: 2,
+                    ..first_page
+                },
+                DataScopeFilter::All,
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(total, 3);
+        assert_eq!(users.len(), 1);
+        assert_eq!(users[0].user_name, "batch-c");
+        assert!(users[0].roles.is_empty());
+        assert!(users[0].role_ids.is_empty());
     }
 
     #[sqlx::test(migrations = "../../migrations")]

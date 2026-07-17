@@ -161,10 +161,8 @@ Authenticated requests send the JWT in the `Authorization: Bearer <token>` heade
   - CRUD/user management returns `UserError` from `crates/iam/src/users`.
   - Login returns `AuthenticateError`; unknown users and incorrect passwords both become
     `INVALID_CREDENTIALS` so the login API does not reveal whether an account exists.
-  - Auth middleware maps missing/deleted users to `SESSION_INVALID`, because an
-    already-issued token can no longer resolve to an active session.
-- `AuthSessionError` has a single auth-session meaning and can convert through
-  `From<AuthSessionError> for AppError`.
+  - Auth middleware loads an Access Snapshot; access evaluation maps missing/deleted
+    users to `SESSION_INVALID` and disabled users to `USER_DISABLED`.
 
 ## API Overview
 
