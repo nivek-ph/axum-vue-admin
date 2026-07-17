@@ -47,7 +47,7 @@ pub async fn run(config: ServeConfig) -> Result<()> {
         access: access.clone(),
         dictionaries: DictionaryService::new(pool.clone()),
         parameters: ParameterService::new(pool.clone()),
-        menus: MenuService::new(pool.clone(), access),
+        menus: MenuService::new(pool.clone()),
         audits,
         files: FileService::new(pool, "./uploads"),
     };

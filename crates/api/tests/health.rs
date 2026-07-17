@@ -22,10 +22,7 @@ fn test_state() -> api::AppState {
         access: iam::access::AccessService::new(pool.clone()),
         dictionaries: metadata::dictionaries::DictionaryService::new(pool.clone()),
         parameters: metadata::parameters::ParameterService::new(pool.clone()),
-        menus: iam::menus::MenuService::new(
-            pool.clone(),
-            iam::access::AccessService::new(pool.clone()),
-        ),
+        menus: iam::menus::MenuService::new(pool.clone()),
         audits,
         files: file_storage::files::FileService::new(pool, "./uploads"),
     }

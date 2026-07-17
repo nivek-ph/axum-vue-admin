@@ -11,6 +11,7 @@ use axum::{
 
 use crate::{
     AppResult,
+    extractors::current_access::CurrentAccess,
     mappings::{LOGIN_REQUIRED, PERMISSION_DENIED},
     state::AppState,
 };
@@ -66,13 +67,16 @@ pub async fn require_auth(
         }
     }
 
-    let user_id = claims.user_id;
-    request
-        .extensions_mut()
-        .insert(iam::users::AuthenticatedUser {
-            id: user_id,
-            data_scope: snapshot.data_scope,
-        });
+    if is_current_menu_endpoint(&method, &path) {
+        request.extensions_mut().insert(CurrentAccess(snapshot));
+    } else {
+        request
+            .extensions_mut()
+            .insert(iam::users::AuthenticatedUser {
+                id: claims.user_id,
+                data_scope: snapshot.data_scope,
+            });
+    }
     request.extensions_mut().insert(audit_context);
     Ok(next.run(request).await)
 }
@@ -103,6 +107,10 @@ fn is_self_service_endpoint(method: &str, path: &str) -> bool {
     )
 }
 
+fn is_current_menu_endpoint(method: &str, path: &str) -> bool {
+    method == "GET" && path == "/api/menus/current"
+}
+
 fn permission_registry_path(path: &str) -> String {
     let trimmed = path.trim_end_matches('/');
     let normalized = if trimmed.is_empty() { "/api" } else { trimmed };
@@ -124,6 +132,13 @@ mod tests {
         assert!(is_self_service_endpoint("GET", "/api/users/me"));
         assert!(is_self_service_endpoint("GET", "/api/menus/current"));
         assert!(!is_self_service_endpoint("GET", "/api/users"));
+    }
+
+    #[test]
+    fn access_snapshot_is_forwarded_only_to_the_current_menu_route() {
+        assert!(is_current_menu_endpoint("GET", "/api/menus/current"));
+        assert!(!is_current_menu_endpoint("POST", "/api/menus/current"));
+        assert!(!is_current_menu_endpoint("GET", "/api/menus/tree"));
     }
     #[test]
     fn restores_api_prefix() {

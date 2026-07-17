@@ -3,21 +3,22 @@ use std::collections::{HashMap, HashSet};
 use sqlx::PgPool;
 
 use super::{ApiBinding, MenuError, MenuMeta, MenuRecord, MenuView};
-use crate::access::AccessService;
+use crate::access::AccessSnapshot;
 
 #[derive(Clone)]
 pub struct MenuService {
     pool: PgPool,
-    access: AccessService,
 }
 
 impl MenuService {
-    pub fn new(pool: PgPool, access: AccessService) -> Self {
-        Self { pool, access }
+    pub fn new(pool: PgPool) -> Self {
+        Self { pool }
     }
 
-    pub async fn current(&self, user_id: i64) -> Result<(Vec<MenuView>, Vec<String>), MenuError> {
-        let snapshot = self.access.snapshot(user_id).await?;
+    pub async fn current(
+        &self,
+        snapshot: AccessSnapshot,
+    ) -> Result<(Vec<MenuView>, Vec<String>), MenuError> {
         let allowed = snapshot.menu_ids.iter().copied().collect::<HashSet<_>>();
         let records = load_records(&self.pool).await?;
         Ok((
