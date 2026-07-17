@@ -2,15 +2,14 @@ use axum::{
     Json,
     extract::{Path, Query, State},
 };
-use serde_json::Value;
 
 use super::dto::{
     DictionaryDetailData, DictionaryDetailRequest, DictionaryDetailResponse, DictionaryDetailValue,
-    DictionaryExportValue, DictionaryImportData, DictionaryListRequest, DictionaryNodeData,
-    DictionaryRequest, DictionaryResponse, DictionaryTreeData, DictionaryWithDetailsResponse,
-    EmptyDictionary, ImportDictionaryRequest,
+    DictionaryExportValue, DictionaryListRequest, DictionaryNodeData, DictionaryRequest,
+    DictionaryResponse, DictionaryTreeData, DictionaryWithDetailsResponse, EmptyDictionary,
+    ImportDictionaryRequest,
 };
-use crate::{ApiResponse, AppResult, state::AppState};
+use crate::{ApiResponse, AppResult, NoData, state::AppState};
 
 #[utoipa::path(
     post,
@@ -18,15 +17,15 @@ use crate::{ApiResponse, AppResult, state::AppState};
     tag = "dictionary",
     security(("bearer_auth" = [])),
     request_body = DictionaryRequest,
-    responses((status = 200, description = "Dictionary created", body = ApiResponse<Value>))
+    responses((status = 200, description = "Dictionary created", body = ApiResponse<NoData>))
 )]
 pub async fn create_sys_dictionary(
     State(state): State<AppState>,
     Json(payload): Json<DictionaryRequest>,
-) -> AppResult<Json<ApiResponse<Value>>> {
+) -> AppResult<Json<ApiResponse<NoData>>> {
     state.dictionaries.create(payload.into()).await?;
 
-    Ok(Json(ApiResponse::ok_message("created")))
+    Ok(Json(ApiResponse::new("OK", "created", None)))
 }
 
 #[utoipa::path(
@@ -36,16 +35,16 @@ pub async fn create_sys_dictionary(
     security(("bearer_auth" = [])),
     params(("id" = i64, Path, description = "Dictionary ID")),
     request_body = DictionaryRequest,
-    responses((status = 200, description = "Dictionary updated", body = ApiResponse<Value>))
+    responses((status = 200, description = "Dictionary updated", body = ApiResponse<NoData>))
 )]
 pub async fn update_sys_dictionary_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
     Json(payload): Json<DictionaryRequest>,
-) -> AppResult<Json<ApiResponse<Value>>> {
+) -> AppResult<Json<ApiResponse<NoData>>> {
     state.dictionaries.update(id, payload.into()).await?;
 
-    Ok(Json(ApiResponse::ok_message("updated")))
+    Ok(Json(ApiResponse::new("OK", "updated", None)))
 }
 
 #[utoipa::path(
@@ -100,14 +99,14 @@ pub async fn get_sys_dictionary_list(
     tag = "dictionary",
     security(("bearer_auth" = [])),
     params(("id" = i64, Path, description = "Dictionary ID")),
-    responses((status = 200, description = "Dictionary deleted", body = ApiResponse<Value>))
+    responses((status = 200, description = "Dictionary deleted", body = ApiResponse<NoData>))
 )]
 pub async fn delete_sys_dictionary_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
-) -> AppResult<Json<ApiResponse<Value>>> {
+) -> AppResult<Json<ApiResponse<NoData>>> {
     state.dictionaries.delete(id).await?;
-    Ok(Json(ApiResponse::ok_message("deleted")))
+    Ok(Json(ApiResponse::new("OK", "deleted", None)))
 }
 
 #[utoipa::path(
@@ -136,12 +135,12 @@ pub async fn export_sys_dictionary_by_id(
     tag = "dictionary",
     security(("bearer_auth" = [])),
     request_body = ImportDictionaryRequest,
-    responses((status = 200, description = "Dictionary imported", body = ApiResponse<DictionaryImportData>))
+    responses((status = 200, description = "Dictionary imported", body = ApiResponse<NoData>))
 )]
 pub async fn import_sys_dictionary(
     State(state): State<AppState>,
     Json(payload): Json<ImportDictionaryRequest>,
-) -> AppResult<Json<ApiResponse<DictionaryImportData>>> {
+) -> AppResult<Json<ApiResponse<NoData>>> {
     let input = payload.into_input().map_err(anyhow::Error::from)?;
     state.dictionaries.import(input).await?;
 
@@ -177,18 +176,18 @@ pub async fn get_dictionary_tree(
     security(("bearer_auth" = [])),
     params(("id" = i64, Path, description = "Dictionary ID")),
     request_body = DictionaryDetailRequest,
-    responses((status = 200, description = "Dictionary node created", body = ApiResponse<Value>))
+    responses((status = 200, description = "Dictionary node created", body = ApiResponse<NoData>))
 )]
 pub async fn create_dictionary_tree_node(
     State(state): State<AppState>,
     Path(dictionary_id): Path<i64>,
     Json(payload): Json<DictionaryDetailRequest>,
-) -> AppResult<Json<ApiResponse<Value>>> {
+) -> AppResult<Json<ApiResponse<NoData>>> {
     state
         .dictionaries
         .create_detail(dictionary_id, payload.into())
         .await?;
-    Ok(Json(ApiResponse::ok_message("created")))
+    Ok(Json(ApiResponse::new("OK", "created", None)))
 }
 
 #[utoipa::path(
@@ -225,18 +224,18 @@ pub async fn find_dictionary_tree_node(
         ("node_id" = i64, Path, description = "Node ID")
     ),
     request_body = DictionaryDetailRequest,
-    responses((status = 200, description = "Dictionary node updated", body = ApiResponse<Value>))
+    responses((status = 200, description = "Dictionary node updated", body = ApiResponse<NoData>))
 )]
 pub async fn update_dictionary_tree_node(
     State(state): State<AppState>,
     Path((dictionary_id, node_id)): Path<(i64, i64)>,
     Json(payload): Json<DictionaryDetailRequest>,
-) -> AppResult<Json<ApiResponse<Value>>> {
+) -> AppResult<Json<ApiResponse<NoData>>> {
     state
         .dictionaries
         .update_detail(dictionary_id, node_id, payload.into())
         .await?;
-    Ok(Json(ApiResponse::ok_message("updated")))
+    Ok(Json(ApiResponse::new("OK", "updated", None)))
 }
 
 #[utoipa::path(
@@ -248,17 +247,17 @@ pub async fn update_dictionary_tree_node(
         ("id" = i64, Path, description = "Dictionary ID"),
         ("node_id" = i64, Path, description = "Node ID")
     ),
-    responses((status = 200, description = "Dictionary node deleted", body = ApiResponse<Value>))
+    responses((status = 200, description = "Dictionary node deleted", body = ApiResponse<NoData>))
 )]
 pub async fn delete_dictionary_tree_node(
     State(state): State<AppState>,
     Path((dictionary_id, node_id)): Path<(i64, i64)>,
-) -> AppResult<Json<ApiResponse<Value>>> {
+) -> AppResult<Json<ApiResponse<NoData>>> {
     state
         .dictionaries
         .delete_detail(dictionary_id, node_id)
         .await?;
-    Ok(Json(ApiResponse::ok_message("deleted")))
+    Ok(Json(ApiResponse::new("OK", "deleted", None)))
 }
 
 #[utoipa::path(
