@@ -72,11 +72,6 @@ impl UserService {
         Ok(ensure_admin_user(&self.pool, &self.passwords, username, password, nickname).await?)
     }
 
-    pub async fn register(&self, payload: RegisterRequest) -> Result<(), UserError> {
-        create_user(&self.pool, &self.passwords, payload).await?;
-        self.bump_access_version().await
-    }
-
     pub async fn create(
         &self,
         actor_user_id: i64,

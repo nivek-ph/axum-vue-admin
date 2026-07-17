@@ -23,7 +23,7 @@ pub struct AppState {
 }
 
 #[cfg(test)]
-pub fn test_state(pool: sqlx::PgPool) -> AppState {
+pub(crate) fn test_state(pool: sqlx::PgPool) -> AppState {
     let passwords = auth::password::PasswordService::new();
     let access = AccessService::new(pool.clone());
     let audits = AuditService::new(pool.clone());
