@@ -8,7 +8,7 @@ use super::{
     AccessEvaluationError, AccessInitError, AccessPropagationError,
     catalog::{AccessBinding, AccessCatalog, AccessNode, CatalogError},
 };
-use crate::{access::scope::DataScopeFilter, users};
+use crate::access::scope::DataScopeFilter;
 
 const AUTHZ_VERSION_KEY: &str = "ava:authz:version";
 const AUTHZ_USER_KEY_PREFIX: &str = "ava:authz:user:";
@@ -97,13 +97,6 @@ impl AccessService {
         Ok(service)
     }
 
-    pub async fn resolve_user(
-        &self,
-        user_id: i64,
-    ) -> Result<users::AuthenticatedUser, users::AuthSessionError> {
-        users::load_authenticated_user(&self.pool, user_id).await
-    }
-
     pub async fn snapshot(&self, user_id: i64) -> Result<AccessSnapshot, AccessEvaluationError> {
         let Some(mut redis) = self.redis.clone() else {
             return self.load_snapshot_from_db(user_id, 0).await;
@@ -148,34 +141,6 @@ impl AccessService {
     ) -> Result<(), CatalogError> {
         self.catalog
             .validate_assignment(&menu_ids.iter().copied().collect())
-    }
-
-    pub async fn has_super_admin_role(&self, user_id: i64) -> Result<bool, AccessEvaluationError> {
-        Ok(self.snapshot(user_id).await?.is_super_admin())
-    }
-
-    pub async fn required_permission(
-        &self,
-        method: &str,
-        path: &str,
-    ) -> Result<Option<String>, AccessEvaluationError> {
-        match self.catalog.resolve(method, path) {
-            Ok(menu_id) => Ok(self.catalog.permission(menu_id).map(ToOwned::to_owned)),
-            Err(CatalogError::Unbound) => Ok(None),
-            Err(error) => Err(error.into()),
-        }
-    }
-
-    pub async fn is_allowed(
-        &self,
-        user_id: i64,
-        permission: &str,
-    ) -> Result<bool, AccessEvaluationError> {
-        Ok(self
-            .snapshot(user_id)
-            .await?
-            .permissions
-            .contains(permission))
     }
 
     async fn load_snapshot_from_db(

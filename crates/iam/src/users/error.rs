@@ -33,13 +33,3 @@ pub enum AuthenticateError {
     #[error("{0}")]
     Database(#[from] sqlx::Error),
 }
-
-#[derive(Debug, thiserror::Error)]
-pub enum AuthSessionError {
-    #[error("user not found")]
-    UserNotFound,
-    #[error("user is disabled")]
-    UserDisabled,
-    #[error("{0}")]
-    Database(#[from] sqlx::Error),
-}

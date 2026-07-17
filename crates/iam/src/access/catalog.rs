@@ -43,18 +43,11 @@ pub struct AccessCatalog {
     enabled_menu_ids: HashSet<i64>,
     enabled_permissions: HashSet<String>,
     parents: HashMap<i64, Option<i64>>,
-    permissions_by_id: HashMap<i64, String>,
 }
 
 impl AccessCatalog {
     pub fn new(bindings: Vec<AccessBinding>) -> Result<Self, CatalogError> {
-        Self::build(
-            bindings,
-            HashSet::new(),
-            HashSet::new(),
-            HashMap::new(),
-            HashMap::new(),
-        )
+        Self::build(bindings, HashSet::new(), HashSet::new(), HashMap::new())
     }
 
     pub fn from_parts(
@@ -101,21 +94,11 @@ impl AccessCatalog {
             .values()
             .map(|node| (node.id, node.parent_id))
             .collect();
-        let permissions_by_id = node_map
-            .values()
-            .filter_map(|node| {
-                node.permission
-                    .clone()
-                    .map(|permission| (node.id, permission))
-            })
-            .collect();
-
         Self::build(
             active_bindings,
             enabled_menu_ids,
             enabled_permissions,
             parents,
-            permissions_by_id,
         )
     }
 
@@ -124,7 +107,6 @@ impl AccessCatalog {
         enabled_menu_ids: HashSet<i64>,
         enabled_permissions: HashSet<String>,
         parents: HashMap<i64, Option<i64>>,
-        permissions_by_id: HashMap<i64, String>,
     ) -> Result<Self, CatalogError> {
         let mut exact = HashMap::new();
         let mut dynamic = HashMap::<String, Vec<RouteBinding>>::new();
@@ -154,7 +136,6 @@ impl AccessCatalog {
             enabled_menu_ids,
             enabled_permissions,
             parents,
-            permissions_by_id,
         })
     }
 
@@ -187,10 +168,6 @@ impl AccessCatalog {
 
     pub fn enabled_permissions(&self) -> &HashSet<String> {
         &self.enabled_permissions
-    }
-
-    pub fn permission(&self, menu_id: i64) -> Option<&str> {
-        self.permissions_by_id.get(&menu_id).map(String::as_str)
     }
 
     pub fn validate_assignment(&self, menu_ids: &HashSet<i64>) -> Result<(), CatalogError> {

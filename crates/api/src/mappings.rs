@@ -161,20 +161,6 @@ impl From<iam::users::AuthenticateError> for AppError {
     }
 }
 
-impl From<iam::users::AuthSessionError> for AppError {
-    fn from(error: iam::users::AuthSessionError) -> Self {
-        use iam::users::AuthSessionError;
-
-        match error {
-            AuthSessionError::UserNotFound => SESSION_INVALID.into(),
-            AuthSessionError::UserDisabled => USER_DISABLED.into(),
-            AuthSessionError::Database(source) => {
-                INTERNAL_SERVER_ERROR.into_error().with_source(source)
-            }
-        }
-    }
-}
-
 impl From<iam::menus::MenuError> for AppError {
     fn from(error: iam::menus::MenuError) -> Self {
         use iam::menus::MenuError;

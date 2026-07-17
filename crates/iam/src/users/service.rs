@@ -8,10 +8,9 @@ use auth::password::PasswordService;
 use uuid::Uuid;
 
 use super::{
-    AuthSessionError, AuthenticateError, AuthenticatedUser, ChangePasswordRequest,
-    DeleteUserRequest, GetUserListRequest, LoginIdentity, LoginRequest, RegisterRequest,
-    ResetPasswordInput, SetSelfInfoRequest, SetSelfSettingRequest, SetUserRolesRequest,
-    UpdateUserInput, UserError, UserInfoView, UserRecord,
+    AuthenticateError, ChangePasswordRequest, DeleteUserRequest, GetUserListRequest, LoginIdentity,
+    LoginRequest, RegisterRequest, ResetPasswordInput, SetSelfInfoRequest, SetSelfSettingRequest,
+    SetUserRolesRequest, UpdateUserInput, UserError, UserInfoView, UserRecord,
 };
 use crate::{
     access::{AccessService, DataScopeFilter},
@@ -399,24 +398,6 @@ pub(crate) async fn login(
         id: record.id,
         username: record.username.clone(),
         user: build_user_info(&record, roles),
-    })
-}
-
-pub(crate) async fn load_authenticated_user(
-    pool: &sqlx::PgPool,
-    user_id: i64,
-) -> Result<AuthenticatedUser, AuthSessionError> {
-    let exists = sqlx::query_scalar::<_, bool>("SELECT enable FROM sys_users WHERE id = $1")
-        .bind(user_id)
-        .fetch_optional(pool)
-        .await?
-        .ok_or(AuthSessionError::UserNotFound)?;
-    if !exists {
-        return Err(AuthSessionError::UserDisabled);
-    }
-    Ok(AuthenticatedUser {
-        id: user_id,
-        data_scope: DataScopeFilter::All,
     })
 }
 

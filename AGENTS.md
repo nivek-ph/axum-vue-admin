@@ -43,8 +43,7 @@ This file gives repo-specific guidance for agents working in this project.
 - Keep user-management and authentication errors distinct:
   - CRUD/user management returns `UserError` from `crates/iam/src/users`.
   - Login returns `AuthenticateError`; unknown users and incorrect passwords both become `INVALID_CREDENTIALS` to avoid account enumeration.
-  - Auth middleware maps a missing/deleted token user to `SESSION_INVALID`.
-- `AuthSessionError` has one auth-session semantic, so `From<AuthSessionError> for AppError` is acceptable.
+  - Auth middleware loads an Access Snapshot; `AccessEvaluationError` maps a missing/deleted token user to `SESSION_INVALID` and a disabled user to `USER_DISABLED`.
 
 ## Frontend
 
