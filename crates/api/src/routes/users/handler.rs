@@ -5,7 +5,7 @@ use axum::{
 
 use super::dto::*;
 use crate::{
-    ApiResponse, AppResult, NoData, extractors::current_user::CurrentUser, state::AppState,
+    ApiResponse, AppResult, EmptyData, extractors::current_user::CurrentUser, state::AppState,
 };
 
 #[utoipa::path(
@@ -64,13 +64,13 @@ pub async fn get_user_list_by_query(
     tag = "user",
     security(("bearer_auth" = [])),
     request_body = RegisterUserRequest,
-    responses((status = 200, description = "User registered", body = ApiResponse<NoData>))
+    responses((status = 200, description = "User registered", body = ApiResponse<EmptyData>))
 )]
 pub async fn admin_register(
     State(state): State<AppState>,
     CurrentUser(user): CurrentUser,
     Json(payload): Json<RegisterUserRequest>,
-) -> AppResult<Json<ApiResponse<NoData>>> {
+) -> AppResult<Json<ApiResponse<EmptyData>>> {
     state.users.register_as(user.id, payload).await?;
 
     Ok(Json(ApiResponse::new("OK", "registered", None)))
@@ -82,13 +82,13 @@ pub async fn admin_register(
     tag = "user",
     security(("bearer_auth" = [])),
     request_body = ChangePasswordRequest,
-    responses((status = 200, description = "Password changed", body = ApiResponse<NoData>))
+    responses((status = 200, description = "Password changed", body = ApiResponse<EmptyData>))
 )]
 pub async fn change_password(
     State(state): State<AppState>,
     CurrentUser(user): CurrentUser,
     Json(payload): Json<ChangePasswordRequest>,
-) -> AppResult<Json<ApiResponse<NoData>>> {
+) -> AppResult<Json<ApiResponse<EmptyData>>> {
     state.users.change_password(user.id, payload).await?;
 
     Ok(Json(ApiResponse::new("OK", "updated", None)))
@@ -101,14 +101,14 @@ pub async fn change_password(
     security(("bearer_auth" = [])),
     params(("id" = i64, Path, description = "User ID")),
     request_body = UpdateUserRequest,
-    responses((status = 200, description = "User updated", body = ApiResponse<NoData>))
+    responses((status = 200, description = "User updated", body = ApiResponse<EmptyData>))
 )]
 pub async fn set_user_info_by_id(
     State(state): State<AppState>,
     CurrentUser(user): CurrentUser,
     Path(id): Path<i64>,
     Json(payload): Json<UpdateUserRequest>,
-) -> AppResult<Json<ApiResponse<NoData>>> {
+) -> AppResult<Json<ApiResponse<EmptyData>>> {
     state.users.update(user.id, id, payload.into()).await?;
 
     Ok(Json(ApiResponse::new("OK", "updated", None)))
@@ -120,13 +120,13 @@ pub async fn set_user_info_by_id(
     tag = "user",
     security(("bearer_auth" = [])),
     request_body = UpdateSelfRequest,
-    responses((status = 200, description = "Current user updated", body = ApiResponse<NoData>))
+    responses((status = 200, description = "Current user updated", body = ApiResponse<EmptyData>))
 )]
 pub async fn set_self_info(
     State(state): State<AppState>,
     CurrentUser(user): CurrentUser,
     Json(payload): Json<UpdateSelfRequest>,
-) -> AppResult<Json<ApiResponse<NoData>>> {
+) -> AppResult<Json<ApiResponse<EmptyData>>> {
     state.users.set_self_info(user.id, payload).await?;
 
     Ok(Json(ApiResponse::new("OK", "updated", None)))
@@ -138,13 +138,13 @@ pub async fn set_self_info(
     tag = "user",
     security(("bearer_auth" = [])),
     request_body = UpdateSelfSettingsRequest,
-    responses((status = 200, description = "User settings updated", body = ApiResponse<NoData>))
+    responses((status = 200, description = "User settings updated", body = ApiResponse<EmptyData>))
 )]
 pub async fn set_self_setting(
     State(state): State<AppState>,
     CurrentUser(user): CurrentUser,
     Json(payload): Json<UpdateSelfSettingsRequest>,
-) -> AppResult<Json<ApiResponse<NoData>>> {
+) -> AppResult<Json<ApiResponse<EmptyData>>> {
     state.users.set_self_setting(user.id, payload).await?;
 
     Ok(Json(ApiResponse::new("OK", "updated", None)))
@@ -156,13 +156,13 @@ pub async fn set_self_setting(
     tag = "user",
     security(("bearer_auth" = [])),
     params(("id" = i64, Path, description = "User ID")),
-    responses((status = 200, description = "User deleted", body = ApiResponse<NoData>))
+    responses((status = 200, description = "User deleted", body = ApiResponse<EmptyData>))
 )]
 pub async fn delete_user_by_id(
     State(state): State<AppState>,
     CurrentUser(user): CurrentUser,
     Path(id): Path<i64>,
-) -> AppResult<Json<ApiResponse<NoData>>> {
+) -> AppResult<Json<ApiResponse<EmptyData>>> {
     state.users.delete(user.id, id).await?;
 
     Ok(Json(ApiResponse::new("OK", "deleted", None)))
@@ -175,14 +175,14 @@ pub async fn delete_user_by_id(
     security(("bearer_auth" = [])),
     params(("id" = i64, Path, description = "User ID")),
     request_body = ResetPasswordRequest,
-    responses((status = 200, description = "Password reset", body = ApiResponse<NoData>))
+    responses((status = 200, description = "Password reset", body = ApiResponse<EmptyData>))
 )]
 pub async fn reset_password_by_id(
     State(state): State<AppState>,
     CurrentUser(user): CurrentUser,
     Path(id): Path<i64>,
     Json(payload): Json<ResetPasswordRequest>,
-) -> AppResult<Json<ApiResponse<NoData>>> {
+) -> AppResult<Json<ApiResponse<EmptyData>>> {
     state
         .users
         .reset_password_as(user.id, id, payload.into())
@@ -198,7 +198,7 @@ pub async fn reset_password_by_id(
     security(("bearer_auth" = [])),
     params(("id" = i64, Path, description = "User ID")),
     request_body = SetUserRolesRequest,
-    responses((status = 200, description = "User roles updated", body = ApiResponse<NoData>))
+    responses((status = 200, description = "User roles updated", body = ApiResponse<EmptyData>))
 )]
 pub async fn set_user_roles_by_id(
     State(state): State<AppState>,
@@ -206,7 +206,7 @@ pub async fn set_user_roles_by_id(
     Extension(audit_context): Extension<audit::AuditContext>,
     Path(id): Path<i64>,
     Json(payload): Json<SetUserRolesRequest>,
-) -> AppResult<Json<ApiResponse<NoData>>> {
+) -> AppResult<Json<ApiResponse<EmptyData>>> {
     state
         .users
         .set_roles_as(user.id, id, payload, audit_context)

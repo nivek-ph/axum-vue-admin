@@ -9,7 +9,7 @@ use super::dto::{
     UploadFileData, UploadFileRequest, UploadMetadataRequest,
 };
 use crate::{
-    ApiResponse, AppResult, NoData, mappings::MULTIPLE_FILES_NOT_SUPPORTED, state::AppState,
+    ApiResponse, AppResult, EmptyData, mappings::MULTIPLE_FILES_NOT_SUPPORTED, state::AppState,
 };
 
 #[utoipa::path(
@@ -40,12 +40,12 @@ pub async fn get_file_list_by_query(
     tag = "file",
     security(("bearer_auth" = [])),
     params(("id" = i64, Path, description = "File ID")),
-    responses((status = 200, description = "File deleted", body = ApiResponse<NoData>))
+    responses((status = 200, description = "File deleted", body = ApiResponse<EmptyData>))
 )]
 pub async fn delete_file_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
-) -> AppResult<Json<ApiResponse<NoData>>> {
+) -> AppResult<Json<ApiResponse<EmptyData>>> {
     state.files.delete(id).await?;
     Ok(Json(ApiResponse::new("OK", "deleted", None)))
 }
@@ -57,13 +57,13 @@ pub async fn delete_file_by_id(
     security(("bearer_auth" = [])),
     params(("id" = i64, Path, description = "File ID")),
     request_body = RenameFileRequest,
-    responses((status = 200, description = "File renamed", body = ApiResponse<NoData>))
+    responses((status = 200, description = "File renamed", body = ApiResponse<EmptyData>))
 )]
 pub async fn edit_file_name_by_id(
     State(state): State<AppState>,
     Path(id): Path<i64>,
     Json(payload): Json<RenameFileRequest>,
-) -> AppResult<Json<ApiResponse<NoData>>> {
+) -> AppResult<Json<ApiResponse<EmptyData>>> {
     state.files.edit_name(payload.into_input(id)).await?;
     Ok(Json(ApiResponse::new("OK", "updated", None)))
 }
@@ -74,12 +74,12 @@ pub async fn edit_file_name_by_id(
     tag = "file",
     security(("bearer_auth" = [])),
     request_body = ImportFileUrlRequest,
-    responses((status = 200, description = "URL imported", body = ApiResponse<NoData>))
+    responses((status = 200, description = "URL imported", body = ApiResponse<EmptyData>))
 )]
 pub async fn import_url(
     State(state): State<AppState>,
     Json(payload): Json<ImportFileUrlRequest>,
-) -> AppResult<Json<ApiResponse<NoData>>> {
+) -> AppResult<Json<ApiResponse<EmptyData>>> {
     state.files.import_url(payload.into()).await?;
     Ok(Json(ApiResponse::new("OK", "imported", None)))
 }
