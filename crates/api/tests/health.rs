@@ -12,7 +12,7 @@ fn test_state() -> api::AppState {
     let database_url = "postgres://postgres:postgres@127.0.0.1/ava";
     let pool = db::DbPool::connect_lazy(database_url).expect("lazy pool should construct");
     let passwords = auth::password::PasswordService::new();
-    let tokens = auth::token::TokenService::without_revocation_store("test-secret");
+    let tokens = auth::token::TokenService::without_session_store("test-secret");
     let captcha = auth::captcha::CaptchaService::without_store();
     let access = AccessService::new(pool.clone());
     let audits = audit::AuditService::new(pool.clone());

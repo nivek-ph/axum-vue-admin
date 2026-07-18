@@ -156,7 +156,7 @@ async fn execute_login(state: &AppState, input: LoginInput) -> Result<LoginRespo
         }
     };
 
-    let token = match state.tokens.issue(identity.id, &identity.username) {
+    let token = match state.tokens.issue(identity.id, &identity.username).await {
         Ok(token) => token,
         Err(error) => {
             record_login(
