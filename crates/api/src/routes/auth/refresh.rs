@@ -35,7 +35,17 @@ pub async fn refresh(
     Json(payload): Json<RefreshRequest>,
 ) -> AppResult<Json<ApiResponse<RefreshResponse>>> {
     let grant = state.tokens.inspect_refresh(&payload.refresh_token).await?;
-    let identity = state.users.refresh_identity(grant.user_id()).await?;
+    let identity = match state.users.refresh_identity(grant.user_id()).await {
+        Ok(identity) => identity,
+        Err(
+            error @ (iam::users::RefreshIdentityError::NotFound
+            | iam::users::RefreshIdentityError::Disabled),
+        ) => {
+            state.tokens.revoke_refresh_grant(&grant).await?;
+            return Err(error.into());
+        }
+        Err(error @ iam::users::RefreshIdentityError::Database(_)) => return Err(error.into()),
+    };
     let pair = state
         .tokens
         .rotate_refresh(grant, &identity.username)
@@ -134,10 +144,24 @@ mod tests {
         let (status, body) = refresh_request(state.clone(), &disabled.refresh_token).await;
         assert_eq!(status, StatusCode::FORBIDDEN);
         assert_eq!(body["code"], "USER_DISABLED");
+        assert!(matches!(
+            tokens
+                .inspect_refresh(&disabled.refresh_token)
+                .await
+                .expect_err("disabled user session should be removed"),
+            auth::token::RefreshError::SessionInvalid
+        ));
 
         let (status, body) = refresh_request(state, &missing.refresh_token).await;
         assert_eq!(status, StatusCode::UNAUTHORIZED);
         assert_eq!(body["code"], "SESSION_INVALID");
+        assert!(matches!(
+            tokens
+                .inspect_refresh(&missing.refresh_token)
+                .await
+                .expect_err("missing user session should be removed"),
+            auth::token::RefreshError::SessionInvalid
+        ));
 
         tokens
             .revoke(rotated_access)

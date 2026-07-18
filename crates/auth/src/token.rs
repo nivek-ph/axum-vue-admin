@@ -227,16 +227,24 @@ impl TokenService {
         }
     }
 
+    pub async fn revoke_refresh_grant(&self, grant: &RefreshGrant) -> Result<(), TokenRevokeError> {
+        self.delete_session(&grant.session_id).await
+    }
+
     pub async fn revoke(&self, token: &str) -> Result<(), TokenRevokeError> {
         let claims = self
             .jwt_service
             .decode_token(token)
             .map_err(TokenRevokeError::Invalid)?;
+        self.delete_session(&claims.sid).await
+    }
+
+    async fn delete_session(&self, session_id: &str) -> Result<(), TokenRevokeError> {
         let mut redis = self
             .redis_connection
             .clone()
             .ok_or(TokenRevokeError::StoreUnavailable)?;
-        let _: usize = redis.del(session_key(&claims.sid)).await?;
+        let _: usize = redis.del(session_key(session_id)).await?;
         Ok(())
     }
 }

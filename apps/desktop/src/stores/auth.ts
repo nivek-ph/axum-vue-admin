@@ -27,7 +27,7 @@ export const useAuthStore = defineStore('auth', () => {
   const userInfo = ref<AuthUserInfo | null>(persisted.userInfo);
 
   const isAuthenticated = computed(
-    () => accessToken.value.length > 0 && refreshToken.value.length > 0
+    () => accessToken.value.length > 0 && refreshToken.value.length > 0 && userInfo.value !== null
   );
   const permissionSet = computed(() => new Set(userInfo.value?.permissions || []));
   const roles = computed(() => userInfo.value?.roles || []);

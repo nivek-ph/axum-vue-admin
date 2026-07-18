@@ -14,6 +14,19 @@ const emptySession = (): PersistedAuthSession => ({
   userInfo: null,
 });
 
+function isAuthUserInfo(value: unknown): value is AuthUserInfo {
+  if (typeof value !== 'object' || value === null) return false;
+  const user = value as Record<string, unknown>;
+  return (
+    typeof user.id === 'number'
+    && Number.isFinite(user.id)
+    && typeof user.userName === 'string'
+    && user.userName.trim().length > 0
+    && typeof user.nickName === 'string'
+    && user.nickName.trim().length > 0
+  );
+}
+
 export function readAuthSession(): PersistedAuthSession {
   if (typeof localStorage === 'undefined') {
     return emptySession();
@@ -28,9 +41,9 @@ export function readAuthSession(): PersistedAuthSession {
     const parsed = JSON.parse(raw) as Partial<PersistedAuthSession>;
     const accessToken = typeof parsed.accessToken === 'string' ? parsed.accessToken.trim() : '';
     const refreshToken = typeof parsed.refreshToken === 'string' ? parsed.refreshToken.trim() : '';
-    const userInfo = parsed.userInfo && typeof parsed.userInfo === 'object' ? (parsed.userInfo as AuthUserInfo) : null;
+    const userInfo = isAuthUserInfo(parsed.userInfo) ? parsed.userInfo : null;
 
-    if (!accessToken || !refreshToken) {
+    if (!accessToken || !refreshToken || !userInfo) {
       localStorage.removeItem(STORAGE_KEY);
       return emptySession();
     }
@@ -49,7 +62,7 @@ export function writeAuthSession(session: PersistedAuthSession) {
 
   const accessToken = session.accessToken.trim();
   const refreshToken = session.refreshToken.trim();
-  if (!accessToken || !refreshToken) {
+  if (!accessToken || !refreshToken || !isAuthUserInfo(session.userInfo)) {
     localStorage.removeItem(STORAGE_KEY);
     return;
   }

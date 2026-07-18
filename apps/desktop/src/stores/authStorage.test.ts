@@ -38,6 +38,13 @@ describe('authStorage', () => {
     expect(readAuthSession()).toEqual({ accessToken: '', refreshToken: '', userInfo: null });
     expect(localStorage.getItem('axum-vue-admin.auth')).toBeNull();
 
+    localStorage.setItem(
+      'axum-vue-admin.auth',
+      JSON.stringify({ accessToken: 'access-token', refreshToken: 'refresh-token', userInfo: null })
+    );
+    expect(readAuthSession()).toEqual({ accessToken: '', refreshToken: '', userInfo: null });
+    expect(localStorage.getItem('axum-vue-admin.auth')).toBeNull();
+
     writeAuthSession({ accessToken: 'access-token', refreshToken: '   ', userInfo: null });
     expect(localStorage.getItem('axum-vue-admin.auth')).toBeNull();
   });
