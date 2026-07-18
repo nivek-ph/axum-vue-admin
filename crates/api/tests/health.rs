@@ -131,6 +131,83 @@ async fn protected_route_with_invalid_bearer_returns_token_invalid_envelope() {
 }
 
 #[tokio::test]
+async fn protected_route_with_missing_login_session_returns_session_invalid_envelope() {
+    let redis_url =
+        std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://127.0.0.1:6379/".to_string());
+    let redis = redis::Client::open(redis_url)
+        .expect("Redis test client should construct")
+        .get_multiplexed_async_connection()
+        .await
+        .expect("Redis test connection should open");
+    let tokens = auth::token::TokenService::new("test-secret", redis);
+    let token = tokens
+        .issue(1, "admin")
+        .await
+        .expect("login session should be issued");
+    tokens
+        .revoke(&token)
+        .await
+        .expect("login session should be removed");
+    let mut state = test_state();
+    state.tokens = tokens;
+
+    let response = api::router(state)
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/me")
+                .header(header::AUTHORIZATION, format!("Bearer {token}"))
+                .body(Body::empty())
+                .expect("request should build"),
+        )
+        .await
+        .expect("router should produce a response");
+
+    assert_eq!(response.status(), 401);
+    let body = to_bytes(response.into_body(), usize::MAX)
+        .await
+        .expect("response body should be readable");
+    assert_eq!(
+        serde_json::from_slice::<serde_json::Value>(&body).expect("body should be json"),
+        json!({
+            "code": "SESSION_INVALID",
+            "message": "session expired",
+            "data": null
+        })
+    );
+}
+
+#[tokio::test]
+async fn protected_route_without_session_store_returns_authorization_unavailable_envelope() {
+    let token = auth::jwt::JwtService::new("test-secret")
+        .issue_token(1, "admin", "missing-store-session")
+        .expect("valid access token should be issued");
+
+    let response = api::router(test_state())
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/me")
+                .header(header::AUTHORIZATION, format!("Bearer {token}"))
+                .body(Body::empty())
+                .expect("request should build"),
+        )
+        .await
+        .expect("router should produce a response");
+
+    assert_eq!(response.status(), 503);
+    let body = to_bytes(response.into_body(), usize::MAX)
+        .await
+        .expect("response body should be readable");
+    assert_eq!(
+        serde_json::from_slice::<serde_json::Value>(&body).expect("body should be json"),
+        json!({
+            "code": "AUTHORIZATION_UNAVAILABLE",
+            "message": "service unavailable",
+            "data": null
+        })
+    );
+}
+
+#[tokio::test]
 async fn removed_non_core_routes_return_not_found() {
     let app = api::router(test_state());
     let requests = [
