@@ -29,6 +29,20 @@ describe('authStorage', () => {
     });
   });
 
+  it('keeps an otherwise valid session when the optional display nickname is empty', () => {
+    writeAuthSession({
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+      userInfo: {
+        id: 1,
+        userName: 'admin',
+        nickName: '',
+      },
+    });
+
+    expect(readAuthSession().userInfo?.nickName).toBe('');
+  });
+
   it('clears invalid, legacy, and incomplete sessions', () => {
     localStorage.setItem('axum-vue-admin.auth', '{not-json');
     expect(readAuthSession()).toEqual({ accessToken: '', refreshToken: '', userInfo: null });

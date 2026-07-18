@@ -23,7 +23,6 @@ function isAuthUserInfo(value: unknown): value is AuthUserInfo {
     && typeof user.userName === 'string'
     && user.userName.trim().length > 0
     && typeof user.nickName === 'string'
-    && user.nickName.trim().length > 0
   );
 }
 
