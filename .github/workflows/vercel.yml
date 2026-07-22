@@ -3,6 +3,15 @@ name: Deploy to Vercel
 on:
   workflow_dispatch:
     inputs:
+      target:
+        description: Component to deploy
+        required: true
+        default: both
+        type: choice
+        options:
+          - both
+          - backend
+          - frontend
       environment:
         description: Vercel deployment environment
         required: true
@@ -11,6 +20,10 @@ on:
         options:
           - preview
           - production
+      api_base_url:
+        description: Optional API base URL
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -22,12 +35,16 @@ concurrency:
 jobs:
   backend:
     name: Deploy backend
+    if: inputs.target == 'both' || inputs.target == 'backend'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    outputs:
+      api_base_url: ${{ steps.deploy.outputs.api_base_url }}
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_BACKEND_PROJECT_ID }}
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      DEPLOY_ENV: ${{ inputs.environment }}
     steps:
       - uses: actions/checkout@v4
 
@@ -38,27 +55,37 @@ jobs:
       - name: Install Vercel CLI
         run: npm install --global vercel@56.5.0
 
-      - name: Select deployment environment
-        env:
-          REQUESTED_ENVIRONMENT: ${{ inputs.environment }}
-        run: |
-          echo "DEPLOY_ENV=${REQUESTED_ENVIRONMENT}" >> "${GITHUB_ENV}"
-
       - name: Pull Vercel settings
         run: vercel pull --yes --environment="${DEPLOY_ENV}" --token="${VERCEL_TOKEN}"
 
       - name: Deploy backend
+        id: deploy
         run: |
           args=(--yes --token="${VERCEL_TOKEN}")
           if [[ "${DEPLOY_ENV}" == "production" ]]; then
             args+=(--prod)
           fi
           deployment_url="$(vercel deploy "${args[@]}")"
+          if [[ -z "${deployment_url}" ]]; then
+            echo "Backend deployment did not return a URL" >&2
+            exit 1
+          fi
+          api_base_url="${deployment_url%/}/api"
+          if [[ "${DEPLOY_ENV}" == "preview" ]]; then
+            echo "api_base_url=${api_base_url}" >> "${GITHUB_OUTPUT}"
+          fi
           echo "### Backend" >> "${GITHUB_STEP_SUMMARY}"
-          echo "${deployment_url}" >> "${GITHUB_STEP_SUMMARY}"
+          echo "${api_base_url}" >> "${GITHUB_STEP_SUMMARY}"
 
   frontend:
     name: Deploy frontend
+    needs: backend
+    if: >-
+      ${{
+        always() &&
+        (inputs.target == 'both' || inputs.target == 'frontend') &&
+        (inputs.target != 'both' || needs.backend.result == 'success')
+      }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -68,7 +95,8 @@ jobs:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_FRONTEND_PROJECT_ID }}
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+      DEPLOY_ENV: ${{ inputs.environment }}
+      VITE_API_BASE_URL: ${{ inputs.api_base_url || needs.backend.outputs.api_base_url || secrets.VITE_API_BASE_URL }}
     steps:
       - uses: actions/checkout@v4
 
@@ -78,12 +106,6 @@ jobs:
 
       - name: Install Vercel CLI
         run: npm install --global vercel@56.5.0
-
-      - name: Select deployment environment
-        env:
-          REQUESTED_ENVIRONMENT: ${{ inputs.environment }}
-        run: |
-          echo "DEPLOY_ENV=${REQUESTED_ENVIRONMENT}" >> "${GITHUB_ENV}"
 
       - name: Pull Vercel settings
         run: vercel pull --yes --environment="${DEPLOY_ENV}" --token="${VERCEL_TOKEN}"
