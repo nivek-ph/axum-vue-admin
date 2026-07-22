@@ -61,9 +61,6 @@ jobs:
     name: Deploy frontend
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: apps/desktop
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_FRONTEND_PROJECT_ID }}
@@ -97,4 +94,3 @@ jobs:
           deployment_url="$(vercel deploy "${args[@]}")"
           echo "### Frontend" >> "${GITHUB_STEP_SUMMARY}"
           echo "${deployment_url}" >> "${GITHUB_STEP_SUMMARY}"
-
