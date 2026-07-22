@@ -5,6 +5,12 @@ default Admin Console is a React + Vite single-page application.
 
 [Deploy existing projects with Vercel](https://github.com/nivek-ph/axum-admin/actions/workflows/vercel.yml)
 
+## Online Demo
+
+- URL: [https://axum-admin-web.vercel.app](https://axum-admin-web.vercel.app)
+- Username: `admin`
+- Password: `123456`
+
 The previous Vue 3 + Tauri implementation is available in the
 `[v1.1.0](../../tree/v1.1.0)` tag.
 
