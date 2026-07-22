@@ -1,14 +1,14 @@
-mod cli;
-mod commands;
-mod config;
-
 use anyhow::Result;
+use ava::{
+    cli::{Cli, Command},
+    commands, config,
+};
 use clap::Parser;
-use cli::{Cli, Command};
 use tracing_otel::Logger;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    config::install_crypto_provider();
     config::load_env_file();
 
     let logger = Logger::from_env(Some("LOG"))?.with_ansi(true);

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 name: Deploy to Vercel
 
 on:
@@ -97,3 +98,127 @@ jobs:
           deployment_url="$(vercel deploy "${args[@]}")"
           echo "### Frontend" >> "${GITHUB_STEP_SUMMARY}"
           echo "${deployment_url}" >> "${GITHUB_STEP_SUMMARY}"
+||||||| parent of 778f2e2 (chore: add Vercel deployment configuration and update dependencies)
+=======
+name: Deploy to Vercel
+
+on:
+  workflow_run:
+    workflows: [Rust]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Vercel deployment environment
+        required: true
+        default: preview
+        type: choice
+        options:
+          - preview
+          - production
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vercel-${{ github.event_name }}-${{ github.ref || github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Deploy backend
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_BACKEND_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@56.5.0
+
+      - name: Select deployment environment
+        env:
+          REQUESTED_ENVIRONMENT: ${{ inputs.environment }}
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_run" ]]; then
+            echo "DEPLOY_ENV=production" >> "${GITHUB_ENV}"
+          else
+            echo "DEPLOY_ENV=${REQUESTED_ENVIRONMENT}" >> "${GITHUB_ENV}"
+          fi
+
+      - name: Pull Vercel settings
+        run: vercel pull --yes --environment="${DEPLOY_ENV}" --token="${VERCEL_TOKEN}"
+
+      - name: Deploy backend
+        run: |
+          args=(--yes --token="${VERCEL_TOKEN}")
+          if [[ "${DEPLOY_ENV}" == "production" ]]; then
+            args+=(--prod)
+          fi
+          deployment_url="$(vercel deploy "${args[@]}")"
+          echo "### Backend" >> "${GITHUB_STEP_SUMMARY}"
+          echo "${deployment_url}" >> "${GITHUB_STEP_SUMMARY}"
+
+  frontend:
+    name: Deploy frontend
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/desktop
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_FRONTEND_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@56.5.0
+
+      - name: Select deployment environment
+        env:
+          REQUESTED_ENVIRONMENT: ${{ inputs.environment }}
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_run" ]]; then
+            echo "DEPLOY_ENV=production" >> "${GITHUB_ENV}"
+          else
+            echo "DEPLOY_ENV=${REQUESTED_ENVIRONMENT}" >> "${GITHUB_ENV}"
+          fi
+
+      - name: Pull Vercel settings
+        run: vercel pull --yes --environment="${DEPLOY_ENV}" --token="${VERCEL_TOKEN}"
+
+      - name: Deploy frontend
+        run: |
+          args=(--yes --build-env VITE_API_BASE_URL=https://axum-demo.vercel.app/api --token="${VERCEL_TOKEN}")
+          if [[ "${DEPLOY_ENV}" == "production" ]]; then
+            args+=(--prod)
+          fi
+          deployment_url="$(vercel deploy "${args[@]}")"
+          echo "### Frontend" >> "${GITHUB_STEP_SUMMARY}"
+          echo "${deployment_url}" >> "${GITHUB_STEP_SUMMARY}"
+>>>>>>> 778f2e2 (chore: add Vercel deployment configuration and update dependencies)
+

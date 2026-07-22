@@ -31,6 +31,10 @@ pub fn load_env_file() {
     dotenvy::dotenv().ok();
 }
 
+pub fn install_crypto_provider() {
+    let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
+}
+
 impl ServeConfig {
     pub fn from_env() -> Result<Self, ConfigError> {
         let http_port = require_env("HTTP_PORT")?;

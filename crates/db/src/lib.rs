@@ -6,8 +6,8 @@ pub type DbPool = PgPool;
 
 pub async fn connect(database_url: &str) -> Result<DbPool, sqlx::Error> {
     PgPoolOptions::new()
-        .acquire_timeout(Duration::from_secs(5))
-        .max_connections(10)
+        .acquire_timeout(Duration::from_secs(15))
+        .max_connections(5)
         .connect(database_url)
         .await
 }

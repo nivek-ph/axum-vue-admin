@@ -1,3 +1,10 @@
+[package]
+name = "ava-monorepo"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
 [workspace]
 members = [
   "apps/ava",
@@ -21,6 +28,7 @@ version = "0.1.0"
 api = { path = "crates/api" }
 audit = { path = "crates/audit" }
 auth = { path = "crates/auth" }
+ava = { path = "apps/ava" }
 db = { path = "crates/db" }
 file-storage = { path = "crates/file-storage" }
 iam = { path = "crates/iam" }
@@ -37,8 +45,9 @@ dotenvy = "0.15"
 hex = "0.4"
 jsonwebtoken = { version = "10", features = ["aws_lc_rs"] }
 password-hash = { version = "0.6.1", features = ["getrandom", "phc"] }
-redis = { version = "1", features = ["tokio-comp"] }
+redis = { version = "1", features = ["tokio-rustls-comp"] }
 reqwest = { version = "0.13.4", default-features = false, features = ["json"] }
+rustls = { version = "0.23", features = ["aws_lc_rs"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sha2 = "0.11"
@@ -74,3 +83,18 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 utoipa = "5"
 utoipa-swagger-ui = { version = "9", features = ["axum"] }
 uuid = { version = "1", features = ["v4"] }
+vercel_runtime = { version = "2.4", features = ["axum"] }
+
+[dependencies]
+# Local workspace crates.
+api.workspace = true
+ava.workspace = true
+
+# External crates.
+tokio.workspace = true
+tower.workspace = true
+vercel_runtime.workspace = true
+
+[[bin]]
+name = "axum"
+path = "api/axum.rs"
