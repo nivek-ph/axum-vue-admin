@@ -103,6 +103,9 @@ jobs:
 name: Deploy to Vercel
 
 on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
   workflow_run:
     workflows: [Rust]
     types: [completed]
@@ -129,6 +132,7 @@ jobs:
   backend:
     name: Deploy backend
     if: >-
+      github.event_name == 'pull_request' ||
       github.event_name == 'workflow_dispatch' ||
       github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
@@ -155,6 +159,8 @@ jobs:
         run: |
           if [[ "${GITHUB_EVENT_NAME}" == "workflow_run" ]]; then
             echo "DEPLOY_ENV=production" >> "${GITHUB_ENV}"
+          elif [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+            echo "DEPLOY_ENV=preview" >> "${GITHUB_ENV}"
           else
             echo "DEPLOY_ENV=${REQUESTED_ENVIRONMENT}" >> "${GITHUB_ENV}"
           fi
@@ -175,6 +181,7 @@ jobs:
   frontend:
     name: Deploy frontend
     if: >-
+      github.event_name == 'pull_request' ||
       github.event_name == 'workflow_dispatch' ||
       github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
@@ -204,6 +211,8 @@ jobs:
         run: |
           if [[ "${GITHUB_EVENT_NAME}" == "workflow_run" ]]; then
             echo "DEPLOY_ENV=production" >> "${GITHUB_ENV}"
+          elif [[ "${GITHUB_EVENT_NAME}" == "pull_request" ]]; then
+            echo "DEPLOY_ENV=preview" >> "${GITHUB_ENV}"
           else
             echo "DEPLOY_ENV=${REQUESTED_ENVIRONMENT}" >> "${GITHUB_ENV}"
           fi
