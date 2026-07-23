@@ -42,15 +42,15 @@ impl CaptchaService {
         let id = Uuid::new_v4().to_string();
         let captcha = CaptchaBuilder::new()
             .length(4)
-            .width(220)
-            .height(64)
+            .width(148)
+            .height(44)
             .dark_mode(false)
-            .complexity(2)
-            .compression(85)
+            .complexity(1)
+            .compression(92)
             .drop_shadow(true)
             .interference_lines(1)
-            .interference_ellipses(0)
-            .distortion(2)
+            .interference_ellipses(1)
+            .distortion(0)
             .build();
         let image = captcha.to_base64();
         let code = captcha.text;

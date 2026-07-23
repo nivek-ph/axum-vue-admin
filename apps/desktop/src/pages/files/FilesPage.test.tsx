@@ -51,7 +51,7 @@ describe('Files workflow', () => {
     window.history.replaceState({}, '', '/files')
     const { container } = render(<Application />)
 
-    await screen.findByRole('heading', { name: 'Files' })
+    await screen.findByRole('heading', { name: 'Manage uploads and external file URLs with flat metadata.' })
     await user.type(screen.getByLabelText('Filter by category'), 'documents')
     await user.click(screen.getByRole('button', { name: 'Search' }))
     await user.upload(

@@ -1,5 +1,5 @@
 import type { AxiosAdapter } from 'axios'
-import { render, screen, waitFor } from '@testing-library/react'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
@@ -15,7 +15,48 @@ describe('Dictionaries workflow', () => {
     useMenuStore.getState().resetAccess()
   })
   afterEach(() => {
+    cleanup()
     http.defaults.adapter = originalAdapter
+  })
+
+  it('shows a request error instead of an empty dictionary list', async () => {
+    const currentUser = {
+      id: 1,
+      userName: 'admin',
+      nickName: 'Admin',
+      roles: [{ id: 1, code: 'super_admin', name: 'Super Admin' }],
+    }
+    useAuthStore.getState().setSession({ accessToken: 'token', refreshToken: 'refresh', userInfo: currentUser })
+    http.defaults.adapter = (async (config) => {
+      if (config.url === '/users/me')
+        return {
+          data: { code: 'OK', message: 'ok', data: { userInfo: currentUser } },
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config,
+        }
+      if (config.url === '/menus/current')
+        return {
+          data: {
+            code: 'OK',
+            message: 'ok',
+            data: { menus: [{ name: 'dictionaries', path: 'dictionaries' }], permissions: [] },
+          },
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config,
+        }
+      if (config.url === '/dictionaries') throw new Error('network error')
+      return { data: { code: 'OK', message: 'ok', data: [] }, status: 200, statusText: 'OK', headers: {}, config }
+    }) as AxiosAdapter
+    window.history.replaceState({}, '', '/dictionaries')
+
+    render(<Application />)
+
+    expect(await screen.findByText('Failed to load dictionaries')).toBeInTheDocument()
+    expect(screen.queryByText('Select a dictionary')).not.toBeInTheDocument()
   })
 
   it('creates a root detail within the selected dictionary and reloads its tree', async () => {

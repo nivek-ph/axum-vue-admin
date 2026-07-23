@@ -1,5 +1,5 @@
 import type { AxiosAdapter } from 'axios'
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
@@ -16,11 +16,12 @@ describe('Access catalog', () => {
     useMenuStore.getState().resetAccess()
   })
   afterEach(async () => {
+    cleanup()
     http.defaults.adapter = originalAdapter
     await i18n.changeLanguage('en-US')
   })
 
-  it('shows menu permissions and API bindings as a read-only catalog', async () => {
+  it('shows menu permissions and API bindings as a read-only tree table', async () => {
     const currentUser = {
       id: 1,
       userName: 'admin',
@@ -29,55 +30,142 @@ describe('Access catalog', () => {
     }
     useAuthStore.getState().setSession({ accessToken: 'token', refreshToken: 'refresh', userInfo: currentUser })
     http.defaults.adapter = (async (config) => {
-      const data =
-        config.url === '/users/me'
-          ? { code: 'OK', message: 'ok', data: { userInfo: currentUser } }
-          : config.url === '/menus/current'
-            ? { code: 'OK', message: 'ok', data: { menus: [{ name: 'menus', path: 'menus' }], permissions: [] } }
-            : {
-                code: 'OK',
-                message: 'ok',
-                data: [
-                  {
-                    id: 1,
-                    parentId: 0,
-                    path: 'organization',
-                    name: 'organization',
-                    sort: 1,
-                    menuType: 'directory',
-                    meta: { title: 'Organization' },
-                    children: [
-                      {
-                        id: 2,
-                        parentId: 1,
-                        path: 'users',
-                        name: 'users',
-                        sort: 1,
-                        menuType: 'page',
-                        permission: 'system:user:list',
-                        meta: { title: 'Users' },
-                        apiBindings: [{ method: 'GET', pathPattern: '/api/users' }],
-                        children: [],
-                      },
-                    ],
-                  },
-                ],
-              }
+      let data: unknown
+      if (config.url === '/users/me') data = { code: 'OK', message: 'ok', data: { userInfo: currentUser } }
+      else if (config.url === '/menus/current')
+        data = { code: 'OK', message: 'ok', data: { menus: [{ name: 'menus', path: 'menus' }], permissions: [] } }
+      else if (config.url === '/menus/tree')
+        data = {
+          code: 'OK',
+          message: 'ok',
+          data: [
+            {
+              id: 1,
+              parentId: 0,
+              path: 'organization',
+              name: 'organization',
+              sort: 1,
+              menuType: 'directory',
+              meta: { title: 'Organization' },
+              children: [
+                {
+                  id: 2,
+                  parentId: 1,
+                  path: 'users',
+                  name: 'users',
+                  sort: 1,
+                  menuType: 'page',
+                  permission: 'system:user:list',
+                  meta: { title: 'Users' },
+                  apiBindings: [{ method: 'GET', pathPattern: '/api/users' }],
+                  children: [
+                    {
+                      id: 3,
+                      parentId: 2,
+                      name: 'Create user',
+                      sort: 1,
+                      menuType: 'action',
+                      permission: 'system:user:create',
+                      meta: { title: 'Create user' },
+                      apiBindings: [{ method: 'POST', pathPattern: '/api/users' }],
+                      children: [],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        }
+      else throw new Error(`Unexpected request: ${config.method} ${config.url}`)
       return { data, status: 200, statusText: 'OK', headers: {}, config }
     }) as AxiosAdapter
     window.history.replaceState({}, '', '/menus')
     render(<Application />)
 
-    expect(await screen.findByRole('heading', { name: 'Menus and permissions' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Access catalog' })).toBeInTheDocument()
+    expect(
+      screen.getByText('Definitions are managed by database migrations and are read-only here.'),
+    ).toBeInTheDocument()
+    expect(await screen.findByText('Organization')).toBeInTheDocument()
+    expect(screen.getAllByText('Users').length).toBeGreaterThan(0)
     expect(await screen.findByText('system:user:list')).toBeInTheDocument()
-    expect(screen.getByText('/api/users')).toBeInTheDocument()
+    expect(screen.getByText('system:user:create')).toBeInTheDocument()
+    expect(screen.getByText('Create user')).toBeInTheDocument()
+    expect(screen.getAllByText('/api/users').length).toBeGreaterThan(0)
+    expect(screen.queryByText('Basic operations')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /new|edit|delete/i })).not.toBeInTheDocument()
+
     const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Collapse Users' }))
+    expect(screen.queryByText('system:user:create')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Expand Users' }))
+    expect(screen.getByText('system:user:create')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Collapse all' }))
+    expect(screen.queryByText('system:user:list')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Expand all' }))
+    expect(screen.getByText('system:user:list')).toBeInTheDocument()
+    expect(screen.getByText('system:user:create')).toBeInTheDocument()
+
     await user.click(screen.getByRole('button', { name: 'Collapse Organization' }))
     expect(screen.queryByText('system:user:list')).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Expand Organization' }))
     expect(screen.getByText('system:user:list')).toBeInTheDocument()
+
     await user.click(screen.getByRole('button', { name: 'Switch language' }))
-    expect(await screen.findByRole('heading', { name: '菜单与权限' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '权限目录' })).toBeInTheDocument()
+  })
+
+  it('collapses extra API bindings behind an expand control', async () => {
+    const currentUser = {
+      id: 1,
+      userName: 'admin',
+      nickName: 'Admin',
+      roles: [{ id: 1, code: 'super_admin', name: 'Super Admin' }],
+    }
+    useAuthStore.getState().setSession({ accessToken: 'token', refreshToken: 'refresh', userInfo: currentUser })
+    http.defaults.adapter = (async (config) => {
+      let data: unknown
+      if (config.url === '/users/me') data = { code: 'OK', message: 'ok', data: { userInfo: currentUser } }
+      else if (config.url === '/menus/current')
+        data = { code: 'OK', message: 'ok', data: { menus: [{ name: 'menus', path: 'menus' }], permissions: [] } }
+      else if (config.url === '/menus/tree')
+        data = {
+          code: 'OK',
+          message: 'ok',
+          data: [
+            {
+              id: 2,
+              parentId: 0,
+              path: 'dictionaries',
+              name: 'dictionaries',
+              sort: 1,
+              menuType: 'page',
+              permission: 'system:dict:list',
+              meta: { title: 'Dictionaries' },
+              apiBindings: [
+                { method: 'GET', pathPattern: '/api/dictionaries' },
+                { method: 'GET', pathPattern: '/api/dictionaries/{id}' },
+                { method: 'GET', pathPattern: '/api/dictionaries/{id}/tree' },
+              ],
+              children: [],
+            },
+          ],
+        }
+      else throw new Error(`Unexpected request: ${config.method} ${config.url}`)
+      return { data, status: 200, statusText: 'OK', headers: {}, config }
+    }) as AxiosAdapter
+    window.history.replaceState({}, '', '/menus')
+    render(<Application />)
+
+    expect(await screen.findByRole('heading', { name: 'Access catalog' })).toBeInTheDocument()
+    expect(await screen.findByText('/api/dictionaries')).toBeInTheDocument()
+    expect(screen.queryByText('/api/dictionaries/{id}')).not.toBeInTheDocument()
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: '+2 APIs' }))
+    expect(screen.getByText('/api/dictionaries/{id}')).toBeInTheDocument()
+    expect(screen.getByText('/api/dictionaries/{id}/tree')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Collapse APIs' }))
+    expect(screen.queryByText('/api/dictionaries/{id}')).not.toBeInTheDocument()
   })
 })

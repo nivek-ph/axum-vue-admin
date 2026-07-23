@@ -37,7 +37,7 @@ describe('Admin Console routing', () => {
 
     render(<Application />)
 
-    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Welcome back, Operator.' })).toBeInTheDocument()
     expect(window.location.pathname).toBe('/dashboard')
   })
 
@@ -56,7 +56,9 @@ describe('Admin Console routing', () => {
     }) as AxiosAdapter
     window.history.replaceState({}, '', '/')
     render(<Application />)
-    expect(await screen.findByRole('heading', { name: 'Files' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: 'Manage uploads and external file URLs with flat metadata.' }),
+    ).toBeInTheDocument()
     expect(window.location.pathname).toBe('/files')
   })
 })

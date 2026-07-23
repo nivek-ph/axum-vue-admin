@@ -100,26 +100,26 @@ describe('Roles workbench', () => {
     }) as AxiosAdapter
     await i18n.changeLanguage('zh-CN')
     window.history.replaceState({}, '', '/roles')
-    const { container } = render(<Application />)
+    render(<Application />)
 
-    expect(await screen.findByRole('heading', { name: '角色管理', level: 1 })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: '管理页面访问、操作权限、数据范围和成员。', level: 1 }),
+    ).toBeInTheDocument()
     await userEvent.click(screen.getByRole('tab', { name: '基础信息' }))
-    const basicInfo = container.querySelector('.role-detail-grid')
-    expect(basicInfo).not.toBeNull()
-    expect(within(basicInfo as HTMLElement).getByText('角色代码')).toBeInTheDocument()
-    expect(within(basicInfo as HTMLElement).getByText('状态')).toBeInTheDocument()
-    expect(within(basicInfo as HTMLElement).getByText('数据范围')).toBeInTheDocument()
-    expect(within(basicInfo as HTMLElement).getByText('排序')).toBeInTheDocument()
+    const basicPanel = await screen.findByRole('tabpanel')
+    expect(within(basicPanel).getByText('角色代码')).toBeInTheDocument()
+    expect(within(basicPanel).getByText('状态')).toBeInTheDocument()
+    expect(within(basicPanel).getByText('数据范围')).toBeInTheDocument()
+    expect(within(basicPanel).getByText('排序')).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('tab', { name: '菜单授权' }))
+    const menuPanel = await screen.findByRole('tabpanel')
     expect(
-      await screen.findByText('勾选页面访问会同时包含该页面下的按钮权限，避免页面可见但接口返回 403。'),
+      within(menuPanel).getByText('勾选页面访问会同时包含该页面下的按钮权限，避免页面可见但接口返回 403。'),
     ).toBeInTheDocument()
-    const menuAuthorization = container.querySelector('.role-content')
-    expect(menuAuthorization).not.toBeNull()
-    expect(within(menuAuthorization as HTMLElement).getByText('系统管理')).toBeInTheDocument()
-    expect(within(menuAuthorization as HTMLElement).getByText('用户管理')).toBeInTheDocument()
-    expect(within(menuAuthorization as HTMLElement).getByText('创建用户')).toBeInTheDocument()
+    expect(within(menuPanel).getByText('系统管理')).toBeInTheDocument()
+    expect(within(menuPanel).getByText('用户管理')).toBeInTheDocument()
+    expect(within(menuPanel).getByText('创建用户')).toBeInTheDocument()
   })
 
   it('saves an action permission with its ancestor closure but not sibling actions', async () => {
@@ -220,6 +220,75 @@ describe('Roles workbench', () => {
 
     await waitFor(() => expect(savedMenuIds).toEqual([1, 2, 21]))
     expect(screen.getByRole('checkbox', { name: 'List' })).not.toBeChecked()
+  })
+
+  it('lets operators pick custom departments without first selecting the custom scope radio', async () => {
+    const currentUser = {
+      id: 1,
+      userName: 'admin',
+      nickName: 'Admin',
+      roles: [{ id: 1, code: 'super_admin', name: 'Super Admin' }],
+    }
+    useAuthStore.getState().setSession({ accessToken: 'token', refreshToken: 'refresh', userInfo: currentUser })
+    let savedScope: string | null = null
+    let savedDeptIds: number[] = []
+    http.defaults.adapter = (async (config) => {
+      let data: unknown
+      if (config.url === '/users/me') data = { code: 'OK', message: 'ok', data: { userInfo: currentUser } }
+      else if (config.url === '/menus/current')
+        data = { code: 'OK', message: 'ok', data: { menus: [{ name: 'roles', path: 'roles' }], permissions: [] } }
+      else if (config.url === '/menus/tree') data = { code: 'OK', message: 'ok', data: [] }
+      else if (config.url === '/depts' && config.method === 'get')
+        data = {
+          code: 'OK',
+          message: 'ok',
+          data: {
+            list: [{ id: 3, parent_id: null, name: 'Operations', code: 'ops', sort: 1, status: 'enabled', children: [] }],
+          },
+        }
+      else if (config.url === '/roles/2/depts' && config.method === 'get')
+        data = { code: 'OK', message: 'ok', data: { deptIds: [] } }
+      else if (config.url === '/roles/2/depts' && config.method === 'put') {
+        savedDeptIds = JSON.parse(String(config.data)).deptIds
+        data = { code: 'OK', message: 'saved' }
+      } else if (config.url === '/roles/2' && config.method === 'put') {
+        savedScope = JSON.parse(String(config.data)).data_scope
+        data = { code: 'OK', message: 'saved' }
+      } else if (config.url === '/roles/2/menus') data = { code: 'OK', message: 'ok', data: { menuIds: [] } }
+      else if (config.url === '/roles')
+        data = {
+          code: 'OK',
+          message: 'ok',
+          data: {
+            list: [
+              {
+                id: 2,
+                code: 'operator',
+                name: 'Operator',
+                status: 'enabled',
+                sort: 1,
+                data_scope: 'all',
+                is_system: false,
+              },
+            ],
+          },
+        }
+      else throw new Error(`Unexpected request: ${config.method} ${config.url}`)
+      return { data, status: 200, statusText: 'OK', headers: {}, config }
+    }) as AxiosAdapter
+    window.history.replaceState({}, '', '/roles')
+    render(<Application />)
+
+    const user = userEvent.setup()
+    await screen.findByRole('tab', { name: 'Data Scope' })
+    await user.click(screen.getByRole('tab', { name: 'Data Scope' }))
+    await user.click(await screen.findByRole('checkbox', { name: 'Operations' }))
+    expect(screen.getByRole('radio', { name: 'Custom departments' })).toBeChecked()
+    await user.click(screen.getByRole('button', { name: 'Save data scope' }))
+    await waitFor(() => {
+      expect(savedScope).toBe('custom_depts')
+      expect(savedDeptIds).toEqual([3])
+    })
   })
 
   it('hides the Members section without both role-user and user-list visibility permissions', async () => {

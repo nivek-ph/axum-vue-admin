@@ -170,11 +170,40 @@ pub(crate) async fn update(
     Ok(())
 }
 
-pub(crate) async fn delete(pool: &sqlx::PgPool, id: i64) -> Result<(), sqlx::Error> {
+pub(crate) async fn delete(pool: &sqlx::PgPool, id: i64) -> Result<(), DeptError> {
+    let mut transaction = pool.begin().await?;
+    sqlx::query("select id from sys_depts where id = $1 for update")
+        .bind(id)
+        .fetch_optional(&mut *transaction)
+        .await?;
+
+    let descendant_count = sqlx::query_scalar::<_, i64>(
+        r#"
+        with recursive descendants as (
+            select id
+            from sys_depts
+            where parent_id = $1
+            union all
+            select d.id
+            from sys_depts d
+            join descendants child on d.parent_id = child.id
+        )
+        select count(*) from descendants
+        "#,
+    )
+    .bind(id)
+    .fetch_one(&mut *transaction)
+    .await?;
+
+    if descendant_count > 0 {
+        return Err(DeptError::HasDescendants { descendant_count });
+    }
+
     sqlx::query("delete from sys_depts where id = $1")
         .bind(id)
-        .execute(pool)
+        .execute(&mut *transaction)
         .await?;
+    transaction.commit().await?;
     Ok(())
 }
 
@@ -235,5 +264,53 @@ mod tests {
         assert!(parent_is_self(7, Some(7)));
         assert!(!parent_is_self(7, Some(8)));
         assert!(!parent_is_self(7, None));
+    }
+
+    #[sqlx::test(migrations = "../../migrations")]
+    async fn delete_rejects_a_department_with_nested_descendants(pool: sqlx::PgPool) {
+        sqlx::query(
+            r#"
+            insert into sys_depts (id, parent_id, name, code, sort, status)
+            values
+                (10, null, 'Parent', 'delete_parent', 0, 'enabled'),
+                (11, 10, 'Child', 'delete_child', 0, 'enabled'),
+                (12, 11, 'Grandchild', 'delete_grandchild', 0, 'enabled')
+            "#,
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+
+        let error = delete(&pool, 10).await.unwrap_err();
+
+        assert!(matches!(
+            error,
+            DeptError::HasDescendants {
+                descendant_count: 2
+            }
+        ));
+        let remaining =
+            sqlx::query_scalar::<_, i64>("select count(*) from sys_depts where id in (10, 11, 12)")
+                .fetch_one(&pool)
+                .await
+                .unwrap();
+        assert_eq!(remaining, 3);
+    }
+
+    #[sqlx::test(migrations = "../../migrations")]
+    async fn delete_allows_a_leaf_department(pool: sqlx::PgPool) {
+        sqlx::query(
+            r#"
+            insert into sys_depts (id, parent_id, name, code, sort, status)
+            values (10, null, 'Leaf', 'delete_leaf', 0, 'enabled')
+            "#,
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+
+        delete(&pool, 10).await.unwrap();
+
+        assert!(find(&pool, 10).await.unwrap().is_none());
     }
 }

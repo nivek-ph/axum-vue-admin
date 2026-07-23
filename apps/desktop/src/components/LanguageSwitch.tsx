@@ -1,7 +1,7 @@
-import { Languages } from 'lucide-react'
+import { IconLanguage } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 
-import { Button } from './ui/Button'
+import { Button } from '@/components/ui/Button'
 import { toggleLocale } from '@/i18n'
 
 export function LanguageSwitch() {
@@ -9,11 +9,12 @@ export function LanguageSwitch() {
   return (
     <Button
       aria-label="Switch language"
-      className="language-switch"
+      className="text-sm"
       onClick={() => void toggleLocale()}
+      size="sm"
       variant="ghost"
     >
-      <Languages size={16} />
+      <IconLanguage />
       {i18n.language === 'zh-CN' ? '中' : 'EN'}
     </Button>
   )

@@ -1,6 +1,7 @@
+import { getCoreRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Plus, RefreshCw } from 'lucide-react'
-import { useState } from 'react'
+import { IconKey, IconPlus, IconRefresh, IconShield, IconTrash } from '@tabler/icons-react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 
@@ -14,9 +15,18 @@ import {
   type CreateUserForm,
   type UserRecord,
 } from '@/api/users'
+import { DataTable } from '@/components/data-table/DataTable'
+import { DataTablePagination } from '@/components/data-table/DataTablePagination'
+import { PageHeader } from '@/components/PageHeader'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/Button'
-import { Modal } from '@/components/ui/Modal'
-import { useConfirm } from '@/components/ui/ConfirmProvider'
+import { Card, CardContent } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
+import { useConfirm } from '@/components/ConfirmProvider'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useAuthStore } from '@/stores/auth'
 
 const emptyForm: CreateUserForm = {
@@ -28,6 +38,7 @@ const emptyForm: CreateUserForm = {
   enable: 1,
   roleIds: [],
 }
+const PAGE_SIZE = 10
 
 export function UsersPage() {
   const { t } = useTranslation()
@@ -39,7 +50,7 @@ export function UsersPage() {
   const [roleUser, setRoleUser] = useState<UserRecord | null>(null)
   const [form, setForm] = useState<CreateUserForm>(emptyForm)
   const [selectedRoles, setSelectedRoles] = useState<number[]>([])
-  const users = useQuery({ queryKey: ['users', page, 10], queryFn: () => fetchUsers(page, 10) })
+  const users = useQuery({ queryKey: ['users', page, PAGE_SIZE], queryFn: () => fetchUsers(page, PAGE_SIZE) })
   const roles = useQuery({ queryKey: ['roles'], queryFn: listRoles })
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['users'] })
   const createMutation = useMutation({
@@ -72,7 +83,116 @@ export function UsersPage() {
     mutationFn: (id: number) => resetUserPassword(id),
     onSuccess: () => toast.success(t('Password reset to 123456')),
   })
-  const pages = Math.max(1, Math.ceil((users.data?.total ?? 0) / 10))
+  const pageCount = Math.max(1, Math.ceil((users.data?.total ?? 0) / PAGE_SIZE))
+
+  const columns = useMemo<ColumnDef<UserRecord>[]>(
+    () => [
+      {
+        accessorKey: 'id',
+        header: 'ID',
+        cell: ({ row }) => row.original.id,
+      },
+      {
+        id: 'user',
+        header: t('User'),
+        cell: ({ row }) => {
+          const item = row.original
+          return (
+            <div className="flex flex-col">
+              <strong className="font-medium">{item.nickName}</strong>
+              <span className="text-xs text-muted-foreground">
+                {item.userName}
+                <br />
+                {item.email}
+              </span>
+            </div>
+          )
+        },
+      },
+      {
+        accessorKey: 'deptName',
+        header: t('Department'),
+        cell: ({ row }) => row.original.deptName || '—',
+      },
+      {
+        id: 'roles',
+        header: t('Roles'),
+        cell: ({ row }) => (
+          <div className="flex flex-wrap gap-1">
+            {row.original.roles?.map((role) => (
+              <Badge key={role.id} variant="secondary">
+                {role.name}
+              </Badge>
+            ))}
+          </div>
+        ),
+      },
+      {
+        accessorKey: 'enable',
+        header: t('Status'),
+        cell: ({ row }) => (
+          <Badge variant={row.original.enable === 1 ? 'default' : 'outline'}>
+            {t(row.original.enable === 1 ? 'Enabled' : 'Disabled')}
+          </Badge>
+        ),
+      },
+      {
+        id: 'actions',
+        header: t('Actions'),
+        enableHiding: false,
+        cell: ({ row }) => {
+          const item = row.original
+          return (
+            <div className="flex flex-wrap gap-1">
+              {can('system:user:assign-roles') && (
+                <Button
+                  onClick={() => {
+                    setRoleUser(item)
+                    setSelectedRoles(item.roleIds?.length ? item.roleIds : (item.roles?.map((role) => role.id) ?? []))
+                  }}
+                  variant="ghost"
+                >
+                  <IconShield size={14} />
+                  {t('Change role')}
+                </Button>
+              )}
+              {can('system:user:reset-password') && (
+                <Button onClick={() => resetMutation.mutate(item.id)} variant="ghost">
+                  <IconKey size={14} />
+                  {t('Reset password')}
+                </Button>
+              )}
+              {can('system:user:delete') && (
+                <Button
+                  onClick={() =>
+                    void confirmAction(t('Delete user "{{name}}"?', { name: item.userName })).then((confirmed) => {
+                      if (confirmed) deleteMutation.mutate(item.id)
+                    })
+                  }
+                  variant="ghost"
+                >
+                  <IconTrash size={14} />
+                  {t('Delete')}
+                </Button>
+              )}
+            </div>
+          )
+        },
+      },
+    ],
+    [can, confirmAction, deleteMutation, resetMutation, t],
+  )
+
+  const table = useReactTable({
+    data: users.data?.list ?? [],
+    columns,
+    pageCount,
+    manualPagination: true,
+    getCoreRowModel: getCoreRowModel(),
+    state: {
+      pagination: { pageIndex: page - 1, pageSize: PAGE_SIZE },
+    },
+  })
 
   function openCreate() {
     const firstRole = roles.data?.[0]?.id
@@ -84,6 +204,15 @@ export function UsersPage() {
     setForm((current) => ({ ...current, [key]: value }))
   }
 
+  function toggleFormRole(roleId: number) {
+    setForm((current) => ({
+      ...current,
+      roleIds: current.roleIds.includes(roleId)
+        ? current.roleIds.filter((id) => id !== roleId)
+        : [...current.roleIds, roleId],
+    }))
+  }
+
   function submitCreate() {
     if (!form.userName.trim() || !form.nickName.trim() || !form.password || form.roleIds.length === 0) {
       toast.error(t('Username, nickname, password, and role are required'))
@@ -93,238 +222,178 @@ export function UsersPage() {
   }
 
   return (
-    <div className="page-stack">
-      <header className="page-header">
-        <div>
-          <p className="eyebrow">{t('Identity management')}</p>
-          <h1>{t('Users')}</h1>
-          <p>{t('Manage operator accounts, roles, and account recovery.')}</p>
-        </div>
-        <div className="header-actions">
-          <Button onClick={() => void users.refetch()}>
-            <RefreshCw size={16} />
-            {t('Refresh')}
-          </Button>
-          {can('system:user:create') && (
-            <Button onClick={openCreate} variant="primary">
-              <Plus size={16} />
-              {t('New user')}
-            </Button>
-          )}
-        </div>
-      </header>
-      <section className="panel">
-        <div className="panel-summary">
-          <span>
-            {users.data?.total ?? 0} {t('users')}
-          </span>
-          <span>
-            {users.data?.list.filter((item) => item.enable === 1).length ?? 0} {t('enabled')}
-          </span>
-        </div>
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>{t('User')}</th>
-                <th>{t('Department')}</th>
-                <th>{t('Roles')}</th>
-                <th>{t('Status')}</th>
-                <th>{t('Actions')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.data?.list.map((item) => (
-                <tr key={item.id}>
-                  <td>{item.id}</td>
-                  <td>
-                    <strong>{item.nickName}</strong>
-                    <small>
-                      {item.userName}
-                      <br />
-                      {item.email}
-                    </small>
-                  </td>
-                  <td>{item.deptName || '—'}</td>
-                  <td>
-                    <div className="tag-list">
-                      {item.roles?.map((role) => (
-                        <span className="tag" key={role.id}>
-                          {role.name}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                  <td>
-                    <span className={item.enable === 1 ? 'status enabled' : 'status'}>
-                      {t(item.enable === 1 ? 'Enabled' : 'Disabled')}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="row-actions">
-                      {can('system:user:assign-roles') && (
-                        <Button
-                          onClick={() => {
-                            setRoleUser(item)
-                            setSelectedRoles(
-                              item.roleIds?.length ? item.roleIds : (item.roles?.map((role) => role.id) ?? []),
-                            )
-                          }}
-                          variant="ghost"
-                        >
-                          {t('Change role')}
-                        </Button>
-                      )}
-                      {can('system:user:reset-password') && (
-                        <Button onClick={() => resetMutation.mutate(item.id)} variant="ghost">
-                          {t('Reset password')}
-                        </Button>
-                      )}
-                      {can('system:user:delete') && (
-                        <Button
-                          onClick={() =>
-                            void confirmAction(t('Delete this user?')).then((confirmed) => {
-                              if (confirmed) deleteMutation.mutate(item.id)
-                            })
-                          }
-                          variant="ghost"
-                        >
-                          {t('Delete')}
-                        </Button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {!users.isLoading && users.data?.list.length === 0 && (
-                <tr>
-                  <td className="empty-cell" colSpan={6}>
-                    {t('No users')}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-        <div className="pagination">
-          <Button disabled={page <= 1} onClick={() => setPage((current) => current - 1)}>
-            {t('Previous')}
-          </Button>
-          <span>
-            {t('Page')} {page} / {pages}
-          </span>
-          <Button disabled={page >= pages} onClick={() => setPage((current) => current + 1)}>
-            {t('Next')}
-          </Button>
-        </div>
-      </section>
-
-      <Modal
-        footer={
+    <div className="flex flex-col gap-3">
+      <PageHeader
+        description={
+          <h1 className="text-base font-semibold text-foreground">
+            {t('Manage operator accounts, roles, and account recovery.')}
+          </h1>
+        }
+        actions={
           <>
-            <Button onClick={() => setCreateOpen(false)}>{t('Cancel')}</Button>
-            <Button disabled={createMutation.isPending} onClick={submitCreate} variant="primary">
-              {t('Create user')}
+            <Button onClick={() => void users.refetch()} variant="outline">
+              <IconRefresh size={16} />
+              {t('Refresh')}
             </Button>
+            {can('system:user:create') && (
+              <Button onClick={openCreate}>
+                <IconPlus size={16} />
+                {t('New user')}
+              </Button>
+            )}
           </>
         }
-        onOpenChange={setCreateOpen}
-        open={createOpen}
-        title={t('New user')}
-      >
-        <div className="form-grid">
-          <label>
-            {t('Username')}
-            <input onChange={(event) => update('userName', event.target.value)} value={form.userName} />
-          </label>
-          <label>
-            {t('Nickname')}
-            <input onChange={(event) => update('nickName', event.target.value)} value={form.nickName} />
-          </label>
-          <label>
-            {t('Password')}
-            <input onChange={(event) => update('password', event.target.value)} type="password" value={form.password} />
-          </label>
-          <label>
-            {t('Role')}
-            <select
-              aria-label="Role"
-              multiple
-              onChange={(event) =>
-                update(
-                  'roleIds',
-                  Array.from(event.target.selectedOptions, (option) => Number(option.value)),
-                )
-              }
-              value={form.roleIds.map(String)}
-            >
-              {roles.data?.map((role) => (
-                <option key={role.id} value={role.id}>
-                  {role.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            {t('Phone')}
-            <input onChange={(event) => update('phone', event.target.value)} value={form.phone} />
-          </label>
-          <label>
-            {t('Email')}
-            <input onChange={(event) => update('email', event.target.value)} value={form.email} />
-          </label>
-          <label>
-            {t('Status')}
-            <select
-              aria-label="Status"
-              onChange={(event) => update('enable', Number(event.target.value))}
-              value={form.enable}
-            >
-              <option value={1}>{t('Enabled')}</option>
-              <option value={0}>{t('Disabled')}</option>
-            </select>
-          </label>
-        </div>
-      </Modal>
+      />
+      <Card>
+        <CardContent className="flex flex-col gap-3">
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <span>
+              {users.data?.total ?? 0} {t('users')}
+            </span>
+            <span>
+              {users.data?.list.filter((item) => item.enable === 1).length ?? 0} {t('enabled')}
+            </span>
+          </div>
+          <DataTable
+            cellClassName="py-1.5"
+            emptyLabel={t('No users')}
+            errorLabel={t('Failed to load data')}
+            isError={users.isError}
+            isLoading={users.isLoading}
+            loadingLabel={t('Loading…')}
+            table={table}
+          />
+          <DataTablePagination
+            nextLabel={t('Next')}
+            onPageChange={setPage}
+            page={page}
+            pageCount={pageCount}
+            pageLabel={t('Page')}
+            previousLabel={t('Previous')}
+          />
+        </CardContent>
+      </Card>
 
-      <Modal
-        footer={
-          <>
-            <Button onClick={() => setRoleUser(null)}>{t('Cancel')}</Button>
+      <Dialog onOpenChange={setCreateOpen} open={createOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t('New user')}</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="user-username">{t('Username')}</Label>
+              <Input
+                id="user-username"
+                onChange={(event) => update('userName', event.target.value)}
+                value={form.userName}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="user-nickname">{t('Nickname')}</Label>
+              <Input
+                id="user-nickname"
+                onChange={(event) => update('nickName', event.target.value)}
+                value={form.nickName}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="user-password">{t('Password')}</Label>
+              <Input
+                id="user-password"
+                onChange={(event) => update('password', event.target.value)}
+                type="password"
+                value={form.password}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="user-status">{t('Status')}</Label>
+              <Select
+                onValueChange={(value) => {
+                  if (value != null) update('enable', Number(value))
+                }}
+                value={String(form.enable)}
+              >
+                <SelectTrigger aria-label={t('Status')} className="w-full" id="user-status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">{t('Enabled')}</SelectItem>
+                  <SelectItem value="0">{t('Disabled')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="user-phone">{t('Phone')}</Label>
+              <Input id="user-phone" onChange={(event) => update('phone', event.target.value)} value={form.phone} />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="user-email">{t('Email')}</Label>
+              <Input id="user-email" onChange={(event) => update('email', event.target.value)} value={form.email} />
+            </div>
+            <div className="col-span-2 flex flex-col gap-1.5">
+              <Label>{t('Role')}</Label>
+              <div className="flex flex-wrap gap-3 rounded-lg border border-input p-2.5">
+                {roles.data?.map((role) => (
+                  <div className="flex items-center gap-1.5 text-sm" key={role.id}>
+                    <Checkbox
+                      aria-label={role.name}
+                      checked={form.roleIds.includes(role.id)}
+                      onCheckedChange={() => toggleFormRole(role.id)}
+                    />
+                    <span>{role.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setCreateOpen(false)} variant="outline">
+              {t('Cancel')}
+            </Button>
+            <Button disabled={createMutation.isPending} onClick={submitCreate}>
+              {t('Create user')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog onOpenChange={(open) => !open && setRoleUser(null)} open={Boolean(roleUser)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('Change user role')}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {roleUser?.nickName} · {roleUser?.userName}
+          </p>
+          <div className="flex flex-col gap-2">
+            {roles.data?.map((role) => (
+              <div className="flex items-center gap-2 text-sm" key={role.id}>
+                <Checkbox
+                  aria-label={role.name}
+                  checked={selectedRoles.includes(role.id)}
+                  onCheckedChange={() =>
+                    setSelectedRoles((current) =>
+                      current.includes(role.id) ? current.filter((id) => id !== role.id) : [...current, role.id],
+                    )
+                  }
+                />
+                <span>{role.name}</span>
+              </div>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setRoleUser(null)} variant="outline">
+              {t('Cancel')}
+            </Button>
             <Button
               disabled={selectedRoles.length === 0}
               onClick={() => roleUser && roleMutation.mutate({ id: roleUser.id, roleIds: selectedRoles })}
-              variant="primary"
             >
               {t('Save roles')}
             </Button>
-          </>
-        }
-        onOpenChange={(open) => !open && setRoleUser(null)}
-        open={Boolean(roleUser)}
-        title={t('Change user role')}
-      >
-        <p>
-          {roleUser?.nickName} · {roleUser?.userName}
-        </p>
-        <div className="check-list">
-          {roles.data?.map((role) => (
-            <label key={role.id}>
-              <input
-                checked={selectedRoles.includes(role.id)}
-                onChange={() =>
-                  setSelectedRoles((current) =>
-                    current.includes(role.id) ? current.filter((id) => id !== role.id) : [...current, role.id],
-                  )
-                }
-                type="checkbox"
-              />
-              {role.name}
-            </label>
-          ))}
-        </div>
-      </Modal>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -5,7 +5,7 @@ use axum::{
 
 use super::dto::{
     AuditAnalysisRequest, AuditAnalysisResponse, AuditEventListData, AuditEventListRequest,
-    AuditEventResponse,
+    AuditEventResponse, AuditStatsRequest, AuditStatsResponse,
 };
 use crate::{ApiResponse, AppResult, state::AppState};
 
@@ -33,6 +33,22 @@ pub async fn get_audit_events(
         page,
         page_size,
     })))
+}
+
+#[utoipa::path(
+    get,
+    path = "/audit/events/stats",
+    tag = "audit",
+    security(("bearer_auth" = [])),
+    params(AuditStatsRequest),
+    responses((status = 200, description = "Audit visit stats", body = ApiResponse<AuditStatsResponse>))
+)]
+pub async fn get_audit_stats(
+    State(state): State<AppState>,
+    Query(query): Query<AuditStatsRequest>,
+) -> AppResult<Json<ApiResponse<AuditStatsResponse>>> {
+    let stats = state.audits.stats(query.days.unwrap_or(14)).await?;
+    Ok(Json(ApiResponse::ok(AuditStatsResponse::from(stats))))
 }
 
 #[utoipa::path(

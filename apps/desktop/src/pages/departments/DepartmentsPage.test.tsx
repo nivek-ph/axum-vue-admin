@@ -1,5 +1,5 @@
 import type { AxiosAdapter } from 'axios'
-import { render, screen, waitFor } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
@@ -15,6 +15,7 @@ describe('Departments workflow', () => {
     useMenuStore.getState().resetAccess()
   })
   afterEach(() => {
+    cleanup()
     http.defaults.adapter = originalAdapter
   })
 
@@ -54,11 +55,165 @@ describe('Departments workflow', () => {
     window.history.replaceState({}, '', '/departments')
     render(<Application />)
 
-    await user.click(await screen.findByRole('button', { name: 'Add child' }))
-    await user.type(screen.getByLabelText('Name'), 'Support')
+    await screen.findByText('Operations')
+    await user.click(screen.getByRole('button', { name: 'Add child' }))
+    expect(await screen.findByLabelText('Parent department')).toHaveTextContent('Operations')
+    await user.type(await screen.findByLabelText('Name'), 'Support')
     await user.type(screen.getByLabelText('Code'), 'support')
     await user.click(screen.getByRole('button', { name: 'Save' }))
     await waitFor(() => expect(created).toMatchObject({ parent_id: 3, name: 'Support', code: 'support' }))
     await waitFor(() => expect(reads).toBeGreaterThan(1))
+  })
+
+  it('lets operators pick a parent department from the tree instead of typing an ID', async () => {
+    const user = userEvent.setup()
+    const currentUser = {
+      id: 1,
+      userName: 'admin',
+      nickName: 'Admin',
+      roles: [{ id: 1, code: 'super_admin', name: 'Super Admin' }],
+    }
+    useAuthStore.getState().setSession({ accessToken: 'token', refreshToken: 'refresh', userInfo: currentUser })
+    let created: Record<string, unknown> | null = null
+    http.defaults.adapter = (async (config) => {
+      let data: unknown
+      if (config.url === '/users/me') data = { code: 'OK', message: 'ok', data: { userInfo: currentUser } }
+      else if (config.url === '/menus/current')
+        data = { code: 'OK', message: 'ok', data: { menus: [{ name: 'departments' }], permissions: [] } }
+      else if (config.url === '/depts' && config.method === 'get') {
+        data = {
+          code: 'OK',
+          message: 'ok',
+          data: {
+            list: [
+              { id: 3, parent_id: null, name: 'Operations', code: 'ops', sort: 1, status: 'enabled', children: [] },
+            ],
+          },
+        }
+      } else if (config.url === '/depts' && config.method === 'post') {
+        created = JSON.parse(String(config.data))
+        data = { code: 'OK', message: 'saved' }
+      } else throw new Error(`Unexpected request: ${config.method} ${config.url}`)
+      return { data, status: 200, statusText: 'OK', headers: {}, config }
+    }) as AxiosAdapter
+    window.history.replaceState({}, '', '/departments')
+    render(<Application />)
+
+    await screen.findByText('Operations')
+    await user.click(screen.getByRole('button', { name: 'New department' }))
+    expect(await screen.findByLabelText('Parent department')).toHaveTextContent('Root department')
+    await user.click(screen.getByLabelText('Parent department'))
+    await user.click(await screen.findByRole('option', { name: 'Operations' }))
+    await user.type(screen.getByLabelText('Name'), 'Support')
+    await user.type(screen.getByLabelText('Code'), 'support')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(created).toMatchObject({ parent_id: 3, name: 'Support', code: 'support' }))
+  })
+
+  it('switches to the organization chart and collapses a department subtree', async () => {
+    const user = userEvent.setup()
+    const currentUser = {
+      id: 1,
+      userName: 'admin',
+      nickName: 'Admin',
+      roles: [{ id: 1, code: 'super_admin', name: 'Super Admin' }],
+    }
+    useAuthStore.getState().setSession({ accessToken: 'token', refreshToken: 'refresh', userInfo: currentUser })
+    http.defaults.adapter = (async (config) => {
+      let data: unknown
+      if (config.url === '/users/me') data = { code: 'OK', message: 'ok', data: { userInfo: currentUser } }
+      else if (config.url === '/menus/current')
+        data = { code: 'OK', message: 'ok', data: { menus: [{ name: 'departments' }], permissions: [] } }
+      else if (config.url === '/depts' && config.method === 'get') {
+        data = {
+          code: 'OK',
+          message: 'ok',
+          data: {
+            list: [
+              {
+                id: 1,
+                parent_id: null,
+                name: 'Head Office',
+                code: 'head_office',
+                sort: 0,
+                status: 'enabled',
+                children: [],
+              },
+              {
+                id: 3,
+                parent_id: null,
+                name: 'Operations',
+                code: 'ops',
+                sort: 1,
+                status: 'enabled',
+                children: [
+                  {
+                    id: 4,
+                    parent_id: 3,
+                    name: 'Support',
+                    code: 'support',
+                    sort: 1,
+                    status: 'enabled',
+                    children: [
+                      {
+                        id: 5,
+                        parent_id: 4,
+                        name: 'Service Desk',
+                        code: 'service_desk',
+                        sort: 1,
+                        status: 'enabled',
+                        children: [],
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        }
+      } else throw new Error(`Unexpected request: ${config.method} ${config.url}`)
+      return { data, status: 200, statusText: 'OK', headers: {}, config }
+    }) as AxiosAdapter
+    window.history.replaceState({}, '', '/departments')
+    render(<Application />)
+
+    await screen.findByText('Operations')
+    await user.click(screen.getByRole('button', { name: 'Collapse Operations' }))
+    expect(screen.queryByText('Support')).not.toBeInTheDocument()
+    expect(screen.queryByText('Service Desk')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Expand Operations' }))
+    expect(screen.getByText('Support')).toBeVisible()
+    expect(screen.getByText('Service Desk')).toBeVisible()
+
+    await user.click(screen.getByRole('button', { name: 'More actions for Operations' }))
+    expect(await screen.findByRole('menuitem', { name: 'Edit' })).toBeVisible()
+    await user.click(await screen.findByRole('menuitem', { name: 'Delete' }))
+    expect(
+      await screen.findByText('Move or delete the 2 subordinate departments before deleting "Operations".'),
+    ).toBeVisible()
+
+    await user.click(screen.getByRole('tab', { name: 'Organization chart' }))
+
+    expect(await screen.findByText('3 departments')).toBeVisible()
+    expect(screen.queryByText('Head Office')).not.toBeInTheDocument()
+    expect(screen.queryByText('1 child')).not.toBeInTheDocument()
+    expect(screen.getByText('Service Desk')).toBeVisible()
+
+    await user.hover(screen.getByRole('group', { name: 'Operations' }))
+    expect(await screen.findByText('Department details')).toBeVisible()
+    expect(screen.getByText('ops')).toBeVisible()
+    fireEvent.click(screen.getByRole('button', { name: 'Add child to Operations' }))
+    expect(await screen.findByLabelText('Parent department')).toHaveTextContent('Operations')
+    await user.click(screen.getByRole('button', { name: 'Cancel' }))
+
+    await user.click(screen.getByRole('button', { name: 'Fullscreen' }))
+    expect(screen.getByRole('button', { name: 'Exit fullscreen' })).toBeVisible()
+    await user.keyboard('{Escape}')
+    expect(screen.getByRole('button', { name: 'Fullscreen' })).toBeVisible()
+
+    await user.click(screen.getByRole('button', { name: 'Collapse Operations' }))
+
+    expect(screen.queryByText('Support')).not.toBeInTheDocument()
+    expect(screen.queryByText('Service Desk')).not.toBeInTheDocument()
   })
 })
