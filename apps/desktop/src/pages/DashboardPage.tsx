@@ -23,7 +23,7 @@ import { fetchUsers } from '@/api/users'
 import { PageHeader } from '@/components/PageHeader'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuthStore } from '@/stores/auth'
-import { useMenuStore } from '@/stores/menu'
+import { flattenMenuItems, type MenuItem, useMenuStore } from '@/stores/menu'
 
 const TOP_N = 10
 const TOP_BAR_ROW_HEIGHT = 36
@@ -83,13 +83,16 @@ export function DashboardPage() {
 
   const visibleCards = RESOURCE_CARDS.filter((card) => canAccess(card.key))
   const canAudit = canAccess('audit-events')
-  const quickLinks = menuItems.filter((item) => item.key !== 'dashboard' && item.key !== 'profile')
+  const quickLinks = flattenMenuItems(menuItems).filter(
+    (item): item is MenuItem & { path: string } =>
+      Boolean(item.path) && item.key !== 'dashboard' && item.key !== 'profile',
+  )
 
   const resourceQueries = useQueries({
     queries: [
       {
         queryKey: ['dashboard', 'users'],
-        queryFn: () => fetchUsers(1, 1),
+        queryFn: () => fetchUsers({ page: 1, pageSize: 1 }),
         enabled: canAccess('users'),
       },
       {

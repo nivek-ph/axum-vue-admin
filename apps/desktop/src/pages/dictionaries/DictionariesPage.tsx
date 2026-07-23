@@ -321,6 +321,7 @@ export function DictionariesPage() {
               isError={dictionaries.isError || (Boolean(selectedId) && details.isError)}
               isLoading={dictionaries.isLoading || (Boolean(selectedId) && details.isLoading)}
               loadingLabel={t('Loading…')}
+              summary={t('Record total', { count: flatDetails.length })}
               table={table}
             />
           </CardContent>

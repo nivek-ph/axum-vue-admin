@@ -26,12 +26,13 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 
 type ResultKind = AuditEventRecord['result']
 const PAGE_SIZE = 10
+const EMPTY_FILTERS = { reqId: '', actor: '', action: '', resourceType: '', result: '' }
 
 function resultBadge(result: ResultKind) {
   switch (result) {
@@ -47,7 +48,7 @@ function resultBadge(result: ResultKind) {
 export function AuditPage() {
   const { t } = useTranslation()
   const [page, setPage] = useState(1)
-  const [draft, setDraft] = useState({ actor: '', action: '', resourceType: '', result: '' })
+  const [draft, setDraft] = useState(EMPTY_FILTERS)
   const [filters, setFilters] = useState(draft)
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const list = useQuery({
@@ -74,6 +75,11 @@ export function AuditPage() {
         accessorKey: 'actorLabel',
         header: t('Actor'),
         cell: ({ row }) => row.original.actorLabel,
+      },
+      {
+        accessorKey: 'reqId',
+        header: t('Request ID'),
+        cell: ({ row }) => <code className="text-xs">{row.original.reqId}</code>,
       },
       {
         accessorKey: 'action',
@@ -145,6 +151,13 @@ export function AuditPage() {
         <CardContent className="space-y-3">
           <div className="flex flex-wrap items-center gap-2">
             <Input
+              aria-label="Filter by request ID"
+              className="w-48"
+              onChange={(event) => setDraft((current) => ({ ...current, reqId: event.target.value }))}
+              placeholder={t('Request ID')}
+              value={draft.reqId}
+            />
+            <Input
               aria-label="Filter by actor"
               className="w-40"
               onChange={(event) => setDraft((current) => ({ ...current, actor: event.target.value }))}
@@ -172,7 +185,9 @@ export function AuditPage() {
               value={draft.result || 'all'}
             >
               <SelectTrigger aria-label="Filter by result" className="w-36">
-                <SelectValue />
+                <span className="flex flex-1 text-left">
+                  {draft.result ? t(resultBadge(draft.result as ResultKind).label) : t('All results')}
+                </span>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t('All results')}</SelectItem>
@@ -213,6 +228,7 @@ export function AuditPage() {
             pageCount={pageCount}
             pageLabel={t('Page')}
             previousLabel={t('Previous')}
+            totalText={t('Record total', { count: list.data?.total ?? 0 })}
           />
         </CardContent>
       </Card>
@@ -256,6 +272,10 @@ export function AuditPage() {
                   <div>
                     <dt className="text-muted-foreground">{t('Actor')}</dt>
                     <dd className="font-medium">{selected.actorLabel}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">{t('Request ID')}</dt>
+                    <dd className="break-all font-mono text-xs">{selected.reqId}</dd>
                   </div>
                   <div>
                     <dt className="text-muted-foreground">{t('Action')}</dt>

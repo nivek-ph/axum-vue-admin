@@ -6,6 +6,8 @@ export const LOCALE_STORAGE_KEY = 'axum-vue-admin.locale'
 const en = {
   'Department count_one': '{{count}} department',
   'Department count_other': '{{count}} departments',
+  'Record total_one': '{{count}} record total',
+  'Record total_other': '{{count}} records total',
 } as const
 
 const zh = {
@@ -91,6 +93,8 @@ const zh = {
   Previous: '上一页',
   Next: '下一页',
   Page: '页',
+  'Record total_one': '共 {{count}} 条',
+  'Record total_other': '共 {{count}} 条',
   Cancel: '取消',
   Confirm: '确认',
   'Confirm action': '确认操作',
@@ -221,6 +225,7 @@ const zh = {
   'Operational trace': '操作追踪',
   'Inspect administrative actions, outcomes, and structured changes.': '检查管理操作、结果和结构化变更。',
   Actor: '操作者',
+  'Request ID': '请求 ID',
   Action: '操作',
   Resource: '操作对象',
   Result: '结果',

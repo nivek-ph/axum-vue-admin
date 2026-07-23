@@ -67,11 +67,12 @@ impl AuditService {
         sqlx::query(
             r#"
             insert into sys_audit_events (
-                actor_id, actor_label, action, resource_type, resource_id, result,
-                reason_code, source_ip, user_agent, changes
-            ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                req_id, actor_id, actor_label, action, resource_type, resource_id,
+                result, reason_code, source_ip, user_agent, changes
+            ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
             "#,
         )
+        .bind(event.req_id)
         .bind(event.actor.id)
         .bind(event.actor.label)
         .bind(action)
@@ -99,15 +100,17 @@ impl AuditService {
         let total = sqlx::query_scalar::<_, i64>(
             r#"
             select count(*) from sys_audit_events
-            where ($1::text is null or actor_label ilike '%' || $1 || '%' or actor_id::text = $1)
-              and ($2::text is null or action = $2)
-              and ($3::text is null or resource_type = $3)
-              and ($4::text is null or resource_id = $4)
-              and ($5::text is null or result = $5)
-              and ($6::timestamptz is null or created_at >= $6)
-              and ($7::timestamptz is null or created_at <= $7)
+            where ($1::text is null or req_id ilike '%' || $1 || '%')
+              and ($2::text is null or actor_label ilike '%' || $2 || '%' or actor_id::text = $2)
+              and ($3::text is null or action = $3)
+              and ($4::text is null or resource_type = $4)
+              and ($5::text is null or resource_id = $5)
+              and ($6::text is null or result = $6)
+              and ($7::timestamptz is null or created_at >= $7)
+              and ($8::timestamptz is null or created_at <= $8)
             "#,
         )
+        .bind(query.req_id.as_deref())
         .bind(query.actor.as_deref())
         .bind(query.action.as_deref())
         .bind(query.resource_type.as_deref())
@@ -121,21 +124,23 @@ impl AuditService {
         let events = sqlx::query_as::<_, AuditEventView>(
             r#"
             select
-                id, actor_id, actor_label, action, resource_type, resource_id, result,
+                id, req_id, actor_id, actor_label, action, resource_type, resource_id, result,
                 reason_code, source_ip, user_agent, changes,
                 to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as created_at
             from sys_audit_events
-            where ($1::text is null or actor_label ilike '%' || $1 || '%' or actor_id::text = $1)
-              and ($2::text is null or action = $2)
-              and ($3::text is null or resource_type = $3)
-              and ($4::text is null or resource_id = $4)
-              and ($5::text is null or result = $5)
-              and ($6::timestamptz is null or created_at >= $6)
-              and ($7::timestamptz is null or created_at <= $7)
+            where ($1::text is null or req_id ilike '%' || $1 || '%')
+              and ($2::text is null or actor_label ilike '%' || $2 || '%' or actor_id::text = $2)
+              and ($3::text is null or action = $3)
+              and ($4::text is null or resource_type = $4)
+              and ($5::text is null or resource_id = $5)
+              and ($6::text is null or result = $6)
+              and ($7::timestamptz is null or created_at >= $7)
+              and ($8::timestamptz is null or created_at <= $8)
             order by id desc
-            limit $8 offset $9
+            limit $9 offset $10
             "#,
         )
+        .bind(query.req_id.as_deref())
         .bind(query.actor.as_deref())
         .bind(query.action.as_deref())
         .bind(query.resource_type.as_deref())
@@ -155,7 +160,7 @@ impl AuditService {
         Ok(sqlx::query_as::<_, AuditEventView>(
             r#"
             select
-                id, actor_id, actor_label, action, resource_type, resource_id, result,
+                id, req_id, actor_id, actor_label, action, resource_type, resource_id, result,
                 reason_code, source_ip, user_agent, changes,
                 to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') as created_at
             from sys_audit_events

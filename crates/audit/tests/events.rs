@@ -6,6 +6,7 @@ use sqlx::PgPool;
 
 fn login_event(result: AuditResult, ip: &str) -> AuditEvent {
     AuditEvent {
+        req_id: "req-login-1".to_string(),
         actor: AuditActor {
             id: Some(7),
             label: "admin".to_string(),
@@ -24,6 +25,7 @@ fn login_event(result: AuditResult, ip: &str) -> AuditEvent {
 
 fn assign_roles_event(ip: &str) -> AuditEvent {
     AuditEvent {
+        req_id: "req-assign-roles-1".to_string(),
         actor: AuditActor {
             id: Some(7),
             label: "admin".to_string(),
@@ -62,6 +64,7 @@ async fn fresh_schema_records_and_filters_structured_audit_events(pool: PgPool) 
         .list(AuditQuery {
             page: 1,
             page_size: 10,
+            req_id: Some("login-1".to_string()),
             actor: Some("admin".to_string()),
             action: Some("auth.login".to_string()),
             resource_type: Some("account".to_string()),
@@ -77,6 +80,7 @@ async fn fresh_schema_records_and_filters_structured_audit_events(pool: PgPool) 
     assert_eq!(page, 1);
     assert_eq!(page_size, 10);
     assert_eq!(events[0].actor_label, "admin");
+    assert_eq!(events[0].req_id, "req-login-1");
     assert_eq!(events[0].action, "auth.login");
     assert_eq!(events[0].resource_type, "account");
     assert_eq!(events[0].resource_id.as_deref(), Some("admin"));

@@ -4,6 +4,7 @@ import { http } from './http'
 
 export interface AuditEventRecord {
   id: number
+  reqId: string
   actorId?: number
   actorLabel: string
   action: string
@@ -19,6 +20,7 @@ export interface AuditEventRecord {
 export interface AuditFilters {
   page?: number
   pageSize?: number
+  reqId?: string
   actor?: string
   action?: string
   resourceType?: string
@@ -52,6 +54,7 @@ export async function fetchAuditEvents(filters: AuditFilters = {}) {
     params: {
       page,
       pageSize,
+      reqId: filters.reqId || undefined,
       actor: filters.actor || undefined,
       action: filters.action || undefined,
       resourceType: filters.resourceType || undefined,
@@ -76,6 +79,7 @@ export async function analyzeAuditEvents(filters: Omit<AuditFilters, 'page' | 'p
   const response = await http.post<never, ApiEnvelope<AuditAnalysis>>(
     '/audit/events/analyze',
     {
+      reqId: filters.reqId || undefined,
       actor: filters.actor || undefined,
       action: filters.action || undefined,
       resourceType: filters.resourceType || undefined,

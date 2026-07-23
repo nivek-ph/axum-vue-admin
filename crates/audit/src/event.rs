@@ -84,6 +84,7 @@ pub struct AuditSource {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AuditContext {
+    pub req_id: String,
     pub actor: AuditActor,
     pub source: AuditSource,
 }
@@ -106,6 +107,7 @@ pub struct FieldChange {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AuditEvent {
+    pub req_id: String,
     pub actor: AuditActor,
     pub action: AuditAction,
     pub resource: AuditResource,
@@ -121,6 +123,8 @@ pub struct AuditQuery {
     pub page: i64,
     #[serde(rename = "pageSize")]
     pub page_size: i64,
+    #[serde(rename = "reqId")]
+    pub req_id: Option<String>,
     pub actor: Option<String>,
     pub action: Option<String>,
     #[serde(rename = "resourceType")]
@@ -137,6 +141,7 @@ pub struct AuditQuery {
 #[derive(Debug, Clone, FromRow)]
 pub struct AuditEventView {
     pub id: i64,
+    pub req_id: String,
     pub actor_id: Option<i64>,
     pub actor_label: String,
     pub action: String,

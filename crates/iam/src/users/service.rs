@@ -217,6 +217,7 @@ impl UserService {
         };
         self.audit
             .record_best_effort(AuditEvent {
+                req_id: context.req_id.clone(),
                 actor: context.actor.clone(),
                 action: AuditAction::AssignUserRoles,
                 resource: AuditResource::User(target_user_id),
@@ -456,14 +457,22 @@ async fn get_user_list_with_scope(
     let total_sql = format!(
         r#"
         select count(*) from sys_users u
-        where ($1::text is null or u.username ilike '%' || $1 || '%')
-          and ($2::text is null or u.nick_name ilike '%' || $2 || '%')
-          and ($3::text is null or coalesce(u.phone, '') ilike '%' || $3 || '%')
-          and ($4::text is null or coalesce(u.email, '') ilike '%' || $4 || '%')
+        where (
+              $1::text is null
+              or u.username ilike '%' || $1 || '%'
+              or u.nick_name ilike '%' || $1 || '%'
+              or coalesce(u.phone, '') ilike '%' || $1 || '%'
+              or coalesce(u.email, '') ilike '%' || $1 || '%'
+          )
+          and ($2::text is null or u.username ilike '%' || $2 || '%')
+          and ($3::text is null or u.nick_name ilike '%' || $3 || '%')
+          and ($4::text is null or coalesce(u.phone, '') ilike '%' || $4 || '%')
+          and ($5::text is null or coalesce(u.email, '') ilike '%' || $5 || '%')
           {scope_clause}
         "#
     );
     let mut total_query = sqlx::query_scalar::<_, i64>(sqlx::AssertSqlSafe(total_sql))
+        .bind(query.keyword.as_deref())
         .bind(query.username.as_deref())
         .bind(query.nick_name.as_deref())
         .bind(query.phone.as_deref())
@@ -494,27 +503,35 @@ async fn get_user_list_with_scope(
             d.name as dept_name
         from sys_users u
         left join sys_depts d on d.id = u.dept_id
-        where ($1::text is null or u.username ilike '%' || $1 || '%')
-          and ($2::text is null or u.nick_name ilike '%' || $2 || '%')
-          and ($3::text is null or coalesce(u.phone, '') ilike '%' || $3 || '%')
-          and ($4::text is null or coalesce(u.email, '') ilike '%' || $4 || '%')
+        where (
+              $1::text is null
+              or u.username ilike '%' || $1 || '%'
+              or u.nick_name ilike '%' || $1 || '%'
+              or coalesce(u.phone, '') ilike '%' || $1 || '%'
+              or coalesce(u.email, '') ilike '%' || $1 || '%'
+          )
+          and ($2::text is null or u.username ilike '%' || $2 || '%')
+          and ($3::text is null or u.nick_name ilike '%' || $3 || '%')
+          and ($4::text is null or coalesce(u.phone, '') ilike '%' || $4 || '%')
+          and ($5::text is null or coalesce(u.email, '') ilike '%' || $5 || '%')
           {scope_clause}
         order by {order_clause}
         limit ${limit_placeholder} offset ${offset_placeholder}
         "#,
         limit_placeholder = if matches!(&resolved_data_scope, ResolvedDataScope::All) {
-            5
-        } else {
-            6
-        },
-        offset_placeholder = if matches!(&resolved_data_scope, ResolvedDataScope::All) {
             6
         } else {
             7
+        },
+        offset_placeholder = if matches!(&resolved_data_scope, ResolvedDataScope::All) {
+            7
+        } else {
+            8
         }
     );
 
     let mut rows_query = sqlx::query_as::<_, UserRecord>(sqlx::AssertSqlSafe(sql))
+        .bind(query.keyword.as_deref())
         .bind(query.username.as_deref())
         .bind(query.nick_name.as_deref())
         .bind(query.phone.as_deref())
@@ -544,8 +561,8 @@ async fn get_user_list_with_scope(
 fn scope_sql_clause(filter: &ResolvedDataScope) -> &'static str {
     match filter {
         ResolvedDataScope::All => "",
-        ResolvedDataScope::DeptIds(_) => "and u.dept_id = any($5)",
-        ResolvedDataScope::Owner(_) => "and u.id = $5",
+        ResolvedDataScope::DeptIds(_) => "and u.dept_id = any($6)",
+        ResolvedDataScope::Owner(_) => "and u.id = $6",
     }
 }
 
@@ -693,6 +710,7 @@ async fn set_user_roles_with_audit(
     AuditService::record_in(
         &mut tx,
         AuditEvent {
+            req_id: audit_context.req_id,
             actor: audit_context.actor,
             action: AuditAction::AssignUserRoles,
             resource: AuditResource::User(user_id),
@@ -1048,6 +1066,7 @@ mod tests {
 
     fn audit_context() -> AuditContext {
         AuditContext {
+            req_id: "req-role-assignment-1".to_string(),
             actor: audit::AuditActor {
                 id: Some(100),
                 label: "actor".to_string(),
@@ -1064,11 +1083,11 @@ mod tests {
         assert_eq!(scope_sql_clause(&ResolvedDataScope::All), "");
         assert_eq!(
             scope_sql_clause(&ResolvedDataScope::DeptIds(vec![1, 2])),
-            "and u.dept_id = any($5)"
+            "and u.dept_id = any($6)"
         );
         assert_eq!(
             scope_sql_clause(&ResolvedDataScope::Owner(7)),
-            "and u.id = $5"
+            "and u.id = $6"
         );
     }
 
@@ -1128,6 +1147,7 @@ mod tests {
         let first_page = GetUserListRequest {
             page: 1,
             page_size: 2,
+            keyword: None,
             username: Some("batch-".to_string()),
             nick_name: None,
             phone: None,
@@ -1167,6 +1187,50 @@ mod tests {
         assert_eq!(users[0].user_name, "batch-c");
         assert!(users[0].roles.is_empty());
         assert!(users[0].role_ids.is_empty());
+    }
+
+    #[sqlx::test(migrations = "../../migrations")]
+    async fn user_keyword_matches_identity_and_contact_fields(pool: sqlx::PgPool) {
+        sqlx::query(
+            r#"
+            insert into sys_users (
+                id, uuid, username, password_hash, nick_name, header_img, home_route,
+                enable, phone, email, dept_id, is_system
+            ) values
+                (210, 'keyword-username-uuid', 'needle-user', 'hash', 'Username Match', '', 'dashboard', true, null, null, 1, false),
+                (211, 'keyword-nickname-uuid', 'nickname-user', 'hash', 'Needle Nickname', '', 'dashboard', true, null, null, 1, false),
+                (212, 'keyword-phone-uuid', 'phone-user', 'hash', 'Phone Match', '', 'dashboard', true, '555-NEEDLE', null, 1, false),
+                (213, 'keyword-email-uuid', 'email-user', 'hash', 'Email Match', '', 'dashboard', true, null, 'needle@example.test', 1, false),
+                (214, 'keyword-other-uuid', 'other-user', 'hash', 'Other User', '', 'dashboard', true, null, null, 1, false)
+            "#,
+        )
+        .execute(&pool)
+        .await
+        .unwrap();
+
+        let access = AccessService::new(pool.clone());
+        let audit = AuditService::new(pool.clone());
+        let service = UserService::new(pool, access, audit, PasswordService::new());
+        let (users, total) = service
+            .list_with_scope(
+                GetUserListRequest {
+                    page: 1,
+                    page_size: 10,
+                    keyword: Some("needle".to_string()),
+                    username: None,
+                    nick_name: None,
+                    phone: None,
+                    email: None,
+                    order_key: Some("username".to_string()),
+                    desc: Some(false),
+                },
+                ResolvedDataScope::All,
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(total, 4);
+        assert_eq!(users.len(), 4);
     }
 
     #[sqlx::test(migrations = "../../migrations")]

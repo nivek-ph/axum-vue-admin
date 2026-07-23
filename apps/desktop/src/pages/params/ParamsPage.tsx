@@ -192,6 +192,7 @@ export function ParamsPage() {
             pageCount={pageCount}
             pageLabel={t('Page')}
             previousLabel={t('Previous')}
+            totalText={t('Record total', { count: query.data?.total ?? 0 })}
           />
         </CardContent>
       </Card>

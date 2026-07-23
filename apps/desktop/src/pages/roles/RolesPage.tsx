@@ -144,7 +144,7 @@ export function RolesPage() {
         .catch(() => toast.error(t('Failed to load data scope')))
     }
     if (tab === 'users' && canViewMembers)
-      void Promise.all([fetchUsers(1, 200), getRoleUserIds(selectedRoleId)])
+      void Promise.all([fetchUsers({ page: 1, pageSize: 200 }), getRoleUserIds(selectedRoleId)])
         .then(([result, ids]) => {
           if (cancelled) return
           setUsers(result.list)
@@ -331,6 +331,9 @@ export function RolesPage() {
                 ))}
               </div>
             </ScrollArea>
+            <p className="text-right text-xs text-muted-foreground">
+              {t('Record total', { count: filteredRoles.length })}
+            </p>
           </CardContent>
         </Card>
 

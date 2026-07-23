@@ -23,6 +23,26 @@ CREATE TABLE sys_roles (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE TABLE sys_users (
+    id BIGSERIAL PRIMARY KEY,
+    uuid TEXT NOT NULL UNIQUE,
+    username TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    nick_name TEXT NOT NULL,
+    header_img TEXT NOT NULL,
+    home_route TEXT NOT NULL DEFAULT 'dashboard',
+    enable BOOLEAN NOT NULL DEFAULT true,
+    phone TEXT,
+    email TEXT,
+    origin_setting JSONB,
+    dept_id BIGINT REFERENCES sys_depts(id) ON DELETE SET NULL,
+    is_system BOOLEAN NOT NULL DEFAULT false,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_sys_users_username ON sys_users(username);
+
 CREATE TABLE sys_user_roles (
     user_id BIGINT NOT NULL REFERENCES sys_users(id) ON DELETE CASCADE,
     role_id BIGINT NOT NULL REFERENCES sys_roles(id) ON DELETE RESTRICT,
@@ -83,15 +103,65 @@ CREATE TABLE sys_role_menus (
     PRIMARY KEY (role_id, menu_id)
 );
 
-ALTER TABLE sys_users
-    ADD COLUMN dept_id BIGINT REFERENCES sys_depts(id) ON DELETE SET NULL,
-    ADD COLUMN is_system BOOLEAN NOT NULL DEFAULT false;
+CREATE TABLE sys_audit_events (
+    id BIGSERIAL PRIMARY KEY,
+    req_id TEXT NOT NULL,
+    actor_id BIGINT,
+    actor_label TEXT NOT NULL,
+    action TEXT NOT NULL,
+    resource_type TEXT NOT NULL,
+    resource_id TEXT,
+    result TEXT NOT NULL,
+    reason_code TEXT,
+    source_ip TEXT NOT NULL DEFAULT '',
+    user_agent TEXT NOT NULL DEFAULT '',
+    changes JSONB NOT NULL DEFAULT '[]'::JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
-INSERT INTO sys_depts (id, parent_id, name, code, sort, status)
-VALUES (1, NULL, 'Head Office', 'head_office', 0, 'enabled');
+CREATE INDEX idx_sys_audit_events_req_id ON sys_audit_events(req_id);
+CREATE INDEX idx_sys_audit_events_actor ON sys_audit_events(actor_id, created_at DESC);
+CREATE INDEX idx_sys_audit_events_action ON sys_audit_events(action, created_at DESC);
+CREATE INDEX idx_sys_audit_events_resource
+    ON sys_audit_events(resource_type, resource_id, created_at DESC);
+CREATE INDEX idx_sys_audit_events_result ON sys_audit_events(result, created_at DESC);
 
-INSERT INTO sys_roles (id, code, name, status, sort, data_scope, is_system)
-VALUES (1, 'super_admin', 'Super Admin', 'enabled', 0, 'all', true);
+CREATE TABLE sys_params (
+    id BIGSERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    "key" TEXT NOT NULL UNIQUE,
+    value TEXT NOT NULL,
+    "desc" TEXT NOT NULL DEFAULT ''
+);
 
-SELECT setval(pg_get_serial_sequence('sys_depts', 'id'), 1);
-SELECT setval(pg_get_serial_sequence('sys_roles', 'id'), 1);
+CREATE TABLE sys_dictionaries (
+    id BIGSERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    type TEXT NOT NULL UNIQUE,
+    status BOOLEAN,
+    "desc" TEXT NOT NULL DEFAULT '',
+    parent_id BIGINT
+);
+
+CREATE TABLE sys_dictionary_details (
+    id BIGSERIAL PRIMARY KEY,
+    label TEXT NOT NULL,
+    value TEXT NOT NULL,
+    extend TEXT NOT NULL DEFAULT '',
+    status BOOLEAN,
+    sort INTEGER NOT NULL DEFAULT 0,
+    sys_dictionary_id BIGINT NOT NULL,
+    parent_id BIGINT,
+    level INTEGER NOT NULL DEFAULT 0,
+    path TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE uploaded_files (
+    id BIGSERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    url TEXT NOT NULL,
+    ext TEXT NOT NULL DEFAULT '',
+    tag TEXT NOT NULL DEFAULT '',
+    category TEXT NOT NULL DEFAULT '',
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);

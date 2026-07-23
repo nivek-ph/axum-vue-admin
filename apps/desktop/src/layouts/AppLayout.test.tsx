@@ -26,7 +26,14 @@ describe('AppLayout shell', () => {
         roles: [{ id: 1, code: 'super_admin', name: 'Super Admin' }],
       },
     })
-    useMenuStore.getState().resetAccess()
+    useMenuStore.getState().setAuthorizedMenus([
+      { name: 'dashboard', path: '/dashboard', meta: { title: 'Dashboard' } },
+      {
+        name: 'organization',
+        meta: { title: 'Organization' },
+        children: [{ name: 'users', path: '/users', meta: { title: 'Users' } }],
+      },
+    ])
     await i18n.changeLanguage('zh-CN')
   })
 
@@ -50,17 +57,47 @@ describe('AppLayout shell', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.queryByText('核心管理')).not.toBeInTheDocument()
-    expect(screen.getByRole('link', { name: '用户管理' })).toBeVisible()
+    expect(screen.getByRole('button', { name: '组织架构' })).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByRole('link', { name: '用户管理' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: '收起' })).toBeVisible()
     expect(screen.queryByRole('button', { name: '灰蓝' })).not.toBeInTheDocument()
 
+    await user.click(screen.getByRole('button', { name: '组织架构' }))
+    expect(screen.getByRole('button', { name: '组织架构' })).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('link', { name: '用户管理' })).toBeVisible()
+
     await user.click(screen.getByRole('button', { name: '收起' }))
     expect(screen.getByRole('button', { name: '展开' })).toBeVisible()
+    expect(screen.getByRole('link', { name: '控制台' })).toBeVisible()
+    expect(screen.getByRole('button', { name: '组织架构' })).toBeVisible()
+    expect(screen.queryByRole('menuitem', { name: '用户管理' })).not.toBeInTheDocument()
     expect(window.localStorage.getItem('ava.sidebarCollapsed')).toBe('1')
+
+    await user.hover(screen.getByRole('button', { name: '组织架构' }))
+    expect(await screen.findByRole('menuitem', { name: '用户管理' })).toBeVisible()
 
     await user.click(screen.getByRole('button', { name: '深色模式' }))
     expect(document.documentElement.classList.contains('dark')).toBe(true)
     expect(window.localStorage.getItem('ava.themeMode')).toBe('dark')
+  })
+
+  it('keeps groups collapsed until the user expands them', async () => {
+    const user = userEvent.setup()
+    render(
+      <MemoryRouter initialEntries={['/users']}>
+        <Routes>
+          <Route element={<AppLayout />}>
+            <Route path="/users" element={<div>Users content</div>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    )
+
+    expect(screen.getByRole('button', { name: '组织架构' })).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByRole('link', { name: '用户管理' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '组织架构' }))
+    expect(screen.getByRole('button', { name: '组织架构' })).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('link', { name: '用户管理' })).toBeVisible()
   })
 })

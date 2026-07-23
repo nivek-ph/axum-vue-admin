@@ -85,9 +85,7 @@ function ApiBindingsCell({ bindings }: { bindings: ApiBinding[] }) {
         ) : null}
       </div>
       {expanded
-        ? rest.map((binding) => (
-            <ApiBindingLine binding={binding} key={`${binding.method}:${binding.pathPattern}`} />
-          ))
+        ? rest.map((binding) => <ApiBindingLine binding={binding} key={`${binding.method}:${binding.pathPattern}`} />)
         : null}
     </div>
   )
@@ -96,9 +94,10 @@ function ApiBindingsCell({ bindings }: { bindings: ApiBinding[] }) {
 export function MenusPage() {
   const { t } = useTranslation()
   const query = useQuery({ queryKey: ['menu-catalog'], queryFn: fetchMenuTree })
-  const tree = query.data ?? []
+  const tree = useMemo(() => query.data ?? [], [query.data])
   const [collapsedIds, setCollapsedIds] = useState<Set<number>>(() => new Set())
   const rows = useMemo(() => flattenVisible(tree, collapsedIds), [collapsedIds, tree])
+  const total = useMemo(() => flattenVisible(tree, new Set()).length, [tree])
 
   const toggleCollapsed = useCallback((id: number) => {
     setCollapsedIds((current) => {
@@ -227,6 +226,7 @@ export function MenusPage() {
               if (row.original.menuType === 'action') return 'bg-background'
               return 'bg-muted/15'
             }}
+            summary={t('Record total', { count: total })}
             table={table}
             tableClassName="min-w-[60rem]"
           />

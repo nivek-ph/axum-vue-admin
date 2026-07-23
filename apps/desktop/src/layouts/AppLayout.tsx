@@ -2,6 +2,7 @@ import {
   IconActivity,
   IconBookmarks,
   IconBuilding,
+  IconChevronRight,
   IconLayoutDashboard,
   IconLayoutSidebar,
   IconLayoutSidebarLeftCollapse,
@@ -14,7 +15,7 @@ import {
   IconUsers,
   type Icon,
 } from '@tabler/icons-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -24,12 +25,13 @@ import { BrandMark } from '@/components/BrandMark'
 import { LanguageSwitch } from '@/components/LanguageSwitch'
 import { ThemeSwitch } from '@/components/ThemeSwitch'
 import { Button, buttonVariants } from '@/components/ui/Button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth'
-import { useMenuStore } from '@/stores/menu'
+import { type MenuItem, useMenuStore } from '@/stores/menu'
 
 const SIDEBAR_COLLAPSED_KEY = 'ava.sidebarCollapsed'
 
@@ -44,6 +46,160 @@ const MENU_ICONS: Record<string, Icon> = {
   files: IconStack2,
   'audit-events': IconActivity,
   profile: IconUser,
+  organization: IconUsers,
+  'access-control': IconShieldCheck,
+  system: IconSettings,
+  audit: IconActivity,
+}
+
+type PageMenuItem = MenuItem & { path: string }
+
+function SidebarPageLink({
+  item,
+  collapsed = false,
+  depth = 0,
+}: {
+  item: PageMenuItem
+  collapsed?: boolean
+  depth?: number
+}) {
+  const { t } = useTranslation()
+  const Icon = MENU_ICONS[item.key] ?? IconLayoutDashboard
+  const label = t(item.label)
+  const link = (
+    <NavLink
+      aria-label={label}
+      className={({ isActive }) =>
+        cn(
+          'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+          depth > 0 && 'py-1.5',
+          collapsed && 'justify-center px-0',
+          isActive && 'bg-sidebar-accent font-medium text-sidebar-accent-foreground',
+        )
+      }
+      to={item.path}
+    >
+      <Icon className="size-4 shrink-0" />
+      {!collapsed ? <span className="truncate">{label}</span> : null}
+    </NavLink>
+  )
+
+  if (!collapsed) return link
+  return (
+    <Tooltip>
+      <TooltipTrigger render={link} />
+      <TooltipContent side="right">{label}</TooltipContent>
+    </Tooltip>
+  )
+}
+
+function groupPageItems(item: MenuItem): PageMenuItem[] {
+  return item.children.flatMap((child) => {
+    if (child.path) return [child as PageMenuItem]
+    return groupPageItems(child)
+  })
+}
+
+function CollapsedGroupButton({ item }: { item: MenuItem }) {
+  const { t } = useTranslation()
+  const Icon = MENU_ICONS[item.key] ?? IconLayoutDashboard
+  const label = t(item.label)
+  const pages = groupPageItems(item)
+  const [open, setOpen] = useState(false)
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  function clearCloseTimer() {
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current)
+      closeTimer.current = null
+    }
+  }
+
+  function openMenu() {
+    clearCloseTimer()
+    setOpen(true)
+  }
+
+  function scheduleClose() {
+    clearCloseTimer()
+    closeTimer.current = setTimeout(() => setOpen(false), 120)
+  }
+
+  return (
+    <DropdownMenu modal={false} onOpenChange={setOpen} open={open}>
+      <DropdownMenuTrigger
+        render={
+          <button
+            aria-expanded={open}
+            aria-haspopup="menu"
+            aria-label={label}
+            className={cn(
+              'flex w-full items-center justify-center rounded-lg py-2 text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+              open && 'bg-sidebar-accent text-sidebar-accent-foreground',
+            )}
+            onMouseEnter={openMenu}
+            onMouseLeave={scheduleClose}
+            type="button"
+          >
+            <Icon className="size-4 shrink-0" />
+          </button>
+        }
+      />
+      <DropdownMenuContent
+        align="start"
+        className="min-w-44"
+        onMouseEnter={openMenu}
+        onMouseLeave={scheduleClose}
+        side="right"
+        sideOffset={6}
+      >
+        <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">{label}</div>
+        {pages.map((page) => {
+          const PageIcon = MENU_ICONS[page.key] ?? IconLayoutDashboard
+          return (
+            <DropdownMenuItem closeOnClick key={page.key} nativeButton={false} render={<NavLink to={page.path} />}>
+              <PageIcon />
+              {t(page.label)}
+            </DropdownMenuItem>
+          )
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
+function SidebarItem({ item, depth = 0 }: { item: MenuItem; depth?: number }) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  const Icon = MENU_ICONS[item.key] ?? IconLayoutDashboard
+  const label = t(item.label)
+
+  if (item.path) {
+    return <SidebarPageLink depth={depth} item={item as PageMenuItem} />
+  }
+
+  return (
+    <div>
+      <button
+        aria-expanded={open}
+        aria-label={label}
+        className="flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        onClick={() => setOpen((current) => !current)}
+        type="button"
+      >
+        <Icon className="size-4 shrink-0" />
+        <span className="min-w-0 flex-1 truncate text-left">{label}</span>
+        <IconChevronRight className={cn('size-3.5 transition-transform', open && 'rotate-90')} />
+      </button>
+      {open ? (
+        <div className="ml-4 flex flex-col gap-0.5 border-l border-sidebar-border pl-2">
+          {item.children.map((child) => (
+            <SidebarItem depth={depth + 1} item={child} key={child.key} />
+          ))}
+        </div>
+      ) : null}
+    </div>
+  )
 }
 
 export function AppLayout() {
@@ -97,39 +253,20 @@ export function AppLayout() {
           <aside
             className={cn(
               'flex shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-150',
-              collapsed ? 'w-14' : 'w-44',
+              collapsed ? 'w-14' : 'w-52',
             )}
           >
             <ScrollArea className="flex-1 px-2.5 py-3">
               <nav aria-label="Main navigation" className="flex flex-col gap-1">
-                {items.map((item) => {
-                  const Icon = MENU_ICONS[item.key] ?? IconLayoutDashboard
-                  const label = t(item.label)
-                  const link = (
-                    <NavLink
-                      aria-label={label}
-                      className={({ isActive }) =>
-                        cn(
-                          'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-                          collapsed && 'justify-center px-0',
-                          isActive && 'bg-sidebar-accent font-medium text-sidebar-accent-foreground',
-                        )
-                      }
-                      to={item.path}
-                    >
-                      <Icon className="size-4 shrink-0" />
-                      {!collapsed ? <span className="truncate">{label}</span> : null}
-                    </NavLink>
-                  )
-
-                  if (!collapsed) return <div key={item.key}>{link}</div>
-                  return (
-                    <Tooltip key={item.key}>
-                      <TooltipTrigger render={link} />
-                      <TooltipContent side="right">{label}</TooltipContent>
-                    </Tooltip>
-                  )
-                })}
+                {collapsed
+                  ? items.map((item) =>
+                      item.path ? (
+                        <SidebarPageLink collapsed item={item as PageMenuItem} key={item.key} />
+                      ) : (
+                        <CollapsedGroupButton item={item} key={item.key} />
+                      ),
+                    )
+                  : items.map((item) => <SidebarItem item={item} key={item.key} />)}
               </nav>
             </ScrollArea>
 
@@ -144,7 +281,7 @@ export function AppLayout() {
                 variant="ghost"
               >
                 {collapsed ? <IconLayoutSidebar /> : <IconLayoutSidebarLeftCollapse />}
-                {!collapsed ? <span>{collapsed ? t('Expand') : t('Collapse')}</span> : null}
+                {!collapsed ? <span>{t('Collapse')}</span> : null}
               </Button>
             </div>
           </aside>
