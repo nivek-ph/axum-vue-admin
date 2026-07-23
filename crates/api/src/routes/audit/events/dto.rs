@@ -6,6 +6,7 @@ pub type AuditEventListRequest = audit::AuditQuery;
 #[derive(Debug, Deserialize, ToSchema)]
 #[serde(rename_all = "camelCase")]
 pub struct AuditAnalysisRequest {
+    pub req_id: Option<String>,
     pub actor: Option<String>,
     pub action: Option<String>,
     pub resource_type: Option<String>,
@@ -20,6 +21,7 @@ impl From<AuditAnalysisRequest> for audit::AuditQuery {
         Self {
             page: 1,
             page_size: 50,
+            req_id: value.req_id,
             actor: value.actor,
             action: value.action,
             resource_type: value.resource_type,
@@ -35,6 +37,7 @@ impl From<AuditAnalysisRequest> for audit::AuditQuery {
 #[serde(rename_all = "camelCase")]
 pub struct AuditEventResponse {
     pub id: i64,
+    pub req_id: String,
     pub actor_id: Option<i64>,
     pub actor_label: String,
     pub action: String,
@@ -62,6 +65,7 @@ impl From<audit::AuditEventView> for AuditEventResponse {
     fn from(value: audit::AuditEventView) -> Self {
         Self {
             id: value.id,
+            req_id: value.req_id,
             actor_id: value.actor_id,
             actor_label: value.actor_label,
             action: value.action,

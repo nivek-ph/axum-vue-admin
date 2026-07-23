@@ -243,7 +243,9 @@ describe('Roles workbench', () => {
           code: 'OK',
           message: 'ok',
           data: {
-            list: [{ id: 3, parent_id: null, name: 'Operations', code: 'ops', sort: 1, status: 'enabled', children: [] }],
+            list: [
+              { id: 3, parent_id: null, name: 'Operations', code: 'ops', sort: 1, status: 'enabled', children: [] },
+            ],
           },
         }
       else if (config.url === '/roles/2/depts' && config.method === 'get')

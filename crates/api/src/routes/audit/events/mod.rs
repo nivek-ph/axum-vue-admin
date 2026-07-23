@@ -31,6 +31,7 @@ mod tests {
     async fn list_and_detail_routes_return_the_filtered_audit_event(pool: sqlx::PgPool) {
         AuditService::new(pool.clone())
             .record(AuditEvent {
+                req_id: "req-api-list-1".to_string(),
                 actor: AuditActor {
                     id: Some(1),
                     label: "admin".to_string(),
@@ -53,7 +54,7 @@ mod tests {
             .clone()
             .oneshot(
                 Request::builder()
-                    .uri("/?page=1&pageSize=10&actor=admin&action=user.assign_roles&resourceType=user&resourceId=7&result=succeeded&startedAt=2000-01-01T00%3A00%3A00Z&endedAt=2100-01-01T00%3A00%3A00Z")
+                    .uri("/?page=1&pageSize=10&reqId=api-list&actor=admin&action=user.assign_roles&resourceType=user&resourceId=7&result=succeeded&startedAt=2000-01-01T00%3A00%3A00Z&endedAt=2100-01-01T00%3A00%3A00Z")
                     .body(Body::empty())
                     .unwrap(),
             )
@@ -66,6 +67,7 @@ mod tests {
         let body: serde_json::Value = serde_json::from_slice(&body).unwrap();
         assert_eq!(body["data"]["total"], 1);
         assert_eq!(body["data"]["list"][0]["resourceId"], "7");
+        assert_eq!(body["data"]["list"][0]["reqId"], "req-api-list-1");
         let id = body["data"]["list"][0]["id"].as_i64().unwrap();
 
         let response = app
@@ -132,6 +134,7 @@ mod tests {
     async fn stats_route_returns_aggregated_visit_metrics(pool: sqlx::PgPool) {
         AuditService::new(pool.clone())
             .record(AuditEvent {
+                req_id: "req-api-stats-1".to_string(),
                 actor: AuditActor {
                     id: Some(1),
                     label: "admin".to_string(),

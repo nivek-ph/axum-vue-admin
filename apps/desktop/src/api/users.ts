@@ -21,6 +21,11 @@ export interface UserListResult {
   page: number
   pageSize: number
 }
+export interface UserFilters {
+  page?: number
+  pageSize?: number
+  keyword?: string
+}
 export interface CreateUserForm {
   userName: string
   nickName: string
@@ -31,10 +36,12 @@ export interface CreateUserForm {
   roleIds: number[]
 }
 
-export async function fetchUsers(page = 1, pageSize = 10) {
+export async function fetchUsers(filters: UserFilters = {}) {
+  const page = filters.page ?? 1
+  const pageSize = filters.pageSize ?? 10
   const response = await http.get<never, ApiEnvelope<UserListResult>>('/users', {
     ...withAuthHeaders(),
-    params: { page, pageSize },
+    params: { page, pageSize, keyword: filters.keyword || undefined },
   })
   return {
     list: response.data?.list ?? [],

@@ -9,12 +9,23 @@ describe('menu access state', () => {
     useMenuStore.getState().resetAccess()
   })
 
-  it('maps nested server menus and falls back to the first authorized route', () => {
+  it('preserves the authorized catalog hierarchy and falls back to the first page', () => {
     const items = buildMenuItems([
-      { name: 'system', children: [{ name: 'roles', path: 'roles' }] },
+      {
+        name: 'organization',
+        meta: { title: 'Organization' },
+        children: [{ name: 'roles', path: '/roles', meta: { title: 'Roles' } }],
+      },
       { name: 'files', path: 'files' },
     ])
-    expect(items.map((item) => item.key)).toEqual(['roles', 'files'])
+    expect(items).toEqual([
+      {
+        key: 'organization',
+        label: 'Organization',
+        children: [{ key: 'roles', label: 'Roles', path: '/roles', children: [] }],
+      },
+      { key: 'files', label: 'Files', path: '/files', children: [] },
+    ])
     useMenuStore.getState().setAuthorizedMenus([{ name: 'files', path: 'files' }])
     expect(useMenuStore.getState().canAccess('roles')).toBe(false)
     expect(useMenuStore.getState().firstAuthorizedPath()).toBe('/files')

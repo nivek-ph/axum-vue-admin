@@ -1,6 +1,6 @@
 import { getCoreRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { IconKey, IconPlus, IconRefresh, IconShield, IconTrash } from '@tabler/icons-react'
+import { IconKey, IconPlus, IconRefresh, IconSearch, IconShield, IconTrash } from '@tabler/icons-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -46,11 +46,16 @@ export function UsersPage() {
   const can = useAuthStore((state) => state.can)
   const confirmAction = useConfirm()
   const [page, setPage] = useState(1)
+  const [draftKeyword, setDraftKeyword] = useState('')
+  const [keyword, setKeyword] = useState('')
   const [createOpen, setCreateOpen] = useState(false)
   const [roleUser, setRoleUser] = useState<UserRecord | null>(null)
   const [form, setForm] = useState<CreateUserForm>(emptyForm)
   const [selectedRoles, setSelectedRoles] = useState<number[]>([])
-  const users = useQuery({ queryKey: ['users', page, PAGE_SIZE], queryFn: () => fetchUsers(page, PAGE_SIZE) })
+  const users = useQuery({
+    queryKey: ['users', page, PAGE_SIZE, keyword],
+    queryFn: () => fetchUsers({ page, pageSize: PAGE_SIZE, keyword }),
+  })
   const roles = useQuery({ queryKey: ['roles'], queryFn: listRoles })
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['users'] })
   const createMutation = useMutation({
@@ -200,6 +205,17 @@ export function UsersPage() {
     setCreateOpen(true)
   }
 
+  function searchUsers() {
+    setKeyword(draftKeyword.trim())
+    setPage(1)
+  }
+
+  function resetSearch() {
+    setDraftKeyword('')
+    setKeyword('')
+    setPage(1)
+  }
+
   function update<K extends keyof CreateUserForm>(key: K, value: CreateUserForm[K]) {
     setForm((current) => ({ ...current, [key]: value }))
   }
@@ -246,14 +262,28 @@ export function UsersPage() {
       />
       <Card>
         <CardContent className="flex flex-col gap-3">
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <span>
-              {users.data?.total ?? 0} {t('users')}
-            </span>
-            <span>
-              {users.data?.list.filter((item) => item.enable === 1).length ?? 0} {t('enabled')}
-            </span>
-          </div>
+          <form
+            className="flex flex-wrap items-center gap-2"
+            onSubmit={(event) => {
+              event.preventDefault()
+              searchUsers()
+            }}
+          >
+            <Input
+              aria-label={t('Search users')}
+              className="w-64"
+              onChange={(event) => setDraftKeyword(event.target.value)}
+              placeholder={t('Search users')}
+              value={draftKeyword}
+            />
+            <Button type="submit">
+              <IconSearch size={16} />
+              {t('Search')}
+            </Button>
+            <Button onClick={resetSearch} type="button" variant="outline">
+              {t('Reset')}
+            </Button>
+          </form>
           <DataTable
             cellClassName="py-1.5"
             emptyLabel={t('No users')}
@@ -270,6 +300,7 @@ export function UsersPage() {
             pageCount={pageCount}
             pageLabel={t('Page')}
             previousLabel={t('Previous')}
+            totalText={t('Record total', { count: users.data?.total ?? 0 })}
           />
         </CardContent>
       </Card>

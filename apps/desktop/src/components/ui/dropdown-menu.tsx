@@ -8,12 +8,18 @@ const DropdownMenuTrigger = MenuPrimitive.Trigger
 function DropdownMenuContent({
   align = 'end',
   className,
+  side = 'bottom',
   sideOffset = 4,
   ...props
-}: MenuPrimitive.Popup.Props & Pick<MenuPrimitive.Positioner.Props, 'align' | 'sideOffset'>) {
+}: MenuPrimitive.Popup.Props & Pick<MenuPrimitive.Positioner.Props, 'align' | 'side' | 'sideOffset'>) {
   return (
     <MenuPrimitive.Portal>
-      <MenuPrimitive.Positioner align={align} className="isolate z-50 outline-hidden" sideOffset={sideOffset}>
+      <MenuPrimitive.Positioner
+        align={align}
+        className="isolate z-50 outline-hidden"
+        side={side}
+        sideOffset={sideOffset}
+      >
         <MenuPrimitive.Popup
           className={cn(
             'cn-menu-target cn-menu-translucent min-w-36 origin-(--transform-origin) rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-hidden duration-100 data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0',

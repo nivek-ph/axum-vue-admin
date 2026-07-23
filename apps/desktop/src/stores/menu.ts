@@ -5,36 +5,61 @@ import { isSuperAdmin, useAuthStore } from './auth'
 export interface MenuItem {
   key: string
   label: string
-  path: string
+  path?: string
+  children: MenuItem[]
 }
 
 export interface RemoteMenuItem {
   name: string
   path?: string
+  hidden?: boolean
+  menuType?: string
   meta?: { title?: string }
   children?: RemoteMenuItem[]
 }
 
 export const coreMenuItems: MenuItem[] = [
-  { key: 'dashboard', label: 'Dashboard', path: '/dashboard' },
-  { key: 'users', label: 'Users', path: '/users' },
-  { key: 'roles', label: 'Roles', path: '/roles' },
-  { key: 'departments', label: 'Departments', path: '/departments' },
-  { key: 'menus', label: 'Access catalog', path: '/menus' },
-  { key: 'params', label: 'Params', path: '/params' },
-  { key: 'dictionaries', label: 'Dictionaries', path: '/dictionaries' },
-  { key: 'files', label: 'Files', path: '/files' },
-  { key: 'audit-events', label: 'Audit events', path: '/audit-events' },
-  { key: 'profile', label: 'Profile', path: '/profile' },
+  { key: 'dashboard', label: 'Dashboard', path: '/dashboard', children: [] },
+  { key: 'users', label: 'Users', path: '/users', children: [] },
+  { key: 'roles', label: 'Roles', path: '/roles', children: [] },
+  { key: 'departments', label: 'Departments', path: '/departments', children: [] },
+  { key: 'menus', label: 'Access catalog', path: '/menus', children: [] },
+  { key: 'params', label: 'Params', path: '/params', children: [] },
+  { key: 'dictionaries', label: 'Dictionaries', path: '/dictionaries', children: [] },
+  { key: 'files', label: 'Files', path: '/files', children: [] },
+  { key: 'audit-events', label: 'Audit events', path: '/audit-events', children: [] },
+  { key: 'profile', label: 'Profile', path: '/profile', children: [] },
 ]
 
-function flatten(items: RemoteMenuItem[]): RemoteMenuItem[] {
-  return items.flatMap((item) => [item, ...flatten(item.children ?? [])])
+const coreMenuByKey = new Map(coreMenuItems.map((item) => [item.key, item]))
+
+function buildMenuItem(remote: RemoteMenuItem): MenuItem | null {
+  if (remote.hidden || remote.menuType === 'action') return null
+
+  const children = (remote.children ?? []).map(buildMenuItem).filter((item): item is MenuItem => item !== null)
+  if (remote.menuType === 'directory' || children.length > 0) {
+    if (children.length === 0) return null
+    return {
+      key: remote.name,
+      label: remote.meta?.title || remote.name,
+      children,
+    }
+  }
+
+  const page = coreMenuByKey.get(remote.name)
+  if (!page) return null
+  return {
+    ...page,
+    label: remote.meta?.title || page.label,
+  }
 }
 
 export function buildMenuItems(remoteMenus: RemoteMenuItem[]) {
-  const allowed = new Set(flatten(remoteMenus).map((item) => item.name))
-  return coreMenuItems.filter((item) => allowed.has(item.key))
+  return remoteMenus.map(buildMenuItem).filter((item): item is MenuItem => item !== null)
+}
+
+export function flattenMenuItems(items: MenuItem[]): MenuItem[] {
+  return items.flatMap((item) => [item, ...flattenMenuItems(item.children)])
 }
 
 interface MenuState {
@@ -49,14 +74,16 @@ interface MenuState {
 export const useMenuStore = create<MenuState>((set, get) => ({
   items: coreMenuItems,
   accessLoaded: false,
-  setAuthorizedMenus: (menus, allowAll = false) =>
-    set({ items: allowAll ? coreMenuItems : buildMenuItems(menus), accessLoaded: true }),
+  setAuthorizedMenus: (menus, allowAll = false) => {
+    const items = buildMenuItems(menus)
+    set({ items: allowAll && items.length === 0 ? coreMenuItems : items, accessLoaded: true })
+  },
   resetAccess: () => set({ items: coreMenuItems, accessLoaded: false }),
   canAccess: (routeName) => {
     if (routeName === 'profile' || routeName === 'login') return true
     if (!get().accessLoaded) return true
     if (isSuperAdmin(useAuthStore.getState().userInfo)) return true
-    return get().items.some((item) => item.key === routeName)
+    return flattenMenuItems(get().items).some((item) => item.key === routeName)
   },
-  firstAuthorizedPath: () => get().items[0]?.path ?? '/profile',
+  firstAuthorizedPath: () => flattenMenuItems(get().items).find((item) => item.path)?.path ?? '/profile',
 }))

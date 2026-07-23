@@ -3,14 +3,16 @@ use audit::{
     AuditSource,
 };
 use auth::{captcha::CaptchaError, token::TokenIssueError};
-use axum::{Json, extract::State};
+use axum::{Extension, Json, extract::State};
 use iam::users;
 use serde::{Deserialize, Serialize};
+use tower_http::request_id::RequestId;
 use utoipa::ToSchema;
 
 use crate::{
     ApiResponse, AppResult,
     extractors::{client_ip::ClientIp, user_agent::UserAgent},
+    request_id::request_id_text,
     routes::users::dto::UserResponse,
     state::AppState,
 };
@@ -29,6 +31,7 @@ struct LoginInput {
     password: String,
     captcha: String,
     captcha_id: String,
+    req_id: String,
     ip: String,
     agent: String,
 }
@@ -78,6 +81,7 @@ pub(super) enum LoginError {
 pub async fn login(
     State(state): State<AppState>,
     ClientIp(ip): ClientIp,
+    Extension(request_id): Extension<RequestId>,
     UserAgent(agent): UserAgent,
     Json(payload): Json<LoginRequest>,
 ) -> AppResult<Json<ApiResponse<LoginResponse>>> {
@@ -88,6 +92,7 @@ pub async fn login(
             password: payload.password,
             captcha: payload.captcha,
             captcha_id: payload.captcha_id,
+            req_id: request_id_text(&request_id),
             ip,
             agent,
         },
@@ -209,6 +214,7 @@ async fn record_login(
 ) {
     audit
         .record_best_effort(AuditEvent {
+            req_id: input.req_id.clone(),
             actor: AuditActor {
                 id: user_id,
                 label: input.username.clone(),
@@ -237,6 +243,7 @@ mod tests {
             password: "secret".to_string(),
             captcha: String::new(),
             captcha_id: String::new(),
+            req_id: "req-login-validation-1".to_string(),
             ip: String::new(),
             agent: String::new(),
         }
@@ -256,6 +263,7 @@ mod tests {
                 password: "must-not-be-recorded".to_string(),
                 captcha: String::new(),
                 captcha_id: String::new(),
+                req_id: "req-login-denied-1".to_string(),
                 ip: "127.0.0.1".to_string(),
                 agent: "login-test".to_string(),
             },
@@ -297,6 +305,7 @@ mod tests {
                 password: "must-not-be-recorded".to_string(),
                 captcha: "must-not-be-recorded".to_string(),
                 captcha_id: "must-not-be-recorded".to_string(),
+                req_id: "req-login-success-1".to_string(),
                 ip: "127.0.0.1".to_string(),
                 agent: "login-test".to_string(),
             },

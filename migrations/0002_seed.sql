@@ -1,17 +1,26 @@
+INSERT INTO sys_depts (id, parent_id, name, code, sort, status)
+VALUES (1, NULL, 'Head Office', 'head_office', 0, 'enabled');
+
+INSERT INTO sys_roles (id, code, name, status, sort, data_scope, is_system)
+VALUES (1, 'super_admin', 'Super Admin', 'enabled', 0, 'all', true);
+
+SELECT setval(pg_get_serial_sequence('sys_depts', 'id'), 1);
+SELECT setval(pg_get_serial_sequence('sys_roles', 'id'), 1);
+
 INSERT INTO sys_menus (
     id, parent_id, path, name, hidden, component, sort, title, icon, menu_type, status, permission
 )
 VALUES
-    (1, NULL, '/dashboard', 'dashboard', false, 'view/dashboard/index.vue', 10, 'Dashboard', 'odometer', 'page', 'enabled', 'system:dashboard:view'),
+    (1, NULL, '/dashboard', 'dashboard', false, '', 10, 'Dashboard', 'odometer', 'page', 'enabled', 'system:dashboard:view'),
 
-    (10, NULL, '/organization', 'organization', false, 'Layout', 20, 'Organization', 'users', 'directory', 'enabled', NULL),
-    (11, 10, '/users', 'users', false, 'view/users/index.vue', 10, 'Users', 'user', 'page', 'enabled', 'system:user:list'),
+    (10, NULL, '/organization', 'organization', false, '', 20, 'Organization', 'users', 'directory', 'enabled', NULL),
+    (11, 10, '/users', 'users', false, '', 10, 'Users', 'user', 'page', 'enabled', 'system:user:list'),
     (1101, 11, '', 'users:create', true, '', 10, 'Create user', '', 'action', 'enabled', 'system:user:create'),
     (1102, 11, '', 'users:update', true, '', 20, 'Update user', '', 'action', 'enabled', 'system:user:update'),
     (1103, 11, '', 'users:delete', true, '', 30, 'Delete user', '', 'action', 'enabled', 'system:user:delete'),
     (1104, 11, '', 'users:reset-password', true, '', 40, 'Reset password', '', 'action', 'enabled', 'system:user:reset-password'),
     (1105, 11, '', 'users:assign-roles', true, '', 50, 'Assign roles', '', 'action', 'enabled', 'system:user:assign-roles'),
-    (12, 10, '/roles', 'roles', false, 'view/roles/index.vue', 20, 'Roles', 'shield', 'page', 'enabled', 'system:role:list'),
+    (12, 10, '/roles', 'roles', false, '', 20, 'Roles', 'shield', 'page', 'enabled', 'system:role:list'),
     (1201, 12, '', 'roles:create', true, '', 10, 'Create role', '', 'action', 'enabled', 'system:role:create'),
     (1202, 12, '', 'roles:update', true, '', 20, 'Update role', '', 'action', 'enabled', 'system:role:update'),
     (1203, 12, '', 'roles:delete', true, '', 30, 'Delete role', '', 'action', 'enabled', 'system:role:delete'),
@@ -21,23 +30,23 @@ VALUES
     (1207, 12, '', 'roles:depts-update', true, '', 70, 'Update role departments', '', 'action', 'enabled', 'system:role:depts-update'),
     (1208, 12, '', 'roles:users-read', true, '', 80, 'Read role users', '', 'action', 'enabled', 'system:role:list-users'),
     (1209, 12, '', 'roles:users-update', true, '', 90, 'Assign role users', '', 'action', 'enabled', 'system:role:assign-users'),
-    (13, 10, '/departments', 'departments', false, 'view/departments/index.vue', 30, 'Departments', 'building', 'page', 'enabled', 'system:dept:list'),
+    (13, 10, '/departments', 'departments', false, '', 30, 'Departments', 'building', 'page', 'enabled', 'system:dept:list'),
     (1301, 13, '', 'departments:create', true, '', 10, 'Create department', '', 'action', 'enabled', 'system:dept:create'),
     (1302, 13, '', 'departments:get', true, '', 20, 'Get department', '', 'action', 'enabled', 'system:dept:get'),
     (1303, 13, '', 'departments:update', true, '', 30, 'Update department', '', 'action', 'enabled', 'system:dept:update'),
     (1304, 13, '', 'departments:delete', true, '', 40, 'Delete department', '', 'action', 'enabled', 'system:dept:delete'),
 
-    (20, NULL, '/access', 'access-control', false, 'Layout', 30, 'Access Control', 'lock', 'directory', 'enabled', NULL),
-    (21, 20, '/menus', 'menus', false, 'view/menus/index.vue', 10, 'Access Catalog', 'menu', 'page', 'enabled', 'system:menu:list'),
+    (20, NULL, '/access', 'access-control', false, '', 30, 'Access Control', 'lock', 'directory', 'enabled', NULL),
+    (21, 20, '/menus', 'menus', false, '', 10, 'Access Catalog', 'menu', 'page', 'enabled', 'system:menu:list'),
 
-    (30, NULL, '/system', 'system', false, 'Layout', 40, 'System', 'settings', 'directory', 'enabled', NULL),
-    (31, 30, '/params', 'params', false, 'view/params/index.vue', 10, 'Params', 'sliders', 'page', 'enabled', 'system:param:list'),
+    (30, NULL, '/system', 'system', false, '', 40, 'System', 'settings', 'directory', 'enabled', NULL),
+    (31, 30, '/params', 'params', false, '', 10, 'Params', 'sliders', 'page', 'enabled', 'system:param:list'),
     (3101, 31, '', 'params:create', true, '', 10, 'Create param', '', 'action', 'enabled', 'system:param:create'),
     (3102, 31, '', 'params:get', true, '', 20, 'Get param', '', 'action', 'enabled', 'system:param:get'),
     (3103, 31, '', 'params:update', true, '', 30, 'Update param', '', 'action', 'enabled', 'system:param:update'),
     (3104, 31, '', 'params:delete', true, '', 40, 'Delete param', '', 'action', 'enabled', 'system:param:delete'),
     (3105, 31, '', 'params:batch-delete', true, '', 50, 'Batch delete params', '', 'action', 'enabled', 'system:param:batch-delete'),
-    (32, 30, '/dictionaries', 'dictionaries', false, 'view/dictionaries/index.vue', 20, 'Dictionaries', 'book', 'page', 'enabled', 'system:dictionary:list'),
+    (32, 30, '/dictionaries', 'dictionaries', false, '', 20, 'Dictionaries', 'book', 'page', 'enabled', 'system:dictionary:list'),
     (3201, 32, '', 'dictionaries:create', true, '', 10, 'Create dictionary', '', 'action', 'enabled', 'system:dictionary:create'),
     (3202, 32, '', 'dictionaries:update', true, '', 20, 'Update dictionary', '', 'action', 'enabled', 'system:dictionary:update'),
     (3203, 32, '', 'dictionaries:delete', true, '', 30, 'Delete dictionary', '', 'action', 'enabled', 'system:dictionary:delete'),
@@ -46,14 +55,14 @@ VALUES
     (3211, 32, '', 'dictionary-details:create', true, '', 60, 'Create dictionary detail', '', 'action', 'enabled', 'system:dictionary-detail:create'),
     (3212, 32, '', 'dictionary-details:update', true, '', 70, 'Update dictionary detail', '', 'action', 'enabled', 'system:dictionary-detail:update'),
     (3213, 32, '', 'dictionary-details:delete', true, '', 80, 'Delete dictionary detail', '', 'action', 'enabled', 'system:dictionary-detail:delete'),
-    (33, 30, '/files', 'files', false, 'view/files/index.vue', 30, 'Files', 'folder', 'page', 'enabled', 'system:file:list'),
+    (33, 30, '/files', 'files', false, '', 30, 'Files', 'folder', 'page', 'enabled', 'system:file:list'),
     (3301, 33, '', 'files:import-url', true, '', 10, 'Import file URL', '', 'action', 'enabled', 'system:file:import-url'),
     (3302, 33, '', 'files:upload', true, '', 20, 'Upload file', '', 'action', 'enabled', 'system:file:upload'),
     (3303, 33, '', 'files:delete', true, '', 30, 'Delete file', '', 'action', 'enabled', 'system:file:delete'),
     (3304, 33, '', 'files:rename', true, '', 40, 'Rename file', '', 'action', 'enabled', 'system:file:rename'),
 
-    (40, NULL, '/audit', 'audit', false, 'Layout', 50, 'Audit', 'history', 'directory', 'enabled', NULL),
-    (41, 40, '/audit-events', 'audit-events', false, 'view/logs/audit.vue', 10, 'Audit Events', 'history', 'page', 'enabled', 'system:audit-event:list');
+    (40, NULL, '/audit', 'audit', false, '', 50, 'Audit', 'history', 'directory', 'enabled', NULL),
+    (41, 40, '/audit-events', 'audit-events', false, '', 10, 'Audit Events', 'history', 'page', 'enabled', 'system:audit-event:list');
 
 INSERT INTO sys_menu_apis (menu_id, method, path_pattern)
 VALUES
@@ -113,4 +122,6 @@ VALUES
     (3304, 'PATCH', '/api/files/{id}/name'),
 
     (41, 'GET', '/api/audit/events'),
-    (41, 'GET', '/api/audit/events/{id}');
+    (41, 'GET', '/api/audit/events/{id}'),
+    (41, 'POST', '/api/audit/events/analyze'),
+    (41, 'GET', '/api/audit/events/stats');

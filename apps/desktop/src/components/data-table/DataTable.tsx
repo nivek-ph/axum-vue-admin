@@ -2,7 +2,7 @@ import { flexRender, type Row, type Table as TanStackTable } from '@tanstack/rea
 import { Fragment, type ReactNode } from 'react'
 
 import { DataTableEmptyState } from '@/components/data-table/DataTableEmptyState'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 
 export function DataTable<TData>({
   cellClassName,
@@ -13,6 +13,7 @@ export function DataTable<TData>({
   loadingLabel,
   renderExpandedContent,
   rowClassName,
+  summary,
   table,
   tableClassName,
 }: {
@@ -24,6 +25,7 @@ export function DataTable<TData>({
   loadingLabel: ReactNode
   renderExpandedContent?: (row: Row<TData>) => ReactNode
   rowClassName?: (row: Row<TData>) => string | undefined
+  summary?: ReactNode
   table: TanStackTable<TData>
   tableClassName?: string
 }) {
@@ -76,6 +78,15 @@ export function DataTable<TData>({
           })
         )}
       </TableBody>
+      {summary ? (
+        <TableFooter>
+          <TableRow className="hover:bg-muted/50">
+            <TableCell className="text-right text-muted-foreground" colSpan={colSpan}>
+              {summary}
+            </TableCell>
+          </TableRow>
+        </TableFooter>
+      ) : null}
     </Table>
   )
 }

@@ -138,6 +138,19 @@ Bootstrap default system data when setting up a database:
 cargo run -p ava -- init
 ```
 
+Optionally load the fictional 50-person company data for local development:
+
+```bash
+set -a
+source .env
+set +a
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f docs/sql/init.sql
+```
+
+The optional script adds demo departments, roles, users, role assignments,
+parameters, and dictionaries. It does not create login credentials, audit
+events, or uploaded-file records.
+
 
 
 ## Deployment

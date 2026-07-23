@@ -1,5 +1,6 @@
 import { getCoreRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table'
 import { cleanup, render, screen } from '@testing-library/react'
+import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it } from 'vitest'
 
 import { DataTable } from '@/components/data-table/DataTable'
@@ -17,11 +18,13 @@ function Example({
   expandedContent = false,
   isError = false,
   isLoading = false,
+  summary,
 }: {
   data?: Row[]
   expandedContent?: boolean
   isError?: boolean
   isLoading?: boolean
+  summary?: ReactNode
 }) {
   const table = useReactTable({
     columns,
@@ -37,6 +40,7 @@ function Example({
       isLoading={isLoading}
       loadingLabel="Loading records"
       renderExpandedContent={expandedContent ? (row) => `${row.original.name} details` : undefined}
+      summary={summary}
       table={table}
     />
   )
@@ -74,5 +78,11 @@ describe('DataTable', () => {
     render(<Example data={[{ name: 'Ada' }]} expandedContent />)
 
     expect(screen.getByText('Ada details')).toBeInTheDocument()
+  })
+
+  it('renders a total summary for a complete local data set', () => {
+    render(<Example data={[{ name: 'Ada' }]} summary="1 record total" />)
+
+    expect(screen.getByText('1 record total')).toBeInTheDocument()
   })
 })

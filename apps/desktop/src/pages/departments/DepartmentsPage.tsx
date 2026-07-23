@@ -336,6 +336,7 @@ export function DepartmentsPage() {
                   isError={query.isError}
                   isLoading={query.isLoading}
                   loadingLabel={t('Loading…')}
+                  summary={t('Record total', { count: allRows.length })}
                   table={table}
                 />
               </CardContent>

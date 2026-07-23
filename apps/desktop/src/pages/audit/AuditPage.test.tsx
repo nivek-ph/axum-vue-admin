@@ -32,6 +32,7 @@ describe('Audit workflow', () => {
     useAuthStore.getState().setSession({ accessToken: 'token', refreshToken: 'refresh', userInfo: currentUser })
     const event = {
       id: 9,
+      reqId: 'req-user-update-9',
       actorId: 1,
       actorLabel: 'admin',
       action: 'user.update',
@@ -43,6 +44,7 @@ describe('Audit workflow', () => {
       changes: [{ field: 'email', before: 'a@example.com', after: 'b@example.com' }],
       createdAt: '2026-07-18T01:00:00Z',
     }
+    let requestedReqId: string | undefined
     http.defaults.adapter = (async (config) => {
       let data: unknown
       if (config.url === '/users/me') data = { code: 'OK', message: 'ok', data: { userInfo: currentUser } }
@@ -52,18 +54,24 @@ describe('Audit workflow', () => {
           message: 'ok',
           data: { menus: [{ name: 'audit-events', path: 'audit-events' }], permissions: [] },
         }
-      else if (config.url === '/audit/events')
+      else if (config.url === '/audit/events') {
+        requestedReqId = config.params?.reqId as string | undefined
         data = { code: 'OK', message: 'ok', data: { list: [event], total: 1, page: 1, pageSize: 10 } }
-      else if (config.url === '/audit/events/9') data = { code: 'OK', message: 'ok', data: event }
+      } else if (config.url === '/audit/events/9') data = { code: 'OK', message: 'ok', data: event }
       else throw new Error(`Unexpected request: ${config.method} ${config.url}`)
       return { data, status: 200, statusText: 'OK', headers: {}, config }
     }) as AxiosAdapter
     window.history.replaceState({}, '', '/audit-events')
     render(<Application />)
 
+    await user.type(await screen.findByLabelText('Filter by request ID'), 'user-update')
+    await user.click(screen.getByRole('button', { name: 'Search' }))
+    expect(requestedReqId).toBe('user-update')
+
     await user.click(await screen.findByRole('button', { name: 'View detail' }))
     expect(await screen.findByRole('heading', { name: 'Audit event detail' })).toBeInTheDocument()
     expect(await screen.findAllByText('2026-07-18T01:00:00Z')).toHaveLength(2)
+    expect(screen.getAllByText('req-user-update-9')).toHaveLength(2)
     expect(screen.getByText(/a@example\.com/)).toBeInTheDocument()
     expect(screen.getByText(/b@example\.com/)).toBeInTheDocument()
   })
@@ -78,6 +86,7 @@ describe('Audit workflow', () => {
     }
     const event = {
       id: 9,
+      reqId: 'req-login-9',
       actorId: 1,
       actorLabel: 'admin',
       action: 'auth.login',

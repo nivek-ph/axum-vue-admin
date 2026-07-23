@@ -1,5 +1,5 @@
 import type { AxiosAdapter } from 'axios'
-import { render, screen } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
@@ -17,6 +17,7 @@ describe('Users workflow', () => {
   })
 
   afterEach(() => {
+    cleanup()
     http.defaults.adapter = originalAdapter
   })
 
@@ -86,5 +87,60 @@ describe('Users workflow', () => {
       enable: 0,
     })
     expect(userListCalls).toBeGreaterThan(1)
+  })
+
+  it('searches users by keyword through the server list API', async () => {
+    const currentUser = {
+      id: 1,
+      userName: 'admin',
+      nickName: 'Admin',
+      homeRoute: 'users',
+      roles: [{ id: 1, code: 'super_admin', name: 'Super Admin' }],
+    }
+    useAuthStore.getState().setSession({ accessToken: 'token', refreshToken: 'refresh', userInfo: currentUser })
+    const requestedKeywords: Array<string | undefined> = []
+    http.defaults.adapter = (async (config) => {
+      let data: unknown
+      if (config.url === '/users/me') data = { code: 'OK', message: 'ok', data: { userInfo: currentUser } }
+      else if (config.url === '/menus/current')
+        data = { code: 'OK', message: 'ok', data: { menus: [{ name: 'users', path: 'users' }], permissions: [] } }
+      else if (config.url === '/roles') data = { code: 'OK', message: 'ok', data: { list: [] } }
+      else if (config.url === '/users') {
+        const keyword = config.params?.keyword as string | undefined
+        requestedKeywords.push(keyword)
+        data = {
+          code: 'OK',
+          message: 'ok',
+          data: {
+            list: keyword
+              ? [
+                  {
+                    id: 42,
+                    userName: 'employee_42',
+                    nickName: 'Matched User',
+                    phone: '',
+                    email: 'employee42@example.test',
+                    enable: 1,
+                    roles: [],
+                  },
+                ]
+              : [],
+            total: keyword ? 1 : 0,
+            page: 1,
+            pageSize: 10,
+          },
+        }
+      } else throw new Error(`Unexpected request: ${config.method} ${config.url}`)
+      return { data, status: 200, statusText: 'OK', headers: {}, config }
+    }) as AxiosAdapter
+    window.history.replaceState({}, '', '/users')
+    render(<Application />)
+
+    const user = userEvent.setup()
+    await user.type(await screen.findByLabelText('Search users'), 'employee_42')
+    await user.click(screen.getByRole('button', { name: 'Search' }))
+
+    expect(await screen.findByText('Matched User')).toBeInTheDocument()
+    expect(requestedKeywords).toContain('employee_42')
   })
 })

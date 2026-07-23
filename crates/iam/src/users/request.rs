@@ -81,6 +81,7 @@ pub struct GetUserListRequest {
     pub page: i64,
     #[serde(rename = "pageSize")]
     pub page_size: i64,
+    pub keyword: Option<String>,
     pub username: Option<String>,
     #[serde(rename = "nickName")]
     pub nick_name: Option<String>,
