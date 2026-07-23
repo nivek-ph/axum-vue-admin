@@ -9,10 +9,9 @@ describe('theme store', () => {
     applyTheme('light')
   })
 
-  it('persists mode on the document element with fixed indigo palette', () => {
+  it('persists mode via the dark class on the document element', () => {
     useThemeStore.getState().setMode('dark')
-    expect(document.documentElement.dataset.palette).toBe('indigo')
-    expect(document.documentElement.dataset.mode).toBe('dark')
+    expect(document.documentElement.classList.contains('dark')).toBe(true)
     expect(window.localStorage.getItem('ava.themeMode')).toBe('dark')
   })
 
@@ -20,7 +19,6 @@ describe('theme store', () => {
     window.localStorage.setItem('ava.themeMode', 'dark')
     bootstrapTheme()
     expect(useThemeStore.getState().mode).toBe('dark')
-    expect(document.documentElement.dataset.mode).toBe('dark')
-    expect(document.documentElement.dataset.palette).toBe('indigo')
+    expect(document.documentElement.classList.contains('dark')).toBe(true)
   })
 })

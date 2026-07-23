@@ -1,7 +1,6 @@
 import { QueryClientProvider } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
-import { Toaster } from 'sonner'
 
 import { bootstrapAuthSession } from '@/auth/bootstrap'
 import { AppLayout } from '@/layouts/AppLayout'
@@ -17,7 +16,9 @@ import { DictionariesPage } from '@/pages/dictionaries/DictionariesPage'
 import { ParamsPage } from '@/pages/params/ParamsPage'
 import { FilesPage } from '@/pages/files/FilesPage'
 import { AuditPage } from '@/pages/audit/AuditPage'
-import { ConfirmProvider } from '@/components/ui/ConfirmProvider'
+import { ConfirmProvider } from '@/components/ConfirmProvider'
+import { Toaster } from '@/components/ui/sonner'
+import { TooltipProvider } from '@/components/ui/tooltip'
 import { isAuthenticated, useAuthStore } from '@/stores/auth'
 import { useMenuStore } from '@/stores/menu'
 
@@ -102,16 +103,24 @@ export function Application() {
     if (!bootstrapped) void bootstrapAuthSession().finally(() => setBootstrapped(true))
   }, [bootstrapped])
 
-  if (!bootstrapped) return <div className="app-loading">Loading Admin Console…</div>
+  if (!bootstrapped) {
+    return (
+      <div className="flex min-h-svh items-center justify-center text-sm text-muted-foreground">
+        Loading Admin Console…
+      </div>
+    )
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <ConfirmProvider>
-          <AppRoutes />
-          <Toaster richColors position="top-right" visibleToasts={1} />
-        </ConfirmProvider>
-      </BrowserRouter>
+      <TooltipProvider>
+        <BrowserRouter>
+          <ConfirmProvider>
+            <AppRoutes />
+            <Toaster position="top-right" richColors visibleToasts={1} />
+          </ConfirmProvider>
+        </BrowserRouter>
+      </TooltipProvider>
     </QueryClientProvider>
   )
 }

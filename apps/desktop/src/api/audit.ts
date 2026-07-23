@@ -88,3 +88,46 @@ export async function analyzeAuditEvents(filters: Omit<AuditFilters, 'page' | 'p
   )
   return response.data
 }
+
+export interface AuditDailyStat {
+  date: string
+  logins: number
+  uniqueIps: number
+}
+export interface AuditHourlyStat {
+  hour: number
+  logins: number
+}
+export interface AuditNamedCount {
+  name: string
+  count: number
+}
+export interface AuditStats {
+  days: number
+  loginCount: number
+  uniqueIps: number
+  eventCount: number
+  daily: AuditDailyStat[]
+  byHour: AuditHourlyStat[]
+  topActions: AuditNamedCount[]
+  topIps: AuditNamedCount[]
+}
+
+export async function fetchAuditStats(days = 14) {
+  const response = await http.get<never, ApiEnvelope<AuditStats>>('/audit/events/stats', {
+    ...withAuthHeaders(),
+    params: { days },
+  })
+  return (
+    response.data ?? {
+      days,
+      loginCount: 0,
+      uniqueIps: 0,
+      eventCount: 0,
+      daily: [],
+      byHour: [],
+      topActions: [],
+      topIps: [],
+    }
+  )
+}

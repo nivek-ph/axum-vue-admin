@@ -40,7 +40,7 @@ describe('AppLayout shell', () => {
 
   it('keeps collapse in the sidebar footer and toggles dark mode only', async () => {
     const user = userEvent.setup()
-    const { container } = render(
+    render(
       <MemoryRouter initialEntries={['/dashboard']}>
         <Routes>
           <Route element={<AppLayout />}>
@@ -50,19 +50,17 @@ describe('AppLayout shell', () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getByText('核心管理')).toBeVisible()
+    expect(screen.queryByText('核心管理')).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: '用户管理' })).toBeVisible()
-    expect(container.querySelector('.sidebar-footer')?.querySelector('[aria-label="收起"]')).toBeTruthy()
-    expect(container.querySelector('.masthead-leading')?.querySelector('[aria-label="收起"]')).toBeFalsy()
+    expect(screen.getByRole('button', { name: '收起' })).toBeVisible()
     expect(screen.queryByRole('button', { name: '灰蓝' })).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: '收起' }))
-    expect(container.querySelector('.app-shell')).toHaveClass('is-sidebar-collapsed')
     expect(screen.getByRole('button', { name: '展开' })).toBeVisible()
+    expect(window.localStorage.getItem('ava.sidebarCollapsed')).toBe('1')
 
     await user.click(screen.getByRole('button', { name: '深色模式' }))
-    expect(document.documentElement.dataset.mode).toBe('dark')
-    expect(document.documentElement.dataset.palette).toBe('indigo')
+    expect(document.documentElement.classList.contains('dark')).toBe(true)
     expect(window.localStorage.getItem('ava.themeMode')).toBe('dark')
   })
 })

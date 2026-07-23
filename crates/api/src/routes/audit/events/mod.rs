@@ -12,6 +12,7 @@ use crate::state::AppState;
 pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/", get(get_audit_events))
+        .route("/stats", get(get_audit_stats))
         .route("/analyze", post(analyze_audit_events))
         .route("/{id}", get(find_audit_event))
 }
@@ -125,5 +126,49 @@ mod tests {
         let body: serde_json::Value = serde_json::from_slice(&body).unwrap();
         assert_eq!(body["data"]["riskLevel"], "low");
         assert_eq!(body["data"]["findings"], serde_json::json!([]));
+    }
+
+    #[sqlx::test(migrations = "../../migrations")]
+    async fn stats_route_returns_aggregated_visit_metrics(pool: sqlx::PgPool) {
+        AuditService::new(pool.clone())
+            .record(AuditEvent {
+                actor: AuditActor {
+                    id: Some(1),
+                    label: "admin".to_string(),
+                },
+                action: AuditAction::Login,
+                resource: AuditResource::Account("admin".to_string()),
+                result: AuditResult::Succeeded,
+                reason_code: None,
+                source: AuditSource {
+                    ip: "203.0.113.10".to_string(),
+                    user_agent: "api-test".to_string(),
+                },
+                changes: Vec::new(),
+            })
+            .await
+            .unwrap();
+        let app = routes().with_state(crate::state::test_state(pool));
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/stats?days=14")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), 200);
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let body: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(body["data"]["loginCount"], 1);
+        assert_eq!(body["data"]["uniqueIps"], 1);
+        assert_eq!(body["data"]["eventCount"], 1);
+        assert_eq!(body["data"]["byHour"].as_array().unwrap().len(), 24);
+        assert_eq!(body["data"]["topActions"][0]["name"], "auth.login");
+        assert_eq!(body["data"]["topIps"][0]["name"], "203.0.113.10");
     }
 }

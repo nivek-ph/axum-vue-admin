@@ -1,4 +1,4 @@
-import { Plus, RefreshCw, Search } from 'lucide-react'
+import { IconPlus, IconRefresh, IconSearch } from '@tabler/icons-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -20,9 +20,18 @@ import {
   type RoleResource,
 } from '@/api/roles'
 import { fetchUsers, type UserRecord } from '@/api/users'
+import { PageHeader } from '@/components/PageHeader'
 import { Button } from '@/components/ui/Button'
-import { Modal } from '@/components/ui/Modal'
-import { useConfirm } from '@/components/ui/ConfirmProvider'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
+import { useConfirm } from '@/components/ConfirmProvider'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/stores/auth'
 
 type Tab = 'basic' | 'menus' | 'scope' | 'users'
@@ -117,25 +126,34 @@ export function RolesPage() {
 
   useEffect(() => {
     if (!selectedRoleId) return
+    let cancelled = false
     if (tab === 'menus')
       void getRolePermissionIds(selectedRoleId)
-        .then(setSelectedMenuIds)
+        .then((ids) => {
+          if (!cancelled) setSelectedMenuIds(ids)
+        })
         .catch(() => toast.error(t('Failed to load role permissions')))
-    if (tab === 'scope')
+    if (tab === 'scope') {
+      setScope(selectedRole?.data_scope ?? 'all')
       void Promise.all([listDepartments(), getRoleDeptIds(selectedRoleId)])
         .then(([tree, ids]) => {
+          if (cancelled) return
           setDepartments(tree)
           setSelectedDeptIds(ids)
-          setScope(selectedRole?.data_scope ?? 'all')
         })
         .catch(() => toast.error(t('Failed to load data scope')))
+    }
     if (tab === 'users' && canViewMembers)
       void Promise.all([fetchUsers(1, 200), getRoleUserIds(selectedRoleId)])
         .then(([result, ids]) => {
+          if (cancelled) return
           setUsers(result.list)
           setSelectedUserIds(ids)
         })
         .catch(() => toast.error(t('Failed to load role members')))
+    return () => {
+      cancelled = true
+    }
   }, [canViewMembers, selectedRoleId, tab, selectedRole?.data_scope, t])
 
   function setMenuAccess(menuId: number, enabled: boolean, includeDescendants: boolean) {
@@ -257,301 +275,376 @@ export function RolesPage() {
   )
 
   return (
-    <div className="page-stack">
-      <header className="page-header">
-        <div>
-          <p className="eyebrow">{t('Access control')}</p>
-          <h1>{t('Roles')}</h1>
-          <p>{t('Manage page access, action permissions, data scope, and members.')}</p>
-        </div>
-        <div className="header-actions">
-          <Button onClick={() => void loadWorkbench()}>
-            <RefreshCw size={16} />
-            {t('Refresh')}
-          </Button>
-          {can('system:role:create') && (
-            <Button onClick={() => openRoleModal()} variant="primary">
-              <Plus size={16} />
-              {t('New role')}
+    <div className="space-y-4">
+      <PageHeader
+        description={
+          <h1 className="text-base font-semibold text-foreground">
+            {t('Manage page access, action permissions, data scope, and members.')}
+          </h1>
+        }
+        actions={
+          <>
+            <Button onClick={() => void loadWorkbench()} variant="outline">
+              <IconRefresh size={16} />
+              {t('Refresh')}
             </Button>
-          )}
-        </div>
-      </header>
-      <section className="role-workbench">
-        <aside className="role-list">
-          <label className="search-input">
-            <Search size={15} />
-            <input
-              aria-label="Search roles"
-              onChange={(event) => setRoleSearch(event.target.value)}
-              placeholder={t('Search role name / code')}
-              value={roleSearch}
-            />
-          </label>
-          {filteredRoles.map((role) => (
-            <button
-              className={selectedRoleId === role.id ? 'active' : ''}
-              key={role.id}
-              onClick={() => setSelectedRoleId(role.id)}
-              type="button"
-            >
-              <strong>{role.name}</strong>
-              <small>
-                ID {role.id} · {role.code}
-              </small>
-            </button>
-          ))}
-        </aside>
-        <div className="role-panel">
-          <div className="role-panel-header">
+            {can('system:role:create') && (
+              <Button onClick={() => openRoleModal()}>
+                <IconPlus size={16} />
+                {t('New role')}
+              </Button>
+            )}
+          </>
+        }
+      />
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[180px_1fr]">
+        <Card className="h-fit">
+          <CardContent className="flex flex-col gap-2">
+            <div className="relative">
+              <IconSearch className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                aria-label="Search roles"
+                className="pl-8"
+                onChange={(event) => setRoleSearch(event.target.value)}
+                placeholder={t('Search role name / code')}
+                value={roleSearch}
+              />
+            </div>
+            <ScrollArea className="h-[min(60vh,520px)]">
+              <div className="flex flex-col gap-1 pr-2">
+                {filteredRoles.map((role) => (
+                  <button
+                    className={cn(
+                      'flex flex-col rounded-md px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-muted',
+                      selectedRoleId === role.id && 'bg-muted font-medium',
+                    )}
+                    key={role.id}
+                    onClick={() => setSelectedRoleId(role.id)}
+                    type="button"
+                  >
+                    <strong className="truncate">{role.name}</strong>
+                    <small className="text-xs text-muted-foreground">
+                      ID {role.id} · {role.code}
+                    </small>
+                  </button>
+                ))}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex-row items-center justify-between gap-3 space-y-0 border-b pb-3">
             <div>
-              <p className="eyebrow">{t('Current role')}</p>
-              <h2>{selectedRole?.name || (loading ? t('Loading…') : t('Roles'))}</h2>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('Current role')}</p>
+              <CardTitle>{selectedRole?.name || (loading ? t('Loading…') : t('Roles'))}</CardTitle>
             </div>
             {selectedRole && (
-              <div className="header-actions">
-                {can('system:role:update') && <Button onClick={() => openRoleModal(selectedRole)}>{t('Edit')}</Button>}
+              <div className="flex items-center gap-2">
+                {can('system:role:update') && (
+                  <Button onClick={() => openRoleModal(selectedRole)} size="sm" variant="outline">
+                    {t('Edit')}
+                  </Button>
+                )}
                 {can('system:role:delete') && (
                   <Button
                     disabled={systemRole}
                     onClick={() =>
-                      void confirmAction(t('Delete role "{name}"?', { name: selectedRole.name })).then((confirmed) => {
-                        if (confirmed) void deleteRole(selectedRole.id).then(loadWorkbench)
-                      })
+                      void confirmAction(t('Delete role "{{name}}"?', { name: selectedRole.name })).then(
+                        (confirmed: boolean) => {
+                          if (confirmed) void deleteRole(selectedRole.id).then(loadWorkbench)
+                        },
+                      )
                     }
-                    variant="danger"
+                    size="sm"
+                    variant="destructive"
                   >
                     {t('Delete')}
                   </Button>
                 )}
               </div>
             )}
-          </div>
-          <div aria-label="Role sections" className="tabs" role="tablist">
-            {(
-              [
-                ['basic', 'Basic Info'],
-                ['menus', 'Menu Authorization'],
-                ['scope', 'Data Scope'],
-                ...(canViewMembers ? [['users', 'Assigned Users'] as const] : []),
-              ] as const
-            ).map(([value, label]) => (
-              <button aria-selected={tab === value} key={value} onClick={() => setTab(value)} role="tab" type="button">
-                {t(label)}
-              </button>
-            ))}
-          </div>
-          {tab === 'basic' && selectedRole && (
-            <div className="role-detail-grid">
-              <div>
-                <span>{t('Role code')}</span>
-                <strong>{selectedRole.code}</strong>
-              </div>
-              <div>
-                <span>{t('Status')}</span>
-                <strong>{t(selectedRole.status === 'enabled' ? 'Enabled' : 'Disabled')}</strong>
-              </div>
-              <div>
-                <span>{t('Data Scope')}</span>
-                <strong>
-                  {t(scopeOptions.find(([value]) => value === selectedRole.data_scope)?.[1] ?? selectedRole.data_scope)}
-                </strong>
-              </div>
-              <div>
-                <span>{t('Sort')}</span>
-                <strong>{selectedRole.sort}</strong>
-              </div>
-            </div>
-          )}
-          {tab === 'menus' && selectedRole && (
-            <div className="role-content">
-              <div className="content-toolbar">
-                <div>
-                  <h3>{t('Menu Authorization')}</h3>
-                  <p>
-                    {t(
-                      'Select page access to include button permissions under that page and avoid visible pages with 403 APIs.',
-                    )}
-                  </p>
-                </div>
-                {canEditPermissions && (
-                  <Button disabled={saving} onClick={() => void savePermissions()} variant="primary">
-                    {t('Save permissions')}
-                  </Button>
-                )}
-              </div>
-              <div className="permission-list">
-                {pageMenus.map((menu) => (
-                  <div className="permission-row" key={menu.id} style={{ paddingLeft: 14 + menu.level * 18 }}>
-                    <div className="permission-resource">
-                      <strong>{t(menu.meta?.title || menu.name)}</strong>
-                      <small>{menu.path}</small>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <Tabs onValueChange={(value) => setTab(value as Tab)} value={tab}>
+              <TabsList aria-label="Role sections">
+                <TabsTrigger value="basic">{t('Basic Info')}</TabsTrigger>
+                <TabsTrigger value="menus">{t('Menu Authorization')}</TabsTrigger>
+                <TabsTrigger value="scope">{t('Data Scope')}</TabsTrigger>
+                {canViewMembers && <TabsTrigger value="users">{t('Assigned Users')}</TabsTrigger>}
+              </TabsList>
+
+              <TabsContent className="pt-4" value="basic">
+                {selectedRole && (
+                  <dl className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
+                    <div>
+                      <dt className="text-muted-foreground">{t('Role code')}</dt>
+                      <dd className="font-medium">{selectedRole.code}</dd>
                     </div>
-                    <div className="permission-checks">
-                      <label>
-                        <input
-                          checked={selectedMenuIds.includes(menu.id)}
-                          disabled={!canEditPermissions}
-                          onChange={(event) => setMenuAccess(menu.id, event.target.checked, true)}
-                          type="checkbox"
-                        />
-                        {t('Page access')}
-                      </label>
-                      {(menu.children ?? [])
-                        .filter((child) => child.menuType === 'action')
-                        .map((action) => (
-                          <label key={action.id}>
-                            <input
-                              aria-label={action.meta?.title || action.permission || action.name}
-                              checked={selectedMenuIds.includes(action.id)}
-                              disabled={!canEditPermissions}
-                              onChange={(event) => setMenuAccess(action.id, event.target.checked, false)}
-                              type="checkbox"
-                            />
-                            {t(action.meta?.title || action.permission || action.name)}
-                          </label>
-                        ))}
+                    <div>
+                      <dt className="text-muted-foreground">{t('Status')}</dt>
+                      <dd className="font-medium">{t(selectedRole.status === 'enabled' ? 'Enabled' : 'Disabled')}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground">{t('Data Scope')}</dt>
+                      <dd className="font-medium">
+                        {t(
+                          scopeOptions.find(([value]) => value === selectedRole.data_scope)?.[1] ??
+                            selectedRole.data_scope,
+                        )}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground">{t('Sort')}</dt>
+                      <dd className="font-medium">{selectedRole.sort}</dd>
+                    </div>
+                  </dl>
+                )}
+              </TabsContent>
+
+              <TabsContent className="pt-4" value="menus">
+                {selectedRole && (
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <h3 className="text-sm font-semibold">{t('Menu Authorization')}</h3>
+                        <p className="text-xs text-muted-foreground">
+                          {t(
+                            'Select page access to include button permissions under that page and avoid visible pages with 403 APIs.',
+                          )}
+                        </p>
+                      </div>
+                      {canEditPermissions && (
+                        <Button disabled={saving} onClick={() => void savePermissions()} size="sm">
+                          {t('Save permissions')}
+                        </Button>
+                      )}
+                    </div>
+                    <div className="divide-y divide-border rounded-lg border">
+                      {pageMenus.map((menu) => (
+                        <div className="flex flex-wrap items-center gap-4 px-3 py-2" key={menu.id}>
+                          <div className="min-w-40" style={{ paddingLeft: menu.level * 18 }}>
+                            <strong className="block text-sm">{t(menu.meta?.title || menu.name)}</strong>
+                            <small className="text-xs text-muted-foreground">{menu.path}</small>
+                          </div>
+                          <div className="flex flex-1 flex-wrap items-center gap-3">
+                            <div className="inline-flex items-center gap-1.5 text-xs">
+                              <Checkbox
+                                aria-label={t('Page access')}
+                                checked={selectedMenuIds.includes(menu.id)}
+                                disabled={!canEditPermissions}
+                                onCheckedChange={(checked) => setMenuAccess(menu.id, checked === true, true)}
+                              />
+                              <span aria-hidden="true">{t('Page access')}</span>
+                            </div>
+                            {(menu.children ?? [])
+                              .filter((child) => child.menuType === 'action')
+                              .map((action) => {
+                                const title = action.meta?.title || action.permission || action.name
+                                return (
+                                  <div className="inline-flex items-center gap-1.5 text-xs" key={action.id}>
+                                    <Checkbox
+                                      aria-label={title}
+                                      checked={selectedMenuIds.includes(action.id)}
+                                      disabled={!canEditPermissions}
+                                      onCheckedChange={(checked) => setMenuAccess(action.id, checked === true, false)}
+                                    />
+                                    <span aria-hidden="true">{t(title)}</span>
+                                  </div>
+                                )
+                              })}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-          {tab === 'scope' && selectedRole && (
-            <div className="role-content">
-              <div className="content-toolbar">
-                <h3>{t('Data Scope')}</h3>
-                <Button disabled={saving} onClick={() => void saveScope()} variant="primary">
-                  {t('Save data scope')}
-                </Button>
-              </div>
-              <div className="scope-grid">
-                <div className="check-list">
-                  {scopeOptions.map(([value, label]) => (
-                    <label key={value}>
-                      <input checked={scope === value} name="scope" onChange={() => setScope(value)} type="radio" />
-                      {label}
-                    </label>
-                  ))}
-                </div>
-                <div className="check-list">
-                  <h4>{t('Custom departments')}</h4>
-                  {flatDepartments.map((department) => (
-                    <label key={department.id} style={{ paddingLeft: 10 + department.level * 16 }}>
-                      <input
-                        checked={selectedDeptIds.includes(department.id)}
-                        disabled={scope !== 'custom_depts'}
-                        onChange={() =>
-                          setSelectedDeptIds((current) =>
-                            current.includes(department.id)
-                              ? current.filter((id) => id !== department.id)
-                              : [...current, department.id],
-                          )
-                        }
-                        type="checkbox"
-                      />
-                      {department.name}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-          {tab === 'users' && selectedRole && canViewMembers && (
-            <div className="role-content">
-              <div className="content-toolbar">
-                <label className="search-input">
-                  <Search size={15} />
-                  <input
-                    aria-label="Search members"
-                    onChange={(event) => setMemberSearch(event.target.value)}
-                    placeholder={t('Search users')}
-                    value={memberSearch}
-                  />
-                </label>
-                {canAssignMembers && (
-                  <Button disabled={saving} onClick={() => void saveMembers()} variant="primary">
-                    {t('Save members')}
-                  </Button>
                 )}
-              </div>
-              <div className="member-grid">
-                {filteredUsers.map((user) => (
-                  <label
-                    className={selectedUserIds.includes(user.id) ? 'member-card selected' : 'member-card'}
-                    key={user.id}
-                  >
-                    <input
-                      checked={selectedUserIds.includes(user.id)}
-                      disabled={!canAssignMembers}
-                      onChange={() =>
-                        setSelectedUserIds((current) =>
-                          current.includes(user.id) ? current.filter((id) => id !== user.id) : [...current, user.id],
-                        )
-                      }
-                      type="checkbox"
-                    />
-                    <span className="avatar small-avatar">{(user.nickName || user.userName).slice(0, 1)}</span>
-                    <span>
-                      <strong>{user.nickName || user.userName}</strong>
-                      <small>{user.userName}</small>
-                    </span>
-                  </label>
-                ))}
-              </div>
+              </TabsContent>
+
+              <TabsContent className="pt-4" value="scope">
+                {selectedRole && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="text-sm font-semibold">{t('Data Scope')}</h3>
+                      <Button disabled={saving} onClick={() => void saveScope()} size="sm">
+                        {t('Save data scope')}
+                      </Button>
+                    </div>
+                    <div className="flex flex-col gap-4 md:flex-row md:items-start">
+                      <div className="flex h-fit w-full max-w-[11rem] shrink-0 flex-col gap-2 rounded-lg border p-3">
+                        {scopeOptions.map(([value, label]) => (
+                          <label className="flex items-center gap-2 text-sm" key={value}>
+                            <input
+                              checked={scope === value}
+                              className="size-4 accent-primary"
+                              name="scope"
+                              onChange={() => setScope(value)}
+                              type="radio"
+                            />
+                            {t(label)}
+                          </label>
+                        ))}
+                      </div>
+                      <div className="flex w-full max-w-xs flex-col gap-2 rounded-lg border p-3">
+                        <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                          {t('Custom departments')}
+                        </h4>
+                        <ScrollArea className="h-[min(50vh,360px)]">
+                          <div className="flex flex-col gap-2 pr-2">
+                            {flatDepartments.map((department) => (
+                              <div
+                                className="inline-flex items-center gap-2 text-sm"
+                                key={department.id}
+                                style={{ paddingLeft: department.level * 16 }}
+                              >
+                                <Checkbox
+                                  aria-label={department.name}
+                                  checked={selectedDeptIds.includes(department.id)}
+                                  onCheckedChange={() => {
+                                    setScope('custom_depts')
+                                    setSelectedDeptIds((current) =>
+                                      current.includes(department.id)
+                                        ? current.filter((id) => id !== department.id)
+                                        : [...current, department.id],
+                                    )
+                                  }}
+                                />
+                                <span aria-hidden="true">{department.name}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </TabsContent>
+
+              {canViewMembers && (
+                <TabsContent className="pt-4" value="users">
+                  {selectedRole && (
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="relative">
+                          <IconSearch className="absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+                          <Input
+                            aria-label="Search members"
+                            className="w-56 pl-8"
+                            onChange={(event) => setMemberSearch(event.target.value)}
+                            placeholder={t('Search users')}
+                            value={memberSearch}
+                          />
+                        </div>
+                        {canAssignMembers && (
+                          <Button disabled={saving} onClick={() => void saveMembers()} size="sm">
+                            {t('Save members')}
+                          </Button>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                        {filteredUsers.map((user) => (
+                          <div
+                            className={cn(
+                              'inline-flex items-center gap-2 rounded-md border p-2 text-sm',
+                              selectedUserIds.includes(user.id) && 'border-primary bg-accent',
+                            )}
+                            key={user.id}
+                          >
+                            <Checkbox
+                              aria-label={`${user.nickName || user.userName}`}
+                              checked={selectedUserIds.includes(user.id)}
+                              disabled={!canAssignMembers}
+                              onCheckedChange={() =>
+                                setSelectedUserIds((current) =>
+                                  current.includes(user.id)
+                                    ? current.filter((id) => id !== user.id)
+                                    : [...current, user.id],
+                                )
+                              }
+                            />
+                            <span
+                              aria-hidden="true"
+                              className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium uppercase"
+                            >
+                              {(user.nickName || user.userName).slice(0, 1)}
+                            </span>
+                            <span aria-hidden="true" className="flex min-w-0 flex-col">
+                              <strong className="truncate font-medium">{user.nickName || user.userName}</strong>
+                              <small className="truncate text-xs text-muted-foreground">{user.userName}</small>
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </TabsContent>
+              )}
+            </Tabs>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Dialog onOpenChange={setRoleModal} open={roleModal}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t(editingRole ? 'Edit' : 'New role')}</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2 space-y-1.5">
+              <Label htmlFor="role-name">{t('Role name')}</Label>
+              <Input
+                id="role-name"
+                onChange={(event) => setRoleForm((current) => ({ ...current, name: event.target.value }))}
+                value={roleForm.name}
+              />
             </div>
-          )}
-        </div>
-      </section>
-      <Modal
-        footer={
-          <>
-            <Button onClick={() => setRoleModal(false)}>{t('Cancel')}</Button>
-            <Button disabled={saving} onClick={() => void saveRole()} variant="primary">
+            <div className="col-span-2 space-y-1.5">
+              <Label htmlFor="role-code">{t('Role code')}</Label>
+              <Input
+                disabled={Boolean(editingRole)}
+                id="role-code"
+                onChange={(event) => setRoleForm((current) => ({ ...current, code: event.target.value }))}
+                value={roleForm.code}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="role-status">{t('Status')}</Label>
+              <Select
+                onValueChange={(value) => {
+                  if (value) setRoleForm((current) => ({ ...current, status: value }))
+                }}
+                value={roleForm.status}
+              >
+                <SelectTrigger className="w-full" id="role-status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="enabled">{t('Enabled')}</SelectItem>
+                  <SelectItem value="disabled">{t('Disabled')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="role-sort">{t('Sort')}</Label>
+              <Input
+                id="role-sort"
+                onChange={(event) => setRoleForm((current) => ({ ...current, sort: Number(event.target.value) }))}
+                type="number"
+                value={roleForm.sort}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setRoleModal(false)} variant="outline">
+              {t('Cancel')}
+            </Button>
+            <Button disabled={saving} onClick={() => void saveRole()}>
               {t('Save role')}
             </Button>
-          </>
-        }
-        onOpenChange={setRoleModal}
-        open={roleModal}
-        title={t(editingRole ? 'Edit' : 'New role')}
-      >
-        <div className="form-grid">
-          <label>
-            {t('Role name')}
-            <input
-              onChange={(event) => setRoleForm((current) => ({ ...current, name: event.target.value }))}
-              value={roleForm.name}
-            />
-          </label>
-          <label>
-            {t('Role code')}
-            <input
-              disabled={Boolean(editingRole)}
-              onChange={(event) => setRoleForm((current) => ({ ...current, code: event.target.value }))}
-              value={roleForm.code}
-            />
-          </label>
-          <label>
-            {t('Status')}
-            <select
-              onChange={(event) => setRoleForm((current) => ({ ...current, status: event.target.value }))}
-              value={roleForm.status}
-            >
-              <option value="enabled">{t('Enabled')}</option>
-              <option value="disabled">{t('Disabled')}</option>
-            </select>
-          </label>
-          <label>
-            {t('Sort')}
-            <input
-              onChange={(event) => setRoleForm((current) => ({ ...current, sort: Number(event.target.value) }))}
-              type="number"
-              value={roleForm.sort}
-            />
-          </label>
-        </div>
-      </Modal>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

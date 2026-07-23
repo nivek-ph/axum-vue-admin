@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Eye, EyeOff } from 'lucide-react'
+import { IconEye, IconEyeOff, IconRefresh } from '@tabler/icons-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -13,6 +13,8 @@ import { BrandMark } from '@/components/BrandMark'
 import { LanguageSwitch } from '@/components/LanguageSwitch'
 import { ThemeSwitch } from '@/components/ThemeSwitch'
 import { Button } from '@/components/ui/Button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { isSuperAdmin, useAuthStore } from '@/stores/auth'
 import { useMenuStore } from '@/stores/menu'
 
@@ -91,98 +93,153 @@ export function LoginPage() {
   }
 
   return (
-    <main className="login-page">
-      <aside className="login-stage" aria-hidden="true">
-        <div className="login-stage-glow" />
-        <div className="login-stage-grid" />
-        <div className="login-stage-copy">
-          <BrandMark />
-          <p className="eyebrow">axum-admin</p>
-          <strong>{t('Admin Console')}</strong>
+    <main className="grid min-h-svh lg:grid-cols-[minmax(0,1.15fr)_minmax(24rem,0.85fr)]">
+      <aside
+        aria-hidden="true"
+        className="relative hidden overflow-hidden bg-[oklch(0.2_0.03_277)] text-white lg:flex lg:flex-col lg:justify-end lg:p-12 xl:p-16"
+      >
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(80%_60%_at_18%_12%,oklch(0.46_0.07_277_/_0.5),transparent_60%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(55%_45%_at_90%_88%,oklch(0.36_0.05_250_/_0.35),transparent_50%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,transparent_40%,oklch(0.16_0.03_277_/_0.85)_100%)]" />
+
+        {/* oversized mark watermark */}
+        <svg
+          className="pointer-events-none absolute -right-[8%] top-[12%] h-[78%] w-auto text-white/[0.07]"
+          fill="none"
+          viewBox="0 0 32 32"
+        >
+          <rect fill="currentColor" height="22" opacity="0.45" rx="4" width="10" x="4" y="5" />
+          <rect fill="currentColor" height="16" opacity="0.7" rx="4" width="10" x="11" y="8" />
+          <rect fill="currentColor" height="22" rx="4" width="10" x="18" y="5" />
+        </svg>
+
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.1] mix-blend-overlay"
+          style={{
+            backgroundImage:
+              "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
+          }}
+        />
+
+        <div className="relative z-10 max-w-lg">
+          <p className="text-[clamp(4.5rem,9vw,7rem)] font-semibold leading-none tracking-[-0.04em] text-white">ava</p>
+          <p className="mt-4 text-lg font-medium text-white/70 xl:mt-5 xl:text-xl">{t('Admin Console')}</p>
         </div>
       </aside>
-      <section className="login-panel">
-        <div className="login-toolbar">
+
+      <section className="relative flex flex-col bg-background">
+        <div className="absolute top-4 right-4 z-10 flex items-center gap-1.5">
           <ThemeSwitch />
           <LanguageSwitch />
         </div>
-        <div className="login-card">
-          <h1 className="login-title">{t('Account Login')}</h1>
-          <form noValidate onSubmit={handleSubmit(submit)}>
-            <div className="login-field">
-              <input
-                aria-describedby={errors.username ? 'username-error' : undefined}
-                aria-invalid={Boolean(errors.username)}
-                aria-label={t('Username')}
-                autoComplete="username"
-                id="username"
-                placeholder={t('Username')}
-                {...register('username')}
-              />
-              {errors.username && (
-                <span className="field-error" id="username-error" role="alert">
-                  {t(errors.username.message ?? 'Username is required')}
-                </span>
-              )}
+
+        <div className="m-auto w-full max-w-md px-5 py-12 xl:max-w-lg xl:px-8 xl:py-16">
+          <div className="mb-6 flex items-center gap-3 lg:hidden">
+            <BrandMark />
+            <div>
+              <p className="text-xs font-medium tracking-[0.22em] uppercase text-muted-foreground">ava</p>
+              <strong className="text-lg font-semibold">{t('Admin Console')}</strong>
             </div>
-            <div className="login-field">
-              <div className="login-password">
-                <input
-                  aria-describedby={errors.password ? 'password-error' : undefined}
-                  aria-invalid={Boolean(errors.password)}
-                  aria-label={t('Password')}
-                  autoComplete="current-password"
-                  id="password"
-                  placeholder={t('Enter password')}
-                  type={showPassword ? 'text' : 'password'}
-                  {...register('password')}
-                />
-                <button
-                  aria-label={showPassword ? t('Hide password') : t('Show password')}
-                  className="login-password-toggle"
-                  onClick={() => setShowPassword((value) => !value)}
-                  type="button"
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
-              </div>
-              {errors.password && (
-                <span className="field-error" id="password-error" role="alert">
-                  {t(errors.password.message ?? 'Password is required')}
-                </span>
-              )}
-            </div>
-            {captcha?.openCaptcha && (
-              <div className="login-field">
-                <div className="captcha-row">
-                  <input
-                    aria-describedby={errors.captcha ? 'captcha-error' : undefined}
-                    aria-invalid={Boolean(errors.captcha)}
-                    aria-label={t('Captcha')}
-                    id="captcha"
-                    placeholder={t('Enter captcha')}
-                    {...register('captcha')}
+          </div>
+
+          <Card className="border-border/80 shadow-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl xl:text-2xl">{t('Account Login')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form className="space-y-4" noValidate onSubmit={handleSubmit(submit)}>
+                <div className="space-y-1.5">
+                  <Input
+                    aria-describedby={errors.username ? 'username-error' : undefined}
+                    aria-invalid={Boolean(errors.username)}
+                    aria-label={t('Username')}
+                    autoComplete="username"
+                    className="h-10 px-3 text-sm md:text-sm"
+                    id="username"
+                    placeholder={t('Username')}
+                    {...register('username')}
                   />
-                  <button
-                    aria-label="Reload captcha"
-                    className="captcha-image"
-                    onClick={() => void loadCaptcha()}
-                    type="button"
-                  >
-                    <img alt="Captcha" src={captcha.picPath} />
-                  </button>
+                  {errors.username ? (
+                    <span className="text-xs text-destructive" id="username-error" role="alert">
+                      {t(errors.username.message ?? 'Username is required')}
+                    </span>
+                  ) : null}
                 </div>
-                {errors.captcha && (
-                  <span className="field-error" id="captcha-error" role="alert">
-                    {t(errors.captcha.message ?? 'Captcha is required')}
-                  </span>
-                )}
-              </div>
-            )}
-            <Button className="login-submit" disabled={submitting} type="submit" variant="primary">
-              {submitting ? '…' : t('Sign in')}
-            </Button>
-          </form>
+
+                <div className="space-y-1.5">
+                  <div className="relative">
+                    <Input
+                      aria-describedby={errors.password ? 'password-error' : undefined}
+                      aria-invalid={Boolean(errors.password)}
+                      aria-label={t('Password')}
+                      autoComplete="current-password"
+                      className="h-10 px-3 pr-10 text-sm md:text-sm"
+                      id="password"
+                      placeholder={t('Enter password')}
+                      type={showPassword ? 'text' : 'password'}
+                      {...register('password')}
+                    />
+                    <Button
+                      aria-label={showPassword ? t('Hide password') : t('Show password')}
+                      className="absolute top-1/2 right-1.5 -translate-y-1/2"
+                      onClick={() => setShowPassword((value) => !value)}
+                      size="icon-sm"
+                      type="button"
+                      variant="ghost"
+                    >
+                      {showPassword ? <IconEyeOff /> : <IconEye />}
+                    </Button>
+                  </div>
+                  {errors.password ? (
+                    <span className="text-xs text-destructive" id="password-error" role="alert">
+                      {t(errors.password.message ?? 'Password is required')}
+                    </span>
+                  ) : null}
+                </div>
+
+                {captcha?.openCaptcha ? (
+                  <div className="space-y-1.5">
+                    <div className="flex gap-2.5">
+                      <Input
+                        aria-describedby={errors.captcha ? 'captcha-error' : undefined}
+                        aria-invalid={Boolean(errors.captcha)}
+                        aria-label={t('Captcha')}
+                        className="h-10 flex-1 px-3 text-sm md:text-sm"
+                        id="captcha"
+                        placeholder={t('Enter captcha')}
+                        {...register('captcha')}
+                      />
+                      <button
+                        aria-label="Reload captcha"
+                        className="group relative flex h-10 w-[9.5rem] shrink-0 items-center justify-center overflow-hidden rounded-lg border border-border bg-[oklch(0.96_0.02_250)] transition-colors hover:border-ring/50 dark:bg-muted"
+                        onClick={() => void loadCaptcha()}
+                        type="button"
+                      >
+                        <img
+                          alt="Captcha"
+                          className="max-h-full max-w-full object-contain select-none"
+                          draggable={false}
+                          src={captcha.picPath}
+                        />
+                        <span className="absolute inset-0 flex items-center justify-center bg-background/70 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100">
+                          <IconRefresh className="size-3.5" />
+                        </span>
+                      </button>
+                    </div>
+                    {errors.captcha ? (
+                      <span className="text-xs text-destructive" id="captcha-error" role="alert">
+                        {t(errors.captcha.message ?? 'Captcha is required')}
+                      </span>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                <Button className="mt-1 h-10 w-full text-sm" disabled={submitting} type="submit">
+                  {submitting ? '…' : t('Sign in')}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
         </div>
       </section>
     </main>

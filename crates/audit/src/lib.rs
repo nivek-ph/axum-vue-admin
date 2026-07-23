@@ -6,4 +6,4 @@ mod service;
 pub use analysis::*;
 pub use error::AuditError;
 pub use event::*;
-pub use service::AuditService;
+pub use service::{AuditDailyStat, AuditHourlyStat, AuditNamedCount, AuditService, AuditStats};

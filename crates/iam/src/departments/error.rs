@@ -6,6 +6,8 @@ pub enum DeptError {
     Database(#[from] sqlx::Error),
     #[error("invalid department parent")]
     InvalidParent,
+    #[error("department has {descendant_count} descendant departments")]
+    HasDescendants { descendant_count: i64 },
     #[error(transparent)]
     AccessPropagation(#[from] AccessPropagationError),
 }

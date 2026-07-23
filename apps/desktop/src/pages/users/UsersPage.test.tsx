@@ -72,8 +72,9 @@ describe('Users workflow', () => {
     await user.type(screen.getByLabelText('Nickname'), 'New Operator')
     await user.clear(screen.getByLabelText('Password'))
     await user.type(screen.getByLabelText('Password'), 'safe-password')
-    await user.selectOptions(screen.getByLabelText('Role'), '2')
-    await user.selectOptions(screen.getByLabelText('Status'), '0')
+    expect(screen.getByRole('checkbox', { name: 'Operator' })).toBeChecked()
+    await user.click(screen.getByRole('combobox', { name: 'Status' }))
+    await user.click(await screen.findByRole('option', { name: 'Disabled' }))
     await user.click(screen.getByRole('button', { name: 'Create user' }))
 
     await screen.findByText('User created')

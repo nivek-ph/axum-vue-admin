@@ -147,8 +147,8 @@ describe('Admin Console authentication', () => {
     await user.type(screen.getByLabelText('Captcha'), 'abcd')
     await user.click(screen.getByRole('button', { name: 'Sign in' }))
 
-    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Users' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Welcome back, Operator.' })).toBeInTheDocument()
+    expect(screen.getByRole('navigation', { name: 'Main navigation' }).querySelector('a[href="/users"]')).not.toBeNull()
     expect(JSON.parse(localStorage.getItem('axum-vue-admin.auth') || '{}')).toMatchObject({
       accessToken: 'access-token',
       refreshToken: 'refresh-token',

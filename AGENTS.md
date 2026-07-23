@@ -48,7 +48,7 @@ This file gives repo-specific guidance for agents working in this project.
 
 ## Frontend
 
-- The Admin Console is React + Vite + React Router + Zustand + TanStack Query + Axios + Radix UI.
+- The Admin Console is React + Vite + React Router + Zustand + TanStack Query + TanStack Table + Axios + shadcn/ui on Base UI, with Tabler Icons.
 - API wrappers live in `apps/desktop/src/api`; keep endpoint paths aligned with `crates/api/src/routes`.
 - Keep the default API base URL as `http://127.0.0.1:3000/api` unless changing the runtime contract intentionally.
 - Use the shared HTTP client in `apps/desktop/src/api/http.ts` so backend envelope errors surface through the same path.

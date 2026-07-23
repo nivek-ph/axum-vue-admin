@@ -266,6 +266,11 @@ impl From<iam::departments::DeptError> for AppError {
             DeptError::InvalidParent => {
                 ErrorSpec::validation("DEPT_INVALID_PARENT", "invalid department parent").into()
             }
+            DeptError::HasDescendants { .. } => ErrorSpec::failed_precondition(
+                "DEPT_HAS_DESCENDANTS",
+                "department has descendant departments",
+            )
+            .into(),
             DeptError::Database(source) => INTERNAL_SERVER_ERROR.into_error().with_source(source),
             DeptError::AccessPropagation(source) => source.into(),
         }
@@ -479,5 +484,15 @@ mod tests {
             assert_eq!(error.status(), StatusCode::INTERNAL_SERVER_ERROR);
             assert_eq!(error.code(), "INTERNAL_SERVER_ERROR");
         }
+    }
+
+    #[test]
+    fn department_with_descendants_has_a_stable_precondition_contract() {
+        let error = AppError::from(iam::departments::DeptError::HasDescendants {
+            descendant_count: 3,
+        });
+
+        assert_eq!(error.status(), StatusCode::PRECONDITION_FAILED);
+        assert_eq!(error.code(), "DEPT_HAS_DESCENDANTS");
     }
 }

@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
+use utoipa::{IntoParams, ToSchema};
 
 pub type AuditEventListRequest = audit::AuditQuery;
 
@@ -91,6 +91,92 @@ impl From<audit::AuditAnalysis> for AuditAnalysisResponse {
             summary: value.summary,
             risk_level: value.risk_level,
             findings: value.findings,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize, IntoParams)]
+#[serde(rename_all = "camelCase")]
+#[into_params(parameter_in = Query)]
+pub struct AuditStatsRequest {
+    pub days: Option<i64>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct AuditDailyStatResponse {
+    pub date: String,
+    pub logins: i64,
+    pub unique_ips: i64,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct AuditHourlyStatResponse {
+    pub hour: i16,
+    pub logins: i64,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct AuditNamedCountResponse {
+    pub name: String,
+    pub count: i64,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+#[serde(rename_all = "camelCase")]
+pub struct AuditStatsResponse {
+    pub days: i64,
+    pub login_count: i64,
+    pub unique_ips: i64,
+    pub event_count: i64,
+    pub daily: Vec<AuditDailyStatResponse>,
+    pub by_hour: Vec<AuditHourlyStatResponse>,
+    pub top_actions: Vec<AuditNamedCountResponse>,
+    pub top_ips: Vec<AuditNamedCountResponse>,
+}
+
+impl From<audit::AuditStats> for AuditStatsResponse {
+    fn from(value: audit::AuditStats) -> Self {
+        Self {
+            days: value.days,
+            login_count: value.login_count,
+            unique_ips: value.unique_ips,
+            event_count: value.event_count,
+            daily: value
+                .daily
+                .into_iter()
+                .map(|row| AuditDailyStatResponse {
+                    date: row.date,
+                    logins: row.logins,
+                    unique_ips: row.unique_ips,
+                })
+                .collect(),
+            by_hour: value
+                .by_hour
+                .into_iter()
+                .map(|row| AuditHourlyStatResponse {
+                    hour: row.hour,
+                    logins: row.logins,
+                })
+                .collect(),
+            top_actions: value
+                .top_actions
+                .into_iter()
+                .map(|row| AuditNamedCountResponse {
+                    name: row.name,
+                    count: row.count,
+                })
+                .collect(),
+            top_ips: value
+                .top_ips
+                .into_iter()
+                .map(|row| AuditNamedCountResponse {
+                    name: row.name,
+                    count: row.count,
+                })
+                .collect(),
         }
     }
 }

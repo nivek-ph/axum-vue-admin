@@ -1,4 +1,4 @@
-import { Moon, Sun } from 'lucide-react'
+import { IconMoon, IconSun } from '@tabler/icons-react'
 import { useTranslation } from 'react-i18next'
 
 import { Button } from '@/components/ui/Button'
@@ -10,8 +10,13 @@ export function ThemeSwitch() {
   const toggleMode = useThemeStore((state) => state.toggleMode)
 
   return (
-    <Button aria-label={mode === 'light' ? t('Dark mode') : t('Light mode')} onClick={toggleMode} variant="ghost">
-      {mode === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+    <Button
+      aria-label={mode === 'light' ? t('Dark mode') : t('Light mode')}
+      onClick={toggleMode}
+      size="icon-sm"
+      variant="ghost"
+    >
+      {mode === 'light' ? <IconMoon /> : <IconSun />}
     </Button>
   )
 }

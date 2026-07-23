@@ -4,7 +4,6 @@ export const THEME_MODES = ['light', 'dark'] as const
 export type ThemeMode = (typeof THEME_MODES)[number]
 
 const MODE_KEY = 'ava.themeMode'
-const PALETTE = 'indigo'
 
 function readMode(): ThemeMode {
   const value = window.localStorage.getItem(MODE_KEY)
@@ -12,9 +11,7 @@ function readMode(): ThemeMode {
 }
 
 export function applyTheme(mode: ThemeMode) {
-  const root = document.documentElement
-  root.dataset.palette = PALETTE
-  root.dataset.mode = mode
+  document.documentElement.classList.toggle('dark', mode === 'dark')
 }
 
 interface ThemeState {
